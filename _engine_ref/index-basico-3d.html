@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diseñador 3D de Chaquetas · Promoción</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #14171e;
+      --panel-2: #1e222b;
+      --text: #e8eaed;
+      --muted: #98a0ac;
+      --accent: #4f8cff;
+      --accent-2: #25d366;
+      --border: #2a2f3a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg); color: var(--text); overflow: hidden;
+    }
+    #app { display: flex; height: 100vh; width: 100vw; }
+
+    #viewer { flex: 1; position: relative; min-width: 0; }
+    #viewer canvas { display: block; }
+    #hint {
+      position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,.45); color: var(--muted); padding: 8px 16px;
+      border-radius: 999px; font-size: 13px; pointer-events: none; backdrop-filter: blur(6px);
+    }
+    #loading {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: var(--bg); z-index: 10; color: var(--muted); font-size: 15px;
+    }
+
+    #panel {
+      width: 360px; background: var(--panel); border-left: 1px solid var(--border);
+      padding: 22px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px;
+    }
+    #panel::-webkit-scrollbar { width: 8px; }
+    #panel::-webkit-scrollbar-thumb { background: #2c313c; border-radius: 8px; }
+
+    .brand h1 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .brand .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+    .brand small { color: var(--muted); font-size: 12px; display: block; margin-top: 3px; }
+
+    .group { display: flex; flex-direction: column; gap: 10px; }
+    .group > .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 600; }
+
+    .swatches { display: flex; gap: 7px; flex-wrap: wrap; }
+    .swatch { width: 28px; height: 28px; border-radius: 7px; cursor: pointer; border: 2px solid transparent; transition: transform .1s; }
+    .swatch:hover { transform: scale(1.1); }
+    .swatch.active { border-color: var(--text); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
+
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .row label { font-size: 13px; }
+    input[type="color"] { width: 40px; height: 30px; border: 1px solid var(--border); border-radius: 7px; background: var(--panel-2); cursor: pointer; padding: 2px; }
+    input[type="text"] { width: 100%; background: var(--panel-2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+    input[type="text"]:focus { outline: none; border-color: var(--accent); }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field span { font-size: 12px; color: var(--muted); }
+    .two { display: flex; gap: 10px; }
+    .two > * { flex: 1; }
+
+    .seg { display: flex; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .seg button { flex: 1; background: transparent; border: none; color: var(--muted); padding: 9px; font-size: 13px; cursor: pointer; }
+    .seg button.active { background: var(--accent); color: #fff; }
+
+    .toggle { display: flex; align-items: center; justify-content: space-between; }
+    .switch { position: relative; width: 44px; height: 24px; }
+    .switch input { display: none; }
+    .slider { position: absolute; inset: 0; background: #333a46; border-radius: 999px; transition: .2s; cursor: pointer; }
+    .slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+    .switch input:checked + .slider { background: var(--accent-2); }
+    .switch input:checked + .slider::before { transform: translateX(20px); }
+
+    .btn { border: none; border-radius: 10px; padding: 13px 16px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; transition: filter .15s; }
+    .btn:hover { filter: brightness(1.1); }
+    .btn.primary { background: var(--accent-2); color: #06331a; }
+    .btn.blue { background: var(--accent); color: #fff; }
+    .btn.ghost { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
+
+    .divider { height: 1px; background: var(--border); }
+    .summary { font-size: 12.5px; color: var(--muted); line-height: 1.7; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+    .summary b { color: var(--text); }
+
+    @media (max-width: 820px) {
+      #app { flex-direction: column; }
+      #panel { width: 100%; border-left: none; border-top: 1px solid var(--border); max-height: 48vh; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="viewer">
+      <div id="loading">Cargando visor 3D…</div>
+      <div id="hint">🖱️ Arrastra para girar · Rueda para zoom</div>
+    </div>
+
+    <aside id="panel">
+      <div class="brand">
+        <h1><span class="dot"></span> Chaquetas Promo 3D</h1>
+        <small>Diseña tu chaqueta y cotiza al instante</small>
+      </div>
+
+      <div class="group">
+        <div class="label">Color del cuerpo</div>
+        <div class="swatches" data-target="body"></div>
+        <div class="row"><label>Personalizado</label><input type="color" id="bodyColor" value="#1b2a4a" /></div>
+      </div>
+
+      <div class="group">
+        <div class="label">Mangas</div>
+        <div class="swatches" data-target="sleeve"></div>
+        <div class="row"><label>Personalizado</label><input type="color" id="sleeveColor" value="#efe9dd" /></div>
+        <div class="seg" id="sleeveMat">
+          <button data-mat="leather" class="active">Cuero</button>
+          <button data-mat="fabric">Tela</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="label">Ribetes (cuello, puños, cintura)</div>
+        <div class="swatches" data-target="rib"></div>
+        <div class="row"><label>Personalizado</label><input type="color" id="ribColor" value="#b71c2b" /></div>
+        <div class="toggle">
+          <span style="font-size:13px">Rayas en los ribetes</span>
+          <label class="switch"><input type="checkbox" id="stripeToggle" checked><span class="slider"></span></label>
+        </div>
+        <div class="row"><label>Color de las rayas</label><input type="color" id="stripeColor" value="#efe9dd" /></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="group">
+        <div class="label">Espalda</div>
+        <div class="field"><span>Nombre (en arco)</span><input type="text" id="nameText" maxlength="14" value="PROMO" /></div>
+        <div class="field"><span>Número / año</span><input type="text" id="yearText" maxlength="4" value="26" /></div>
+        <div class="row"><label>Color del texto</label><input type="color" id="textColor" value="#efe9dd" /></div>
+      </div>
+
+      <div class="group">
+        <div class="label">Parche en el pecho</div>
+        <div class="toggle">
+          <span style="font-size:13px">Mostrar parche</span>
+          <label class="switch"><input type="checkbox" id="patchToggle" checked><span class="slider"></span></label>
+        </div>
+        <div class="two">
+          <div class="field"><span>Inicial</span><input type="text" id="initialText" maxlength="2" value="P" /></div>
+          <div class="field"><span>Color parche</span><input type="color" id="patchColor" value="#b71c2b" style="width:100%;height:38px" /></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="group">
+        <div class="label">Tu cotización</div>
+        <div class="summary" id="summary"></div>
+        <div class="field"><span>WhatsApp del vendedor (opcional)</span><input type="text" id="phone" placeholder="Ej: 573001234567" /></div>
+        <button class="btn primary" id="quoteBtn">📲 Pedir cotización por WhatsApp</button>
+        <button class="btn blue" id="downloadBtn">📸 Descargar mi diseño (PNG)</button>
+        <button class="btn ghost" id="glbBtn">🧊 Descargar modelo 3D (.glb)</button>
+        <button class="btn ghost" id="resetBtn">↺ Reiniciar</button>
+      </div>
+    </aside>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+    import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+
+    const viewer = document.getElementById('viewer');
+    const $ = id => document.getElementById(id);
+
+    /* ---------- Texturas procedurales ---------- */
+    function makeCanvas(s){ const c = document.createElement('canvas'); c.width = c.height = s; return c; }
+
+    function noiseFill(x, s, base, amp){
+      const img = x.getImageData(0,0,s,s); const d = img.data;
+      for (let i=0;i<d.length;i+=4){ const n = base + (Math.random()*2-1)*amp; d[i]=d[i+1]=d[i+2]=n; d[i+3]=255; }
+      x.putImageData(img,0,0);
+    }
+    // Lana melton: ruido fino + trama cruzada
+    function woolHeight(s=256){
+      const c = makeCanvas(s), x = c.getContext('2d');
+      x.fillStyle='#808080'; x.fillRect(0,0,s,s); noiseFill(x,s,128,20);
+      x.globalAlpha=.22; x.lineWidth=1;
+      x.strokeStyle='#5a5a5a'; for(let i=0;i<s;i+=3){ x.beginPath(); x.moveTo(0,i); x.lineTo(s,i); x.stroke(); }
+      x.strokeStyle='#b0b0b0'; for(let i=1;i<s;i+=3){ x.beginPath(); x.moveTo(i,0); x.lineTo(i,s); x.stroke(); }
+      x.globalAlpha=1; return c;
+    }
+    // Cuero: ruido + poros suaves
+    function leatherHeight(s=256){
+      const c = makeCanvas(s), x = c.getContext('2d');
+      x.fillStyle='#808080'; x.fillRect(0,0,s,s); noiseFill(x,s,128,10);
+      for(let i=0;i<900;i++){
+        const r = 2+Math.random()*6, gx=Math.random()*s, gy=Math.random()*s;
+        const g = x.createRadialGradient(gx,gy,0,gx,gy,r);
+        const v = Math.random()>.5 ? 150 : 105;
+        g.addColorStop(0,`rgb(${v},${v},${v})`); g.addColorStop(1,'rgba(128,128,128,0)');
+        x.fillStyle=g; x.beginPath(); x.arc(gx,gy,r,0,7); x.fill();
+      }
+      return c;
+    }
+    // Punto/knit: costillas verticales
+    function ribHeight(s=256){
+      const c = makeCanvas(s), x = c.getContext('2d');
+      x.fillStyle='#808080'; x.fillRect(0,0,s,s); noiseFill(x,s,128,8);
+      const bar = 8;
+      for(let i=0;i<s;i+=bar){
+        const g = x.createLinearGradient(i,0,i+bar,0);
+        g.addColorStop(0,'#666'); g.addColorStop(.5,'#c8c8c8'); g.addColorStop(1,'#666');
+        x.fillStyle=g; x.fillRect(i,0,bar,s);
+      }
+      return c;
+    }
+    // Height -> Normal map (Sobel simple, con wrap)
+    function heightToNormal(hc, strength=2.2){
+      const s = hc.width, src = hc.getContext('2d').getImageData(0,0,s,s).data;
+      const out = makeCanvas(s), ox = out.getContext('2d'), dst = ox.createImageData(s,s), o = dst.data;
+      const H=(x,y)=>{ x=(x+s)%s; y=(y+s)%s; return src[(y*s+x)*4]/255; };
+      for(let y=0;y<s;y++) for(let x=0;x<s;x++){
+        const dx=(H(x-1,y)-H(x+1,y))*strength, dy=(H(x,y-1)-H(x,y+1))*strength;
+        const l=Math.hypot(dx,dy,1), i=(y*s+x)*4;
+        o[i]=(dx/l*.5+.5)*255; o[i+1]=(dy/l*.5+.5)*255; o[i+2]=(1/l*.5+.5)*255; o[i+3]=255;
+      }
+      ox.putImageData(dst,0,0); return out;
+    }
+    function normalTex(heightCanvas, rx, ry, strength){
+      const t = new THREE.CanvasTexture(heightToNormal(heightCanvas, strength));
+      t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(rx,ry); t.colorSpace=THREE.NoColorSpace; return t;
+    }
+
+    const woolNormal    = normalTex(woolHeight(),    4, 5, 1.8);
+    const leatherNormal = normalTex(leatherHeight(), 3, 3, 1.6);
+    const ribNormal     = normalTex(ribHeight(),    10, 2, 2.4);
+
+    /* ---------- Escena ---------- */
+    const scene = new THREE.Scene();
+    (function bg(){
+      const c = makeCanvas(512), x = c.getContext('2d');
+      const g = x.createRadialGradient(256,190,50,256,320,460);
+      g.addColorStop(0,'#2b313d'); g.addColorStop(1,'#0c0e12');
+      x.fillStyle=g; x.fillRect(0,0,512,512);
+      const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; scene.background = t;
+    })();
+
+    const camera = new THREE.PerspectiveCamera(38, viewer.clientWidth/viewer.clientHeight, 0.1, 100);
+    camera.position.set(0, 0.5, 7.2);
+
+    const renderer = new THREE.WebGLRenderer({ antialias:true, preserveDrawingBuffer:true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+    renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    viewer.appendChild(renderer.domElement);
+
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x2a2e37, 0.55));
+    const key = new THREE.DirectionalLight(0xffffff, 2.4);
+    key.position.set(4,7,6); key.castShadow = true;
+    key.shadow.mapSize.set(2048,2048); key.shadow.camera.near=1; key.shadow.camera.far=30;
+    key.shadow.bias = -0.0004; scene.add(key);
+    const fill = new THREE.DirectionalLight(0xbcd0ff, 0.5); fill.position.set(-6,2,-4); scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xffffff, 0.8); rim.position.set(0,3,-6); scene.add(rim);
+
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(10,64), new THREE.ShadowMaterial({ opacity:0.32 }));
+    floor.rotation.x = -Math.PI/2; floor.position.y = -3.05; floor.receiveShadow = true; scene.add(floor);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; controls.dampingFactor = 0.08;
+    controls.minDistance = 4.5; controls.maxDistance = 12; controls.target.set(0,-0.1,0);
+    controls.autoRotate = true; controls.autoRotateSpeed = 0.9;
+    renderer.domElement.addEventListener('pointerdown', ()=> controls.autoRotate = false);
+
+    /* ---------- Materiales ---------- */
+    const mat = {
+      body:   new THREE.MeshStandardMaterial({ color:0x1b2a4a, roughness:0.85, metalness:0.02, normalMap:woolNormal, normalScale:new THREE.Vector2(0.55,0.55) }),
+      sleeve: new THREE.MeshPhysicalMaterial({ color:0xefe9dd, roughness:0.42, metalness:0.0, clearcoat:0.45, clearcoatRoughness:0.4, normalMap:leatherNormal, normalScale:new THREE.Vector2(0.5,0.5), side:THREE.DoubleSide }),
+      rib:    new THREE.MeshStandardMaterial({ color:0xb71c2b, roughness:0.9, metalness:0.0, normalMap:ribNormal, normalScale:new THREE.Vector2(0.7,0.7) }),
+      stripe: new THREE.MeshStandardMaterial({ color:0xefe9dd, roughness:0.9, normalMap:ribNormal, normalScale:new THREE.Vector2(0.6,0.6) }),
+      pocket: new THREE.MeshStandardMaterial({ color:0x142038, roughness:0.85, normalMap:woolNormal, normalScale:new THREE.Vector2(0.4,0.4) }),
+      snap:   new THREE.MeshStandardMaterial({ color:0xd9dde2, roughness:0.25, metalness:0.9 }),
+    };
+
+    /* ---------- Chaqueta ---------- */
+    const jacket = new THREE.Group(); scene.add(jacket);
+    const stripeMeshes = [];
+    function add(geo, m, parent=jacket){ const mesh = new THREE.Mesh(geo, m); mesh.castShadow = true; mesh.receiveShadow = true; parent.add(mesh); return mesh; }
+
+    // Superficies suaves de la prenda -> silueta redondeada tipo bomber
+    [mat.body, mat.rib, mat.stripe, mat.pocket].forEach(m => m.side = THREE.DoubleSide);
+
+    // Sección transversal (superelipse: frente/espalda planos, lados redondeados)
+    function ringPoints(rx, rz, n, seg){
+      const p = [];
+      for(let j=0;j<=seg;j++){
+        const a = j/seg*Math.PI*2, ca = Math.cos(a), sa = Math.sin(a);
+        const x = Math.sign(ca)*Math.pow(Math.abs(ca), 2/n)*rx;
+        const z = Math.sign(sa)*Math.pow(Math.abs(sa), 2/n)*rz;
+        p.push(x, z);
+      }
+      return p;
+    }
+    // Loft: une una serie de anillos {y,rx,rz,n} en un tubo suave
+    function loft(rings, seg, capBottom, capTop){
+      const pos = [], uv = [], idx = [], rows = rings.length, rw = seg+1;
+      for(let i=0;i<rows;i++){
+        const r = rings[i], p = ringPoints(r.rx, r.rz, r.n||2.6, seg);
+        for(let j=0;j<=seg;j++){ pos.push(p[j*2], r.y, p[j*2+1]); uv.push(j/seg*3, i/(rows-1)*3); }
+      }
+      for(let i=0;i<rows-1;i++) for(let j=0;j<seg;j++){ const a=i*rw+j, b=a+rw; idx.push(a,b,a+1, b,b+1,a+1); }
+      if(capBottom){ const c=pos.length/3; pos.push(0,rings[0].y,0); uv.push(0,0); for(let j=0;j<seg;j++) idx.push(c, j+1, j); }
+      if(capTop){ const c=pos.length/3, o=(rows-1)*rw; pos.push(0,rings[rows-1].y,0); uv.push(0,0); for(let j=0;j<seg;j++) idx.push(c, o+j, o+j+1); }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2));
+      g.setIndex(idx); g.computeVertexNormals(); return g;
+    }
+    function band(y, rx, rz, n, m){ const g = loft([{y:y-0.045,rx,rz,n},{y:y+0.045,rx,rz,n}], 56, false, false); const mesh = add(g, m); stripeMeshes.push(mesh); return mesh; }
+
+    const SEG = 56;
+
+    // Torso: cintura ceñida -> pecho amplio -> hombros caídos -> base del cuello
+    const bodyRings = [
+      {y:-1.45, rx:0.96, rz:0.34}, {y:-1.1, rx:1.03, rz:0.38}, {y:-0.5, rx:1.09, rz:0.41},
+      {y:0.1,   rx:1.13, rz:0.42}, {y:0.6,  rx:1.15, rz:0.42}, {y:0.95, rx:1.16, rz:0.41},
+      {y:1.2,   rx:1.15, rz:0.40}, {y:1.4,  rx:1.06, rz:0.38, n:2.8},
+      {y:1.56,  rx:0.82, rz:0.33, n:3.0}, {y:1.68, rx:0.52, rz:0.27, n:3.3}, {y:1.76, rx:0.4, rz:0.23, n:3.5},
+    ];
+    const body = add(loft(bodyRings, SEG, true, false), mat.body);
+
+    // Cintura acanalada (rib) ceñida + rayas
+    const waist = add(loft([
+      {y:-1.95, rx:0.93, rz:0.33}, {y:-1.78, rx:0.93, rz:0.33}, {y:-1.6, rx:0.95, rz:0.335}, {y:-1.44, rx:0.965, rz:0.343}
+    ], SEG, true, false), mat.rib);
+    band(-1.8, 0.935, 0.335, 2.6, mat.stripe);
+    band(-1.67, 0.945, 0.338, 2.6, mat.stripe);
+
+    // Cuello alzado tipo béisbol (rib) + raya
+    const collar = add(loft([
+      {y:1.76, rx:0.4, rz:0.23, n:3.5}, {y:1.9, rx:0.45, rz:0.26, n:3.3}, {y:2.02, rx:0.49, rz:0.29, n:3.1}
+    ], 48, false, false), mat.rib);
+    band(1.97, 0.475, 0.28, 3.15, mat.stripe);
+
+    // Placket frontal + snaps metálicos
+    const placket = add(new RoundedBoxGeometry(0.16, 2.9, 0.1, 4, 0.05), mat.rib);
+    placket.position.set(0, 0.15, 0.4);
+    for(let i=0;i<5;i++){ const b = add(new THREE.CylinderGeometry(0.062,0.062,0.04,20), mat.snap); b.rotation.x=Math.PI/2; b.position.set(0, 1.25 - i*0.62, 0.46); }
+
+    // Bolsillos (welt inclinados)
+    [-1,1].forEach(sgn=>{ const pk = add(new RoundedBoxGeometry(0.7,0.13,0.04,2,0.05), mat.pocket); pk.position.set(sgn*0.5,-0.7,0.4); pk.rotation.z = sgn*0.26; });
+
+    // Mangas curvas: tubo con radio variable (forma de brazo) + hombro + puño
+    function taperedTube(curve, rStart, rEnd, tubular=44, radial=26){
+      const frames = curve.computeFrenetFrames(tubular, false);
+      const pos=[], nor=[], uv=[], idx=[]; const dir = new THREE.Vector3();
+      for(let i=0;i<=tubular;i++){
+        const t=i/tubular, P=curve.getPointAt(t), r=rStart+(rEnd-rStart)*t;
+        const N=frames.normals[i], B=frames.binormals[i];
+        for(let j=0;j<=radial;j++){
+          const a=j/radial*Math.PI*2, cx=Math.cos(a), cy=Math.sin(a);
+          dir.set(N.x*cx+B.x*cy, N.y*cx+B.y*cy, N.z*cx+B.z*cy).normalize();
+          pos.push(P.x+dir.x*r, P.y+dir.y*r, P.z+dir.z*r);
+          nor.push(dir.x,dir.y,dir.z); uv.push(j/radial, t*3);
+        }
+      }
+      const rw=radial+1;
+      for(let i=0;i<tubular;i++) for(let j=0;j<radial;j++){ const a=i*rw+j, b=a+rw; idx.push(a,b,a+1, b,b+1,a+1); }
+      const g=new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
+      g.setAttribute('normal', new THREE.Float32BufferAttribute(nor,3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2));
+      g.setIndex(idx); return g;
+    }
+    function buildSleeve(side){
+      const s = side==='left' ? -1 : 1;
+      const start = new THREE.Vector3(s*1.0, 0.88, 0.02);
+      const ctrl  = new THREE.Vector3(s*1.9, -0.2, 0.05);
+      const end   = new THREE.Vector3(s*2.3, -1.45, 0.0);
+      const curve = new THREE.QuadraticBezierCurve3(start, ctrl, end);
+      add(taperedTube(curve, 0.5, 0.37), mat.sleeve);
+      const sh = add(new THREE.SphereGeometry(0.47,28,24), mat.sleeve); sh.position.set(s*1.05, 0.86, 0.02);
+      const tan = curve.getTangentAt(1);
+      const cuff = add(new THREE.CylinderGeometry(0.42,0.4,0.42,30), mat.rib);
+      cuff.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), tan);
+      cuff.position.copy(end).addScaledVector(tan, -0.03);
+      [0.12,-0.12].forEach(off=>{ const r = add(new THREE.CylinderGeometry(0.425,0.425,0.06,30), mat.stripe, cuff); r.position.y = off; stripeMeshes.push(r); });
+    }
+    buildSleeve('left'); buildSleeve('right');
+
+    /* ---------- Parche pecho ---------- */
+    const patchCanvas = makeCanvas(256); const patchCtx = patchCanvas.getContext('2d');
+    const patchTex = new THREE.CanvasTexture(patchCanvas); patchTex.colorSpace = THREE.SRGBColorSpace; patchTex.anisotropy = 8;
+    const patch = add(new THREE.Mesh(new THREE.PlaneGeometry(0.5,0.6), new THREE.MeshStandardMaterial({ map:patchTex, transparent:true, roughness:0.55 })).geometry, new THREE.MeshStandardMaterial({ map:patchTex, transparent:true, roughness:0.55 }));
+    patch.position.set(0.5, 0.7, 0.42); patch.rotation.set(-0.04, 0.12, 0);
+    function drawPatch(){
+      const x = patchCtx, s = 256; x.clearRect(0,0,s,s);
+      const col = $('patchColor').value;
+      x.fillStyle = col; x.strokeStyle = '#f4efe4'; x.lineWidth = 12;
+      // escudo
+      x.beginPath();
+      x.moveTo(40,30); x.lineTo(216,30); x.lineTo(216,150);
+      x.quadraticCurveTo(216,210,128,240); x.quadraticCurveTo(40,210,40,150); x.closePath();
+      x.fill(); x.stroke();
+      x.fillStyle = '#f4efe4'; x.font = '900 130px Georgia, serif'; x.textAlign='center'; x.textBaseline='middle';
+      x.fillText(($('initialText').value||'').toUpperCase().slice(0,2), 128, 120);
+      patchTex.needsUpdate = true;
+    }
+
+    /* ---------- Texto espalda (nombre en arco + número) ---------- */
+    const backCanvas = makeCanvas(512); backCanvas.height = 640;
+    const backCtx = backCanvas.getContext('2d');
+    const backTex = new THREE.CanvasTexture(backCanvas); backTex.colorSpace = THREE.SRGBColorSpace; backTex.anisotropy = 8;
+    const backPlane = add(new THREE.PlaneGeometry(1.6,2.1), new THREE.MeshStandardMaterial({ map:backTex, transparent:true, roughness:0.7 }));
+    backPlane.position.set(0, 0.15, -0.44); backPlane.rotation.y = Math.PI;
+    function drawBack(){
+      const x = backCtx, W = 512; x.clearRect(0,0,W,640);
+      const color = $('textColor').value;
+      x.fillStyle = color; x.strokeStyle = 'rgba(0,0,0,.35)'; x.lineWidth = 7; x.textAlign='center'; x.textBaseline='middle';
+      // nombre en arco
+      const name = ($('nameText').value||'').toUpperCase();
+      x.save(); x.translate(256, 430); x.font = '900 76px Segoe UI, Arial, sans-serif';
+      const step = Math.min(0.28, 1.7/Math.max(name.length,1));
+      const start = -(name.length-1)/2*step, radius = 250;
+      for(let i=0;i<name.length;i++){ const a = start + i*step; x.save(); x.rotate(a); x.translate(0,-radius);
+        x.strokeText(name[i],0,0); x.fillText(name[i],0,0); x.restore(); }
+      x.restore();
+      // número
+      const year = ($('yearText').value||'').toUpperCase();
+      x.font = '900 190px Segoe UI, Arial, sans-serif';
+      x.strokeText(year,256,400); x.fillText(year,256,400);
+      backTex.needsUpdate = true;
+    }
+
+    /* ---------- UI ---------- */
+    const palette = ['#1b2a4a','#101319','#7a1f2b','#0d4d3c','#4a3d1b','#512c66','#efe9dd','#b71c2b','#e0a422','#2f6fed','#d9dde2','#aab0bb'];
+    document.querySelectorAll('.swatches').forEach(cont=>{
+      const target = cont.dataset.target;
+      palette.forEach(hex=>{ const sw = document.createElement('div'); sw.className='swatch'; sw.style.background=hex;
+        sw.addEventListener('click', ()=>{ setColor(target,hex); $(target+'Color').value=hex;
+          cont.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active')); sw.classList.add('active'); });
+        cont.appendChild(sw);
+      });
+    });
+    function setColor(target, hex){
+      if(mat[target]) mat[target].color.set(hex);
+      if(target==='body'){ const c = new THREE.Color(hex).multiplyScalar(0.72); mat.pocket.color.copy(c); }
+      updateSummary();
+    }
+    ['body','sleeve','rib','stripe'].forEach(t=> $(t+'Color').addEventListener('input', e=> setColor(t, e.target.value)) );
+    ['nameText','yearText','textColor'].forEach(id=> $(id).addEventListener('input', ()=>{ drawBack(); updateSummary(); }) );
+    ['initialText','patchColor'].forEach(id=> $(id).addEventListener('input', drawPatch) );
+
+    $('sleeveMat').addEventListener('click', e=>{
+      const btn = e.target.closest('button'); if(!btn) return;
+      $('sleeveMat').querySelectorAll('button').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+      if(btn.dataset.mat==='leather'){ mat.sleeve.clearcoat=0.45; mat.sleeve.roughness=0.42; mat.sleeve.normalMap=leatherNormal; }
+      else { mat.sleeve.clearcoat=0.0; mat.sleeve.roughness=0.85; mat.sleeve.normalMap=woolNormal; }
+      mat.sleeve.needsUpdate = true; updateSummary();
+    });
+    $('stripeToggle').addEventListener('change', e=> stripeMeshes.forEach(m=> m.visible = e.target.checked) );
+    $('patchToggle').addEventListener('change', e=> patch.visible = e.target.checked );
+
+    function updateSummary(){
+      const finish = $('sleeveMat').querySelector('.active').textContent;
+      $('summary').innerHTML =
+        `<b>Nombre:</b> ${$('nameText').value||'—'} &nbsp;·&nbsp; <b>N°:</b> ${$('yearText').value||'—'}<br>`+
+        `<b>Cuerpo:</b> ${$('bodyColor').value} &nbsp;·&nbsp; <b>Mangas:</b> ${$('sleeveColor').value} (${finish})<br>`+
+        `<b>Ribetes:</b> ${$('ribColor').value} &nbsp;·&nbsp; <b>Rayas:</b> ${$('stripeToggle').checked ? $('stripeColor').value : 'no'}<br>`+
+        `<b>Parche:</b> ${$('patchToggle').checked ? ($('initialText').value||'—')+' / '+$('patchColor').value : 'no'}`;
+    }
+
+    $('quoteBtn').addEventListener('click', ()=>{
+      const phone = $('phone').value.replace(/\D/g,'');
+      const finish = $('sleeveMat').querySelector('.active').textContent;
+      const msg = `¡Hola! Quiero cotizar una chaqueta de promoción:%0A`+
+        `• Nombre: ${$('nameText').value}%0A• Número/año: ${$('yearText').value}%0A`+
+        `• Cuerpo: ${$('bodyColor').value}%0A• Mangas: ${$('sleeveColor').value} (${finish})%0A`+
+        `• Ribetes: ${$('ribColor').value}%0A• Rayas: ${$('stripeToggle').checked?$('stripeColor').value:'no'}%0A`+
+        `• Parche: ${$('patchToggle').checked?($('initialText').value+' / '+$('patchColor').value):'no'}%0A`+
+        `• Texto: ${$('textColor').value}`;
+      window.open(phone ? `https://wa.me/${phone}?text=${msg}` : `https://wa.me/?text=${msg}`, '_blank');
+    });
+
+    $('downloadBtn').addEventListener('click', ()=>{
+      renderer.render(scene, camera);
+      const link = document.createElement('a');
+      link.download = `chaqueta-${($('nameText').value||'diseno').toLowerCase()}.png`;
+      link.href = renderer.domElement.toDataURL('image/png'); link.click();
+    });
+
+    $('glbBtn').addEventListener('click', ()=>{
+      const btn = $('glbBtn'), original = btn.textContent; btn.textContent = 'Generando modelo…';
+      const exporter = new GLTFExporter();
+      exporter.parse(jacket, (result)=>{
+        const blob = new Blob([result], { type:'model/gltf-binary' });
+        const link = document.createElement('a');
+        link.download = `chaqueta-${($('nameText').value||'diseno').toLowerCase()}.glb`;
+        link.href = URL.createObjectURL(blob); link.click();
+        setTimeout(()=> URL.revokeObjectURL(link.href), 5000);
+        btn.textContent = original;
+      }, (err)=>{ console.error(err); btn.textContent = original; alert('No se pudo exportar el modelo 3D.'); }, { binary:true });
+    });
+
+    $('resetBtn').addEventListener('click', ()=> location.reload());
+
+    /* ---------- Init ---------- */
+    drawBack(); drawPatch(); updateSummary();
+    $('loading').style.display = 'none';
+
+    window.addEventListener('resize', ()=>{
+      camera.aspect = viewer.clientWidth/viewer.clientHeight; camera.updateProjectionMatrix();
+      renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+    });
+    window.__view = { camera, controls, scene, renderer, jacket, THREE };
+    (function animate(){ requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); })();
+  </script>
+</body>
+</html>

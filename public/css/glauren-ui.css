@@ -1,0 +1,100 @@
+/* ============================================================
+   GLAUREN · Sistema de diseño (design system)
+   Tokens + componentes. Estética: collegiate premium (navy + dorado).
+   Usar estas clases en todo el proyecto para consistencia.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&display=swap');
+
+:root{
+  /* Color · base */
+  --g-ink:#080b14; --g-surface:#14171e; --g-surface-2:#1e222b; --g-surface-3:#252b36;
+  --g-bone:#efe7d6; --g-line:rgba(239,231,214,.14); --g-line-strong:rgba(239,231,214,.28);
+  /* Color · marca / semántico */
+  --g-gold:#c9a54b; --g-gold-2:#dbb85f; --g-red:#c1272d; --g-green:#25d366; --g-blue:#4f8cff;
+  --g-muted:#8b93a7; --g-primary:var(--g-gold);
+  --g-ok:#25d366; --g-warn:#e0a422; --g-danger:#e0556a; --g-info:#4f8cff;
+  /* Tipografía */
+  --g-font-display:'Big Shoulders Display',sans-serif; --g-font-body:'Hanken Grotesk',system-ui,sans-serif; --g-font-label:'Hanken Grotesk',sans-serif;
+  --g-fs-xs:12px; --g-fs-sm:13px; --g-fs-md:15px; --g-fs-lg:18px; --g-fs-xl:24px;
+  /* Radio / espaciado / sombra */
+  --g-r-sm:8px; --g-r:12px; --g-r-lg:16px; --g-r-pill:999px;
+  --g-sp-1:6px; --g-sp-2:10px; --g-sp-3:16px; --g-sp-4:24px; --g-sp-5:36px;
+  --g-shadow:0 10px 30px rgba(0,0,0,.35); --g-shadow-lg:0 30px 70px rgba(0,0,0,.55);
+  --g-t:.16s ease;
+}
+
+/* Utilidades tipográficas */
+.g-eyebrow{font-family:var(--g-font-label);text-transform:uppercase;letter-spacing:.28em;font-size:var(--g-fs-xs);color:var(--g-gold)}
+.g-display{font-family:var(--g-font-display);text-transform:uppercase;line-height:.95;letter-spacing:.01em}
+.g-h1{font-family:var(--g-font-display);text-transform:uppercase;font-size:clamp(30px,4vw,52px);line-height:1;margin:0}
+.g-h2{font-family:var(--g-font-label);text-transform:uppercase;letter-spacing:.1em;font-size:var(--g-fs-lg);margin:0}
+.g-label{font-family:var(--g-font-label);text-transform:uppercase;letter-spacing:.1em;font-size:11px;color:var(--g-muted)}
+.g-muted{color:var(--g-muted)}
+
+/* Botón */
+.g-btn{font-family:var(--g-font-body);font-weight:600;font-size:var(--g-fs-md);border:1px solid transparent;border-radius:var(--g-r-sm);
+  padding:12px 20px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;justify-content:center;transition:var(--g-t);text-decoration:none;line-height:1}
+.g-btn:hover{transform:translateY(-1px)}
+.g-btn:active{transform:translateY(0)}
+.g-btn--primary{background:var(--g-gold);color:#1a1405}
+.g-btn--primary:hover{background:var(--g-gold-2)}
+.g-btn--ghost{background:transparent;border-color:var(--g-line);color:var(--g-bone)}
+.g-btn--ghost:hover{border-color:var(--g-gold);color:var(--g-gold)}
+.g-btn--danger{background:transparent;border-color:rgba(224,85,106,.4);color:var(--g-danger)}
+.g-btn--danger:hover{background:rgba(224,85,106,.12)}
+.g-btn--sm{padding:8px 14px;font-size:var(--g-fs-sm)}
+.g-btn--lg{padding:15px 26px;font-size:var(--g-fs-lg)}
+.g-btn--block{width:100%}
+.g-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+/* Tarjeta */
+.g-card{background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:var(--g-sp-4)}
+.g-card--tight{padding:var(--g-sp-3)}
+.g-card--raised{box-shadow:var(--g-shadow)}
+.g-card__title{font-family:var(--g-font-label);text-transform:uppercase;letter-spacing:.1em;font-size:var(--g-fs-sm);color:var(--g-gold);margin-bottom:var(--g-sp-3)}
+
+/* Badge / chip de estado */
+.g-badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--g-font-label);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  padding:5px 11px;border-radius:var(--g-r-pill);border:1px solid transparent}
+.g-badge--ok{background:rgba(37,211,102,.14);color:var(--g-ok)}
+.g-badge--warn{background:rgba(224,164,34,.14);color:var(--g-warn)}
+.g-badge--danger{background:rgba(224,85,106,.14);color:var(--g-danger)}
+.g-badge--info{background:rgba(79,140,255,.14);color:var(--g-info)}
+.g-badge--muted{background:var(--g-surface-3);color:var(--g-muted)}
+
+/* Formularios */
+.g-field{display:flex;flex-direction:column;gap:6px;margin-bottom:var(--g-sp-3)}
+.g-input,.g-select,.g-textarea{width:100%;background:var(--g-surface-2);border:1px solid var(--g-line);color:var(--g-bone);
+  border-radius:var(--g-r-sm);padding:12px 14px;font-size:var(--g-fs-md);font-family:var(--g-font-body);transition:var(--g-t)}
+.g-input:focus,.g-select:focus,.g-textarea:focus{outline:none;border-color:var(--g-gold);box-shadow:0 0 0 3px rgba(201,165,75,.12)}
+.g-input::placeholder{color:#5b6270}
+
+/* Tabla */
+.g-table{width:100%;border-collapse:collapse;font-size:var(--g-fs-sm)}
+.g-table th{font-family:var(--g-font-label);text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--g-muted);
+  text-align:left;padding:12px 14px;border-bottom:1px solid var(--g-line)}
+.g-table td{padding:12px 14px;border-bottom:1px solid var(--g-line);color:var(--g-bone)}
+.g-table tr{transition:var(--g-t)}
+.g-table tbody tr:hover{background:var(--g-surface-2)}
+
+/* Línea de tiempo (proceso de fabricación) */
+.g-timeline{display:flex;flex-direction:column}
+.g-timeline__step{display:flex;gap:14px;align-items:flex-start;position:relative;padding-bottom:18px}
+.g-timeline__step:not(:last-child)::before{content:'';position:absolute;left:13px;top:26px;bottom:0;width:2px;background:var(--g-line)}
+.g-timeline__step.is-done:not(:last-child)::before{background:var(--g-gold)}
+.g-timeline__dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--g-line);display:grid;place-items:center;
+  flex-shrink:0;font-size:13px;color:var(--g-muted);background:var(--g-ink)}
+.g-timeline__step.is-done .g-timeline__dot{border-color:var(--g-gold);background:var(--g-gold);color:#1a1405}
+.g-timeline__step.is-current .g-timeline__dot{border-color:var(--g-gold);color:var(--g-gold)}
+.g-timeline__label{font-weight:600;padding-top:3px}
+.g-timeline__step.is-current .g-timeline__label{color:var(--g-gold)}
+.g-timeline__step.is-pending .g-timeline__label{color:var(--g-muted)}
+
+/* Divisor + helpers */
+.g-divider{height:1px;background:var(--g-line);border:0;margin:var(--g-sp-3) 0}
+.g-stack>*+*{margin-top:var(--g-sp-3)}
+
+/* Accesibilidad */
+:where(a,button,input,select,textarea):focus-visible{outline:2px solid var(--g-gold);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}

@@ -1,0 +1,222 @@
+@extends('portal.layout')
+@section('title', $contract->code)
+
+@section('content')
+<a href="{{ route('portal.dashboard') }}" style="color:var(--g-muted);text-decoration:none;font-size:14px"><i class="bi bi-arrow-left"></i> Mis contratos</a>
+
+<div style="display:flex;justify-content:space-between;align-items:end;gap:14px;flex-wrap:wrap;margin:14px 0 26px">
+    <div>
+        <h1 class="p-h" style="margin:0">{{ $contract->code }}</h1>
+        <p class="p-sub" style="margin:4px 0 0">{{ $contract->jacketType?->name ?? 'Chaqueta' }} · Promoción {{ $contract->year }}</p>
+    </div>
+</div>
+
+{{-- Firma pendiente --}}
+@if($contract->contract_status === 'enviado' && $contract->sign_token)
+    <div style="background:rgba(224,164,34,.1);border:1px solid rgba(224,164,34,.35);border-radius:var(--g-r);padding:20px 22px;margin-bottom:26px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+        <div>
+            <div style="font-weight:700;color:var(--g-warn);margin-bottom:3px"><i class="bi bi-pen"></i> Tu contrato está listo para firmar</div>
+            <div style="color:var(--g-muted);font-size:14px">Revísalo y fírmalo en línea para iniciar la producción.</div>
+        </div>
+        <a href="{{ route('contrato.firmar', $contract->sign_token) }}" style="background:var(--g-gold);color:#1a1405;text-decoration:none;font-weight:700;padding:11px 20px;border-radius:var(--g-r-sm);white-space:nowrap">Ver y firmar contrato</a>
+    </div>
+@elseif($contract->contract_status === 'firmado')
+    <div style="background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.3);border-radius:var(--g-r);padding:16px 20px;margin-bottom:26px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+        <div style="color:var(--g-ok);font-size:14px">
+            <i class="bi bi-patch-check-fill"></i> Contrato firmado por <b>{{ $contract->signed_by_name }}</b>@if($contract->signed_at) el {{ $contract->signed_at->format('d/m/Y') }}@endif.
+        </div>
+        @if($contract->sign_token)
+            <a href="{{ route('contrato.firmar', $contract->sign_token) }}" target="_blank" style="border:1px solid var(--g-line);color:var(--g-bone);text-decoration:none;font-size:13px;padding:8px 14px;border-radius:var(--g-r-sm);white-space:nowrap"><i class="bi bi-download"></i> Ver / descargar</a>
+        @endif
+    </div>
+@endif
+
+{{-- Línea de tiempo de fabricación --}}
+<section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-bottom:22px">
+    <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0 0 22px">Avance de fabricación</h2>
+    @php $current = $contract->stageIndex(); $keys = array_keys($stages); @endphp
+    <div style="display:flex;flex-wrap:wrap;gap:0">
+        @foreach($stages as $key => $label)
+            @php $i = $loop->index; $done = $i < $current; $active = $i === $current; @endphp
+            <div style="flex:1;min-width:110px;text-align:center;position:relative">
+                @if(!$loop->last)
+                    <div style="position:absolute;top:13px;left:50%;width:100%;height:2px;background:{{ $i < $current ? 'var(--g-gold)' : 'var(--g-line)' }}"></div>
+                @endif
+                <div style="position:relative;z-index:2;width:28px;height:28px;border-radius:50%;margin:0 auto 8px;display:grid;place-items:center;font-size:13px;
+                    background:{{ $done || $active ? 'var(--g-gold)' : 'var(--g-surface-2)' }};
+                    color:{{ $done || $active ? '#1a1405' : 'var(--g-muted)' }};
+                    border:2px solid {{ $done || $active ? 'var(--g-gold)' : 'var(--g-line)' }}">
+                    @if($done)<i class="bi bi-check"></i>@else{{ $i + 1 }}@endif
+                </div>
+                <div style="font-size:12px;line-height:1.3;color:{{ $active ? 'var(--g-gold)' : ($done ? 'var(--g-bone)' : 'var(--g-muted)') }};font-weight:{{ $active ? 700 : 400 }}">{{ $label }}</div>
+            </div>
+        @endforeach
+    </div>
+</section>
+
+{{-- Resumen de pagos --}}
+<section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-bottom:22px">
+    <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0 0 18px">Estado de pagos del curso</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+        <div style="background:var(--g-surface-2);border:1px solid var(--g-line);border-radius:var(--g-r-sm);padding:16px;text-align:center">
+            <div style="font-family:var(--g-font-display);font-size:30px;line-height:1">{{ $pay['total'] }}</div>
+            <div style="color:var(--g-muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Estudiantes</div>
+        </div>
+        <div style="background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.35);border-radius:var(--g-r-sm);padding:16px;text-align:center">
+            <div style="font-family:var(--g-font-display);font-size:30px;line-height:1;color:var(--g-ok)">{{ $pay['pagados'] }}</div>
+            <div style="color:var(--g-muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Pagaron</div>
+        </div>
+        <div style="background:rgba(224,164,34,.1);border:1px solid rgba(224,164,34,.35);border-radius:var(--g-r-sm);padding:16px;text-align:center">
+            <div style="font-family:var(--g-font-display);font-size:30px;line-height:1;color:var(--g-warn)">{{ $pay['revision'] }}</div>
+            <div style="color:var(--g-muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em">En revisión</div>
+        </div>
+        <div style="background:rgba(255,74,61,.08);border:1px solid rgba(255,74,61,.3);border-radius:var(--g-r-sm);padding:16px;text-align:center">
+            <div style="font-family:var(--g-font-display);font-size:30px;line-height:1;color:#ff6b60">{{ $pay['pendientes'] }}</div>
+            <div style="color:var(--g-muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Falta pagar</div>
+        </div>
+    </div>
+    @php $faltan = $contract->students->filter(fn($s)=>!in_array($s->payment_status,['pagado','en_revision'],true)); @endphp
+    @if($faltan->count())
+        <div style="font-size:13px;color:var(--g-muted);margin-bottom:6px">Aún no han pagado:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+            @foreach($faltan as $s)
+                <span style="background:var(--g-surface-2);border:1px solid var(--g-line);border-radius:999px;padding:5px 12px;font-size:12.5px">{{ $s->nickname ?: $s->name }}</span>
+            @endforeach
+        </div>
+    @else
+        <div style="color:var(--g-ok);font-size:14px"><i class="bi bi-check-circle-fill"></i> ¡Todos al día! 🎉</div>
+    @endif
+</section>
+
+{{-- Diseño aprobado --}}
+@if($design)
+<section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-bottom:22px">
+    <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0 0 18px">Diseño de tu promoción</h2>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">
+        <a href="{{ $design->imageUrl() }}" target="_blank" style="display:block;width:200px;border-radius:var(--g-r-sm);overflow:hidden;border:1px solid var(--g-line)">
+            <img src="{{ $design->imageUrl() }}" alt="Diseño aprobado" style="width:100%;display:block">
+        </a>
+        <div style="flex:1;min-width:200px;color:var(--g-muted);font-size:14px">
+            <div style="color:var(--g-bone);font-weight:600;margin-bottom:4px">{{ $contract->jacketType?->name ?? 'Chaqueta' }}</div>
+            Este es el diseño de la promoción. ¿Quieres ajustar algo? Escríbenos abajo por mensajes.
+        </div>
+    </div>
+</section>
+@endif
+
+{{-- Fotos del proceso --}}
+<section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-bottom:22px">
+    <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0 0 18px">Fotos de tu producción</h2>
+    @if($contract->photos->isEmpty())
+        <p style="color:var(--g-muted);font-size:14px;margin:0">Aún no hay fotos. Aparecerán aquí cuando el equipo las cargue.</p>
+    @else
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">
+            @foreach($contract->photos as $photo)
+                <a href="{{ $photo->url() }}" target="_blank" style="display:block;aspect-ratio:1;border-radius:var(--g-r-sm);overflow:hidden;border:1px solid var(--g-line)">
+                    <img src="{{ $photo->url() }}" alt="Producción" loading="lazy" style="width:100%;height:100%;object-fit:cover">
+                </a>
+            @endforeach
+        </div>
+    @endif
+</section>
+
+{{-- Alumnos --}}
+<section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+        <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0">Alumnos <span style="color:var(--g-muted);font-family:var(--g-font-body);font-size:14px">({{ $contract->students->count() }})</span></h2>
+        <button onclick="document.getElementById('addForm').style.display='block';this.style.display='none'" style="background:none;border:1px solid var(--g-gold);color:var(--g-gold);padding:8px 14px;border-radius:var(--g-r-sm);cursor:pointer;font-size:13px"><i class="bi bi-plus-lg"></i> Agregar alumno</button>
+    </div>
+
+    {{-- Formulario para agregar (colegio solo captura datos básicos) --}}
+    <form id="addForm" method="POST" action="{{ route('portal.students.store', $contract) }}" style="display:none;background:var(--g-surface-2);border:1px solid var(--g-line);border-radius:var(--g-r-sm);padding:18px;margin-bottom:18px">
+        @csrf
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:12px">
+            <div><label style="font-size:12px;color:var(--g-muted);display:block;margin-bottom:5px">Nombre completo *</label><input name="name" required style="width:100%;background:var(--g-ink);border:1px solid var(--g-line);color:var(--g-bone);padding:9px 11px;border-radius:6px;box-sizing:border-box"></div>
+            <div><label style="font-size:12px;color:var(--g-muted);display:block;margin-bottom:5px">Documento (T.I./C.C.) *</label><input name="document" required style="width:100%;background:var(--g-ink);border:1px solid var(--g-line);color:var(--g-bone);padding:9px 11px;border-radius:6px;box-sizing:border-box"></div>
+            <div><label style="font-size:12px;color:var(--g-muted);display:block;margin-bottom:5px">Sexo</label>
+                <select name="gender" style="width:100%;background:var(--g-ink);border:1px solid var(--g-line);color:var(--g-bone);padding:9px 11px;border-radius:6px;box-sizing:border-box">
+                    <option value="">—</option><option value="M">Masculino</option><option value="F">Femenino</option><option value="Otro">Otro</option>
+                </select></div>
+            <div><label style="font-size:12px;color:var(--g-muted);display:block;margin-bottom:5px">Apodo (para bordar)</label><input name="nickname" style="width:100%;background:var(--g-ink);border:1px solid var(--g-line);color:var(--g-bone);padding:9px 11px;border-radius:6px;box-sizing:border-box"></div>
+        </div>
+        <div style="font-size:12px;color:var(--g-muted);margin-bottom:12px"><i class="bi bi-info-circle"></i> El equipo Glauren tomará y registrará las medidas de cada alumno.</div>
+        <button style="background:var(--g-gold);color:#1a1405;border:none;padding:9px 18px;border-radius:6px;font-weight:700;cursor:pointer">Guardar alumno</button>
+    </form>
+
+    @if($contract->students->isEmpty())
+        <p style="color:var(--g-muted);font-size:14px;margin:0">Aún no hay alumnos. Agrégalos con el botón de arriba.</p>
+    @else
+        <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:14px">
+                <thead>
+                    <tr style="text-align:left;color:var(--g-muted);font-family:var(--g-font-label);text-transform:uppercase;font-size:11px;letter-spacing:.06em">
+                        <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)">Nombre</th>
+                        <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)">Documento</th>
+                        <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)">Apodo</th>
+                        <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)">Medidas</th>
+                        <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)">Pago</th>
+                        <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($contract->students as $s)
+                        <tr>
+                            <td style="padding:10px 8px;border-bottom:1px solid var(--g-line)">{{ $s->name }}</td>
+                            <td style="padding:10px 8px;border-bottom:1px solid var(--g-line);color:var(--g-muted)">{{ $s->document }}</td>
+                            <td style="padding:10px 8px;border-bottom:1px solid var(--g-line)">{{ $s->nickname ?: '—' }}</td>
+                            <td style="padding:10px 8px;border-bottom:1px solid var(--g-line)">
+                                @if($s->hasMeasurements())
+                                    <span style="color:var(--g-ok);font-size:13px"><i class="bi bi-check-circle"></i> Tomadas</span>
+                                @else
+                                    <span style="color:var(--g-muted);font-size:13px">Pendiente</span>
+                                @endif
+                            </td>
+                            <td style="padding:10px 8px;border-bottom:1px solid var(--g-line)">
+                                @if($s->isPaid())
+                                    <span style="color:var(--g-ok);font-size:13px"><i class="bi bi-check-circle-fill"></i> Pagó</span>
+                                @elseif($s->isUnderReview())
+                                    <span style="color:var(--g-warn);font-size:13px"><i class="bi bi-clock"></i> En revisión</span>
+                                @else
+                                    <span style="color:#ff6b60;font-size:13px"><i class="bi bi-x-circle"></i> Falta</span>
+                                @endif
+                            </td>
+                            <td style="padding:10px 8px;border-bottom:1px solid var(--g-line);text-align:right">
+                                @unless($s->hasMeasurements())
+                                    <form method="POST" action="{{ route('portal.students.destroy', [$contract, $s]) }}" onsubmit="return confirm('¿Eliminar a {{ $s->name }}?')" style="display:inline">
+                                        @csrf @method('DELETE')
+                                        <button style="background:none;border:none;color:var(--g-muted);cursor:pointer" title="Eliminar"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                @endunless
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+</section>
+
+{{-- Mensajes con Glauren --}}
+<section id="mensajes" style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-top:22px">
+    <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0 0 6px">💬 Mensajes con Glauren</h2>
+    <p style="color:var(--g-muted);font-size:13px;margin:0 0 18px">Habla directo con tu asesor sobre el diseño, pagos o la entrega.</p>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;max-height:360px;overflow-y:auto">
+        @forelse($messages as $m)
+            @php $mine = $m->sender === 'colegio'; @endphp
+            <div style="align-self:{{ $mine ? 'flex-end' : 'flex-start' }};max-width:78%">
+                <div style="background:{{ $mine ? 'var(--g-gold)' : 'var(--g-surface-2)' }};color:{{ $mine ? '#1a1405' : 'var(--g-bone)' }};border:1px solid var(--g-line);border-radius:{{ $mine ? '12px 12px 2px 12px' : '12px 12px 12px 2px' }};padding:10px 14px;font-size:14px">{!! nl2br(e($m->body)) !!}</div>
+                <div style="font-size:11px;color:var(--g-muted);margin-top:3px;text-align:{{ $mine ? 'right' : 'left' }}">{{ $mine ? 'Tú' : 'Glauren' }} · {{ $m->created_at->diffForHumans() }}</div>
+            </div>
+        @empty
+            <p style="color:var(--g-muted);font-size:14px;text-align:center;padding:14px 0">Aún no hay mensajes. Escríbenos abajo 👇</p>
+        @endforelse
+    </div>
+
+    <form method="POST" action="{{ route('portal.message', $contract) }}" style="display:flex;gap:10px">
+        @csrf
+        <input type="text" name="body" maxlength="1000" required placeholder="Escribe tu mensaje…" style="flex:1;background:var(--g-surface-2);border:1px solid var(--g-line);border-radius:var(--g-r-sm);padding:12px 14px;color:var(--g-bone);font-size:14px">
+        <button style="background:var(--g-gold);color:#1a1405;border:none;border-radius:var(--g-r-sm);padding:0 20px;font-weight:700;cursor:pointer"><i class="bi bi-send"></i></button>
+    </form>
+</section>
+@endsection

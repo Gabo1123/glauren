@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configurador 3D de Chaquetas · Promoción</title>
+  <style>
+    :root{
+      --bg:#0e1014; --panel:#14171e; --panel2:#1e222b; --text:#e8eaed; --muted:#98a0ac;
+      --accent:#4f8cff; --accent2:#25d366; --border:#2a2f3a;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+    #app{display:flex;height:100vh;width:100vw}
+
+    #viewer{flex:1;position:relative;min-width:0}
+    #viewer canvas{display:block}
+    #hint{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.45);color:var(--muted);padding:8px 16px;border-radius:999px;font-size:13px;pointer-events:none;backdrop-filter:blur(6px);opacity:0;transition:.3s}
+
+    /* Dropzone / estado vacío */
+    #drop{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:30px;transition:.2s;z-index:5}
+    #drop.hidden{display:none}
+    #drop.hot{background:rgba(79,140,255,.08)}
+    .dz-card{border:2px dashed var(--border);border-radius:20px;padding:44px 46px;max-width:460px;background:rgba(20,23,30,.6);backdrop-filter:blur(4px)}
+    .dz-card.hot{border-color:var(--accent)}
+    .dz-ico{font-size:52px;margin-bottom:6px}
+    .dz-card h2{font-size:22px;margin-bottom:8px}
+    .dz-card p{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:20px}
+    .dz-card small{color:var(--muted);font-size:12px;display:block;margin-top:16px}
+    .type-grid{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+    .type-card{width:200px;background:rgba(20,23,30,.72);border:1px solid var(--border);border-radius:16px;padding:24px 18px;cursor:pointer;transition:.15s;backdrop-filter:blur(4px)}
+    .type-card:hover{border-color:var(--accent);transform:translateY(-3px)}
+    .type-card .ico{font-size:46px}
+    .type-card h3{font-size:16px;margin:10px 0 4px}
+    .type-card p{font-size:12px;color:var(--muted);margin:0}
+    .type-card .price{margin-top:10px;font-size:13px;color:var(--accent2);font-weight:700}
+    .admin-link{margin-top:18px;font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;display:inline-block}
+    .price-box{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px}
+    .price-box .total{font-size:26px;font-weight:800;color:var(--text)}
+    .price-box .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+    code{background:#0c0e12;padding:1px 5px;border-radius:4px;font-size:11px}
+
+    #spin{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:rgba(14,16,20,.7);z-index:6;color:var(--muted)}
+    #spin.on{display:flex}
+    .loader{width:42px;height:42px;border:4px solid var(--panel2);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite}
+    @keyframes sp{to{transform:rotate(360deg)}}
+
+    #panel{width:360px;background:var(--panel);border-left:1px solid var(--border);padding:22px;overflow-y:auto;display:flex;flex-direction:column;gap:20px}
+    #panel::-webkit-scrollbar{width:8px}#panel::-webkit-scrollbar-thumb{background:#2c313c;border-radius:8px}
+    .brand h1{font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px}
+    .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+    .brand small{color:var(--muted);font-size:12px;display:block;margin-top:3px}
+
+    .group{display:flex;flex-direction:column;gap:10px}
+    .group>.label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600}
+
+    .btn{border:none;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:600;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;transition:filter .15s}
+    .btn:hover{filter:brightness(1.12)}
+    .btn.primary{background:var(--accent);color:#fff}
+    .btn.green{background:var(--accent2);color:#06331a}
+    .btn.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border)}
+    .btn:disabled{opacity:.4;cursor:not-allowed;filter:none}
+
+    .part{display:flex;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+    .part .name{flex:1;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .part input[type=color]{width:42px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--panel);cursor:pointer;padding:2px;flex-shrink:0}
+    .swatches{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+    .swatch{width:22px;height:22px;border-radius:6px;cursor:pointer;border:2px solid transparent}
+    .swatch:hover{transform:scale(1.12)}
+
+    .toggle{display:flex;align-items:center;justify-content:space-between}
+    .switch{position:relative;width:44px;height:24px}.switch input{display:none}
+    .slider{position:absolute;inset:0;background:#333a46;border-radius:999px;transition:.2s;cursor:pointer}
+    .slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+    .switch input:checked+.slider{background:var(--accent2)}
+    .switch input:checked+.slider::before{transform:translateX(20px)}
+    .seg{display:flex;background:var(--panel2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+    .seg button{flex:1;background:transparent;border:none;color:var(--muted);padding:9px;font-size:13px;cursor:pointer}
+    .seg button.active{background:var(--accent);color:#fff}
+
+    .divider{height:1px;background:var(--border)}
+    .note{font-size:12px;color:var(--muted);line-height:1.6;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px}
+    .note a{color:var(--accent);text-decoration:none}
+    .empty-parts{font-size:12.5px;color:var(--muted);line-height:1.6}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field span{font-size:12px;color:var(--muted)}
+    .two{display:flex;gap:10px}.two>*{flex:1}
+    input[type=text]{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 11px;font-size:13.5px}
+    input[type=text]:focus{outline:none;border-color:var(--accent)}
+    input[type=range]{width:100%;accent-color:var(--accent)}
+    .patch-item{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-top:6px}
+    .patch-item button{margin-left:auto;background:#3a1f26;color:#ff9aa6;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px}
+
+    @media (max-width:820px){#app{flex-direction:column}#panel{width:100%;border-left:none;border-top:1px solid var(--border);max-height:48vh}}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="viewer">
+      <div id="drop">
+        <div style="text-align:center;max-width:760px">
+          <div class="dz-ico">🧥</div>
+          <h2 style="font-size:24px;margin-bottom:6px">Diseña tu chaqueta de promoción</h2>
+          <p style="color:var(--muted);font-size:14px;margin-bottom:24px">Elige el tipo, personalízala en 3D y pide tu cotización.</p>
+          <div class="type-grid" id="typeGrid"></div>
+          <div class="admin-link" id="adminLink">🔒 Modo administrador</div>
+        </div>
+      </div>
+      <div id="spin"><div class="loader"></div><span id="spinTxt">Cargando modelo…</span></div>
+      <div id="hint">🖱️ Arrastra para girar · Rueda para zoom</div>
+    </div>
+
+    <aside id="panel">
+      <div class="brand">
+        <h1><span class="dot"></span> Chaquetas de Promoción</h1>
+        <small id="brandSub">Configurador 3D · elige un tipo</small>
+      </div>
+
+      <div class="group">
+        <button class="btn ghost" id="backBtn">← Elegir otro tipo</button>
+      </div>
+
+      <div class="group">
+        <div class="label">Piezas y colores</div>
+        <div id="parts"><div class="empty-parts">Elige un tipo de chaqueta para empezar. Cada material (cuerpo, mangas, ribetes…) tendrá su propio color.</div></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="group">
+        <div class="label">Parches / Logos</div>
+        <div id="patchStatus" class="empty-parts">Sube una imagen o escribe un texto y luego <b>haz clic sobre la chaqueta</b> (frente, espalda o manga) para colocarlo.</div>
+        <button class="btn ghost" id="imgBtn">🖼️ Subir imagen (PNG con fondo transparente)</button>
+        <div class="field"><input type="text" id="patchText" placeholder="…o escribe un texto (ej: CMMV, 2026)" maxlength="16"></div>
+        <div class="two">
+          <div class="field"><span>Color del texto</span><input type="color" id="patchTextColor" value="#ffffff" style="width:100%;height:34px;border:1px solid var(--border);border-radius:7px;background:var(--panel2);cursor:pointer;padding:2px"></div>
+          <button class="btn ghost" id="textBtn" style="align-self:flex-end">Usar texto</button>
+        </div>
+        <div class="field"><span>Tamaño del parche</span><input type="range" id="patchSize" min="0.15" max="1.4" step="0.05" value="0.55"></div>
+        <div class="field"><span>Girar parche</span><input type="range" id="patchRoll" min="0" max="360" step="5" value="0"></div>
+        <div id="patchList"></div>
+        <button class="btn ghost" id="undoPatch">↶ Borrar último parche</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="group">
+        <div class="label">Cotización</div>
+        <div class="field"><span>Cantidad</span><input type="text" id="qty" inputmode="numeric" value="1"></div>
+        <div class="price-box">
+          <div class="lbl">Precio estimado</div>
+          <div class="total" id="priceTotal">—</div>
+          <div id="priceDetail" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+        </div>
+        <button class="btn green" id="quoteBtn" disabled>📲 Cotizar por WhatsApp</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="group">
+        <div class="label">Vista</div>
+        <div class="toggle"><span style="font-size:13px">Girar automático</span><label class="switch"><input type="checkbox" id="rotToggle" checked><span class="slider"></span></label></div>
+        <div class="seg" id="bgSeg">
+          <button data-bg="studio" class="active">Estudio</button>
+          <button data-bg="white">Blanco</button>
+          <button data-bg="dark">Oscuro</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <button class="btn green" id="pngBtn" disabled>📸 Descargar foto (PNG)</button>
+        <button class="btn ghost" id="resetBtn" disabled>↺ Centrar vista</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="group" id="adminPanel" style="display:none">
+        <div class="label">🔒 Administrador</div>
+        <button class="btn primary" id="pickBtn2">📂 Cargar modelo (.glb) de prueba</button>
+        <div class="field"><span>Tu WhatsApp (recibe las cotizaciones)</span><input type="text" id="waInput" placeholder="573001234567"></div>
+        <div class="note" id="sources"></div>
+      </div>
+
+      <div class="admin-link" id="adminLink2" style="text-align:center;margin:0 auto">🔒 Modo administrador</div>
+    </aside>
+  </div>
+
+  <input type="file" id="fileInput" accept=".glb,.gltf" style="display:none" />
+  <input type="file" id="imgInput" accept="image/*" style="display:none" />
+
+  <script type="importmap">
+  { "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }}
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+    import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
+    import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+    import { DecalGeometry } from 'three/addons/geometries/DecalGeometry.js';
+
+    const $ = id => document.getElementById(id);
+    const viewer = $('viewer');
+
+    /* ====== CONFIG (editable por el admin) ====== */
+    const CONFIG = {
+      whatsapp: '',   // ADMIN: tu número con código de país, sin + ni espacios. Ej: 573001234567
+      types: {
+        varsity:      { name:'Varsity',               icon:'🧥', desc:'La clásica de promoción', model:'modelos/varsity.glb',      basePrice:120000 },
+        hoodie:       { name:'Hoodie / Buzo',         icon:'👕', desc:'Con capucha',             model:'modelos/hoodie.glb',       basePrice:95000 },
+        estructurada: { name:'Chaqueta estructurada', icon:'🥼', desc:'Formal / entallada',      model:'modelos/estructurada.glb', basePrice:150000 },
+      },
+      patchPrice: 8000,   // costo por parche/logo
+    };
+    let waNumber = localStorage.getItem('wa') || CONFIG.whatsapp;
+    let currentType = null, activeParts = [];
+    const money = n => '$'+ (n||0).toLocaleString('es-CO');
+
+    /* ----- Escena ----- */
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(42, viewer.clientWidth/viewer.clientHeight, 0.01, 1000);
+    camera.position.set(0, 0.4, 6);
+
+    const renderer = new THREE.WebGLRenderer({ antialias:true, preserveDrawingBuffer:true, alpha:true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+    renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    viewer.appendChild(renderer.domElement);
+
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+    // Fondos
+    const bgStudio = (()=>{ const c=document.createElement('canvas');c.width=c.height=512;const x=c.getContext('2d');
+      const g=x.createRadialGradient(256,180,40,256,340,480); g.addColorStop(0,'#2c313d'); g.addColorStop(1,'#0c0e12');
+      x.fillStyle=g; x.fillRect(0,0,512,512); const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t; })();
+    const bgWhite = (()=>{ const c=document.createElement('canvas');c.width=c.height=512;const x=c.getContext('2d');
+      const g=x.createRadialGradient(256,200,60,256,300,520); g.addColorStop(0,'#ffffff'); g.addColorStop(1,'#d6dae0');
+      x.fillStyle=g; x.fillRect(0,0,512,512); const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t; })();
+    const backgrounds = { studio:bgStudio, white:bgWhite, dark:new THREE.Color(0x0c0e12) };
+    scene.background = backgrounds.studio;
+
+    // Luces
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x30343d, 0.5));
+    const key = new THREE.DirectionalLight(0xffffff, 2.6); key.position.set(4,8,6); key.castShadow=true;
+    key.shadow.mapSize.set(2048,2048); key.shadow.camera.near=0.5; key.shadow.camera.far=40; key.shadow.bias=-0.0004;
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0xcfe0ff, 0.5); fill.position.set(-6,3,-4); scene.add(fill);
+    const rim  = new THREE.DirectionalLight(0xffffff, 0.9); rim.position.set(0,4,-7); scene.add(rim);
+
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(20,64), new THREE.ShadowMaterial({opacity:0.3}));
+    floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; scene.add(floor);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping=true; controls.dampingFactor=0.08; controls.autoRotate=true; controls.autoRotateSpeed=1.0;
+    renderer.domElement.addEventListener('pointerdown', ()=>{ controls.autoRotate=false; $('rotToggle').checked=false; });
+
+    /* ----- Loader ----- */
+    const draco = new DRACOLoader(); draco.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
+    const ktx2 = new KTX2Loader().setTranscoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/basis/').detectSupport(renderer);
+    const loader = new GLTFLoader();
+    loader.setDRACOLoader(draco); loader.setKTX2Loader(ktx2); loader.setMeshoptDecoder(MeshoptDecoder);
+
+    let current = null;
+    const palette = ['#1b2a4a','#101319','#7a1f2b','#0d4d3c','#efe9dd','#b71c2b','#e0a422','#2f6fed','#d9dde2','#111111','#ffffff','#6b7280'];
+
+    let modelSize = new THREE.Vector3(1,1,1);
+    const modelMeshes = [];
+    function normalizeModel(obj){                     // escala + centra UNA vez al cargar
+      let box = new THREE.Box3().setFromObject(obj);
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z) || 1;
+      obj.scale.setScalar(3.4/maxDim);
+      obj.updateMatrixWorld(true);
+      box = new THREE.Box3().setFromObject(obj);
+      const center = box.getCenter(new THREE.Vector3());
+      obj.position.sub(center);
+      obj.updateMatrixWorld(true);
+      box = new THREE.Box3().setFromObject(obj); box.getSize(modelSize);
+      floor.position.y = -modelSize.y/2 - 0.02;
+      modelMeshes.length = 0;
+      obj.traverse(o=>{ if(o.isMesh) modelMeshes.push(o); });
+    }
+    function frameCamera(){                            // sólo mueve la cámara (no toca el modelo)
+      const s = modelSize, maxDim = Math.max(s.x,s.y,s.z)||1;
+      const fitDist = (s.y/2)/Math.tan(camera.fov*Math.PI/360);
+      camera.position.set(fitDist*0.5, s.y*0.1, fitDist*1.25 + maxDim*0.2);
+      controls.target.set(0,0,0); controls.minDistance=maxDim*0.35; controls.maxDistance=maxDim*4; controls.update();
+    }
+
+    function buildPartsUI(root){
+      const seen = new Map(); // uuid -> material
+      root.traverse(o=>{
+        if(o.isMesh){
+          o.castShadow = true; o.receiveShadow = true;
+          const arr = Array.isArray(o.material)? o.material : [o.material];
+          arr.forEach(m=>{ if(m && !seen.has(m.uuid)) seen.set(m.uuid, {mat:m, label:m.name || o.name || 'Material'}); });
+        }
+      });
+      activeParts = Array.from(seen.values());
+      const cont = $('parts'); cont.innerHTML='';
+      if(seen.size===0){ cont.innerHTML='<div class="empty-parts">El modelo no expone materiales editables.</div>'; return; }
+      let i=0;
+      for(const {mat,label} of seen.values()){
+        i++;
+        const row = document.createElement('div'); row.className='part';
+        const hex = '#'+ (mat.color? mat.color.getHexString() : 'cccccc');
+        row.innerHTML = `<span class="name" title="${label}">${label || ('Parte '+i)}</span>`;
+        const inp = document.createElement('input'); inp.type='color'; inp.value = hex;
+        inp.addEventListener('input', e=>{ if(mat.color){ mat.color.set(e.target.value); mat.needsUpdate=true; } });
+        row.appendChild(inp); cont.appendChild(row);
+        const sw = document.createElement('div'); sw.className='swatches';
+        palette.forEach(h=>{ const s=document.createElement('div'); s.className='swatch'; s.style.background=h;
+          s.addEventListener('click', ()=>{ if(mat.color){ mat.color.set(h); mat.needsUpdate=true; inp.value=h; } });
+          sw.appendChild(s); });
+        cont.appendChild(sw);
+      }
+    }
+
+    function loadArrayBuffer(buf, name){
+      $('spin').classList.add('on'); $('spinTxt').textContent = 'Procesando '+name+'…';
+      loader.parse(buf, '', (gltf)=>{
+        if(current){ scene.remove(current); }
+        clearDecals();
+        current = gltf.scene;
+        scene.add(current);
+        normalizeModel(current); frameCamera();
+        buildPartsUI(current);
+        $('drop').classList.add('hidden');
+        $('spin').classList.remove('on');
+        $('hint').style.opacity='1';
+        $('pngBtn').disabled=false; $('resetBtn').disabled=false; $('quoteBtn').disabled=false;
+        controls.autoRotate = $('rotToggle').checked;
+        updatePrice();
+      }, (err)=>{
+        console.error(err); $('spin').classList.remove('on');
+        alert('No se pudo cargar el modelo.\n\nAsegúrate de que sea un .glb (recomendado) o un .gltf autocontenido.\n\nDetalle: '+(err?.message||err));
+      });
+    }
+
+    function handleFile(file){
+      if(!file) return;
+      const ok = /\.(glb|gltf)$/i.test(file.name);
+      if(!ok){ alert('Formato no soportado. Usa un archivo .glb o .gltf'); return; }
+      const reader = new FileReader();
+      reader.onload = ()=> loadArrayBuffer(reader.result, file.name);
+      reader.onerror = ()=> alert('No se pudo leer el archivo.');
+      reader.readAsArrayBuffer(file);
+    }
+
+    /* ----- UI ----- */
+    $('fileInput').addEventListener('change', e=> handleFile(e.target.files[0]));
+    const pick = ()=> $('fileInput').click();
+    $('pickBtn2').addEventListener('click', pick);
+
+    // Drag & drop (admin: soltar un .glb de prueba)
+    const drop = $('drop');
+    ['dragenter','dragover'].forEach(ev=> viewer.addEventListener(ev, e=>{ e.preventDefault(); drop.classList.add('hot'); }));
+    ['dragleave','drop'].forEach(ev=> viewer.addEventListener(ev, e=>{ e.preventDefault(); drop.classList.remove('hot'); }));
+    viewer.addEventListener('drop', e=>{ const f = e.dataTransfer.files[0]; if(f) handleFile(f); });
+
+    $('rotToggle').addEventListener('change', e=> controls.autoRotate = e.target.checked);
+    $('bgSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return;
+      $('bgSeg').querySelectorAll('button').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+      scene.background = backgrounds[b.dataset.bg];
+    });
+    $('resetBtn').addEventListener('click', ()=>{ if(current) frameCamera(); });
+    $('pngBtn').addEventListener('click', ()=>{
+      renderer.render(scene,camera);
+      const a=document.createElement('a'); a.download='chaqueta-3d.png'; a.href=renderer.domElement.toDataURL('image/png'); a.click();
+    });
+
+    /* ----- Parches / Logos (decals) ----- */
+    const raycaster = new THREE.Raycaster(); const ndc = new THREE.Vector2();
+    let decalTexture = null, decalAspect = 1, decalSize = 0.55, decalRoll = 0; const decals = [];
+    function setPatchStatus(t){ $('patchStatus').innerHTML = t; }
+    function clearDecals(){ decals.forEach(d=>{ scene.remove(d); d.geometry.dispose(); }); decals.length=0; if($('patchList')) $('patchList').innerHTML=''; }
+
+    function roundRect(x,a,b,w,h,r){ x.beginPath(); x.moveTo(a+r,b); x.arcTo(a+w,b,a+w,b+h,r); x.arcTo(a+w,b+h,a,b+h,r); x.arcTo(a,b+h,a,b,r); x.arcTo(a,b,a+w,b,r); x.closePath(); }
+    function makeTextTexture(text, color){
+      const c=document.createElement('canvas'); c.width=512; c.height=256; const x=c.getContext('2d');
+      x.clearRect(0,0,512,256);
+      x.fillStyle=color; x.textAlign='center'; x.textBaseline='middle';
+      let fs=150; x.font=`900 ${fs}px Segoe UI, Arial, sans-serif`;
+      while(x.measureText(text).width>470 && fs>30){ fs-=8; x.font=`900 ${fs}px Segoe UI, Arial, sans-serif`; }
+      x.lineJoin='round'; x.strokeStyle='rgba(0,0,0,.28)'; x.lineWidth=fs*0.09;
+      x.strokeText(text,256,138); x.fillText(text,256,138);
+      const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8;
+      decalAspect = 2; return t;
+    }
+    function loadDecalImage(file){
+      const url=URL.createObjectURL(file);
+      new THREE.TextureLoader().load(url, tex=>{
+        tex.colorSpace=THREE.SRGBColorSpace; tex.anisotropy=8;
+        decalAspect = (tex.image.width/tex.image.height)||1; decalTexture=tex;
+        setPatchStatus('✅ Imagen lista. Ahora <b>haz clic sobre la chaqueta</b> donde quieras el parche.');
+        URL.revokeObjectURL(url);
+      }, undefined, ()=>{ setPatchStatus('❌ No se pudo leer la imagen.'); URL.revokeObjectURL(url); });
+    }
+    function refreshDecalList(){
+      const c=$('patchList'); c.innerHTML='';
+      decals.forEach((d,i)=>{ const row=document.createElement('div'); row.className='patch-item';
+        row.innerHTML=`<span>Parche ${i+1}</span>`;
+        const b=document.createElement('button'); b.textContent='Borrar';
+        b.onclick=()=>{ scene.remove(d); d.geometry.dispose(); const idx=decals.indexOf(d); if(idx>-1) decals.splice(idx,1); refreshDecalList(); };
+        row.appendChild(b); c.appendChild(row);
+      });
+      updatePrice();
+    }
+    function placeDecal(hit){
+      const mesh=hit.object; const point=hit.point.clone();
+      const n=hit.face.normal.clone().transformDirection(mesh.matrixWorld).normalize();
+      const dummy=new THREE.Object3D(); dummy.position.copy(point); dummy.lookAt(point.clone().add(n));
+      dummy.rotateZ(THREE.MathUtils.degToRad(decalRoll));
+      const sz=new THREE.Vector3(decalSize, decalSize/decalAspect, 0.45);
+      const g=new DecalGeometry(mesh, point, dummy.rotation, sz);
+      const m=new THREE.MeshStandardMaterial({ map:decalTexture, transparent:true, roughness:0.6, metalness:0.0,
+        polygonOffset:true, polygonOffsetFactor:-6, depthWrite:false });
+      const d=new THREE.Mesh(g,m); d.renderOrder=2; scene.add(d); decals.push(d); refreshDecalList();
+    }
+
+    // colocar con clic (distingue clic de arrastre para no confundir con girar)
+    let downPos=null;
+    renderer.domElement.addEventListener('pointerdown', e=>{ downPos={x:e.clientX,y:e.clientY}; });
+    renderer.domElement.addEventListener('pointerup', e=>{
+      if(!downPos) return; const moved=Math.hypot(e.clientX-downPos.x, e.clientY-downPos.y); downPos=null;
+      if(moved>6) return;
+      if(!decalTexture){ if(modelMeshes.length) setPatchStatus('Primero sube una imagen o usa un texto ⬆️'); return; }
+      if(!modelMeshes.length) return;
+      const rect=renderer.domElement.getBoundingClientRect();
+      ndc.x=((e.clientX-rect.left)/rect.width)*2-1; ndc.y=-((e.clientY-rect.top)/rect.height)*2+1;
+      raycaster.setFromCamera(ndc, camera);
+      const hits=raycaster.intersectObjects(modelMeshes, true);
+      if(hits.length){ placeDecal(hits[0]); setPatchStatus('✅ Parche colocado. Puedes colocar más, ajustar tamaño/giro, o borrarlos abajo.'); }
+      else setPatchStatus('Haz clic <b>sobre la chaqueta</b> (no en el fondo).');
+    });
+
+    $('imgBtn').addEventListener('click', ()=> $('imgInput').click());
+    $('imgInput').addEventListener('change', e=>{ if(e.target.files[0]) loadDecalImage(e.target.files[0]); });
+    $('textBtn').addEventListener('click', ()=>{ const t=$('patchText').value.trim(); if(!t){ setPatchStatus('Escribe un texto primero.'); return; }
+      decalTexture=makeTextTexture(t.toUpperCase(), $('patchTextColor').value);
+      setPatchStatus('✅ Texto listo. Ahora <b>haz clic sobre la chaqueta</b> para colocarlo.'); });
+    $('patchSize').addEventListener('input', e=> decalSize=parseFloat(e.target.value));
+    $('patchRoll').addEventListener('input', e=> decalRoll=parseFloat(e.target.value));
+    $('undoPatch').addEventListener('click', ()=>{ const d=decals.pop(); if(d){ scene.remove(d); d.geometry.dispose(); refreshDecalList(); } });
+
+    /* ====== Plataforma: tipos, precio, cotización, admin ====== */
+    function buildTypeGrid(){
+      const g=$('typeGrid'); g.innerHTML='';
+      Object.entries(CONFIG.types).forEach(([key,t])=>{
+        const c=document.createElement('div'); c.className='type-card';
+        c.innerHTML=`<div class="ico">${t.icon}</div><h3>${t.name}</h3><p>${t.desc||''}</p><div class="price">desde ${money(t.basePrice)}</div>`;
+        c.addEventListener('click', ()=> loadType(key));
+        g.appendChild(c);
+      });
+    }
+    function loadType(key){
+      const t=CONFIG.types[key]; if(!t) return; currentType=key;
+      $('spin').classList.add('on'); $('spinTxt').textContent='Cargando '+t.name+'…';
+      $('brandSub').textContent = t.name + ' · personaliza y cotiza';
+      fetch(t.model).then(r=>{ if(!r.ok) throw new Error('nomodel'); return r.arrayBuffer(); })
+        .then(buf=> loadArrayBuffer(buf, key))
+        .catch(err=>{ $('spin').classList.remove('on');
+          if(err.message==='nomodel') alert('El tipo "'+t.name+'" aún no tiene modelo 3D.\n\nEl administrador debe subir el archivo:\n'+t.model+'\n\n(o cárgalo desde el Modo administrador para probar).');
+          else alert('No se pudo cargar el modelo: '+err.message);
+        });
+    }
+    function updatePrice(){
+      const t=CONFIG.types[currentType]; if(!t){ $('priceTotal').textContent='—'; $('priceDetail').textContent=''; return; }
+      const qty=Math.max(1, parseInt($('qty').value)||1);
+      const per=t.basePrice + decals.length*CONFIG.patchPrice, total=per*qty;
+      $('priceTotal').textContent=money(total);
+      $('priceDetail').textContent=`${money(per)} c/u × ${qty}  ·  incluye ${decals.length} parche(s)`;
+    }
+    $('qty').addEventListener('input', updatePrice);
+    $('quoteBtn').addEventListener('click', ()=>{
+      const t=CONFIG.types[currentType];
+      if(!t){ alert('Primero elige un tipo de chaqueta.'); return; }
+      const qty=Math.max(1, parseInt($('qty').value)||1);
+      const per=t.basePrice+decals.length*CONFIG.patchPrice, total=per*qty;
+      const colors = activeParts.length ? activeParts.map(p=>`${p.label}: ${p.mat&&p.mat.color? '#'+p.mat.color.getHexString():'-'}`).join('%0A   ') : '(por defecto)';
+      const msg = `¡Hola! Quiero cotizar una chaqueta de promoción:%0A`+
+        `• Tipo: ${t.name}%0A`+
+        `• Cantidad: ${qty}%0A`+
+        `• Colores:%0A   ${colors}%0A`+
+        `• Parches/logos: ${decals.length}%0A`+
+        `• Precio estimado: ${money(total)} (referencial)%0A%0A`+
+        `Te adjunto la imagen de mi diseño 👇`;
+      renderer.render(scene,camera);
+      const a=document.createElement('a'); a.download='mi-chaqueta.png'; a.href=renderer.domElement.toDataURL('image/png'); a.click();
+      const num=(waNumber||'').replace(/\D/g,'');
+      setTimeout(()=> window.open(num? `https://wa.me/${num}?text=${msg}` : `https://api.whatsapp.com/send?text=${msg}`, '_blank'), 500);
+    });
+    $('backBtn').addEventListener('click', ()=> $('drop').classList.remove('hidden'));
+
+    // Admin
+    function toggleAdmin(){ const p=$('adminPanel'); p.style.display = (p.style.display==='none'?'':'none'); }
+    $('adminLink').addEventListener('click', toggleAdmin);
+    $('adminLink2').addEventListener('click', toggleAdmin);
+    $('waInput').value = waNumber;
+    $('waInput').addEventListener('input', e=>{ waNumber=e.target.value.trim(); localStorage.setItem('wa', waNumber); });
+    $('sources').innerHTML = 'Para publicar el modelo de cada tipo, sube su archivo <b>.glb</b> a la carpeta <code>modelos/</code> con el nombre <code>varsity.glb</code>, <code>hoodie.glb</code> o <code>estructurada.glb</code>. En la <b>Fase 2</b> esto será un panel en la nube con login.';
+
+    buildTypeGrid();
+
+    /* ----- Loop ----- */
+    window.addEventListener('resize', ()=>{ camera.aspect=viewer.clientWidth/viewer.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(viewer.clientWidth, viewer.clientHeight); });
+    (function animate(){ requestAnimationFrame(animate); controls.update(); renderer.render(scene,camera); })();
+
+    window.__view = { scene, camera, controls, renderer, loadArrayBuffer };
+  </script>
+</body>
+</html>
