@@ -516,7 +516,7 @@
             <div class="u-left mono">★ Sé el primero de tu colegio y llévate tu chaqueta <b style="color:var(--gold)">GRATIS</b></div>
             <div class="u-right">
                 <a class="u-hide" href="tel:{{ $phone }}">{!! $svgPhone !!} {{ $phone }}</a>
-                <a href="https://wa.me/{{ $wa }}?text={{ urlencode('Hola Glauren, quiero información de las chaquetas de prom.') }}" target="_blank" rel="noopener">{!! $svgWa !!} WhatsApp</a>
+                <a href="https://wa.me/{{ $wa }}?text={{ urlencode('¡Hola Glauren! 👋 Quiero información sobre las chaquetas de mi promoción.') }}" target="_blank" rel="noopener">{!! $svgWa !!} WhatsApp</a>
                 <span class="u-soc u-hide">
                     <a href="{{ Setting::get('social_instagram', 'https://www.instagram.com/chaquetaprom_/') }}" target="_blank" rel="noopener" aria-label="Instagram">{!! $svgIg !!}</a>
                     <a href="{{ Setting::get('social_tiktok', 'https://www.tiktok.com/@chaquetaprom') }}" target="_blank" rel="noopener" aria-label="TikTok">{!! $svgTk !!}</a>
@@ -574,7 +574,7 @@
         <p class="hero-sub">{{ Setting::get('home_hero_subtitle', 'Diséñala en 3D, síguela mientras la fabricamos —con fotos reales— y págala en línea. Sin misterios.') }}</p>
         <div class="cta-actions">
             <a href="{{ route('personalizar') }}" class="btn btn-gold">Diseña tu chaqueta en 3D</a>
-            <a href="https://wa.me/{{ $wa }}?text={{ urlencode('Hola Glauren, quiero información de las chaquetas de prom.') }}" target="_blank" rel="noopener" class="btn btn-wa">{!! $svgWa !!} WhatsApp</a>
+            <a href="https://wa.me/{{ $wa }}?text={{ urlencode('¡Hola Glauren! 👋 Quiero información sobre las chaquetas de mi promoción.') }}" target="_blank" rel="noopener" class="btn btn-wa">{!! $svgWa !!} WhatsApp</a>
             <a href="{{ route('seguimiento') }}" class="btn btn-line">Busca tu chaqueta</a>
         </div>
     </div>
@@ -1023,7 +1023,7 @@
     </div>
 </footer>
 
-<a href="https://wa.me/{{ $wa }}?text={{ urlencode('Hola Glauren, quiero información de las chaquetas de prom.') }}" target="_blank" rel="noopener" class="fab" aria-label="Escríbenos por WhatsApp"><span class="ficon">{!! $svgWa !!}</span><span class="ftxt">Escríbenos</span></a>
+<a href="https://wa.me/{{ $wa }}?text={{ urlencode('¡Hola Glauren! 👋 Quiero información sobre las chaquetas de mi promoción.') }}" target="_blank" rel="noopener" class="fab" aria-label="Escríbenos por WhatsApp"><span class="ficon">{!! $svgWa !!}</span><span class="ftxt">Escríbenos</span></a>
 
 {{-- Popup: chaqueta o buso GRATIS al contratar --}}
 <div class="pop-ov" id="promoPop">
