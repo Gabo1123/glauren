@@ -356,6 +356,7 @@
                             <button class="btn btn-sm {{ $st->isPaid() ? 'btn-outline-warning' : 'btn-outline-success' }}" title="{{ $st->isPaid() ? 'Marcar pendiente' : 'Marcar pagado' }}"><i class="bi bi-cash-coin"></i></button>
                         </form>
                         <a href="{{ route('admin.students.edit', [$contract, $st]) }}" class="btn btn-sm btn-outline-light"><i class="bi bi-rulers"></i> Medidas</a>
+                        <form method="POST" action="{{ route('admin.students.pin', [$contract, $st]) }}" class="d-inline" onsubmit="return confirm('¿Reiniciar el PIN de {{ $st->name }}? Creará uno nuevo al entrar.')">@csrf @method('PUT')<button class="btn btn-sm btn-outline-warning" title="Reiniciar PIN del portal"><i class="bi bi-key"></i></button></form>
                         <form method="POST" action="{{ route('admin.students.destroy', [$contract, $st]) }}" class="d-inline" onsubmit="return confirm('¿Eliminar alumno?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form>
                     </td>
                 </tr>

@@ -207,6 +207,7 @@ Route::prefix('gtorres')->name('admin.')->group(function () {
         Route::delete('contratos/{contract}/alumnos/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
         Route::put('contratos/{contract}/alumnos/{student}/pago', [StudentController::class, 'togglePay'])->name('students.pay');
         Route::put('contratos/{contract}/alumnos/{student}/avisos', [StudentController::class, 'toggleNotify'])->name('students.notify');
+        Route::put('contratos/{contract}/alumnos/{student}/pin', [StudentController::class, 'resetPin'])->name('students.pin');
 
         // Finanzas (panel global)
         Route::get('finanzas', [\App\Modules\Chaquetas\Http\Controllers\Admin\FinanceController::class, 'index'])->name('finance.index');

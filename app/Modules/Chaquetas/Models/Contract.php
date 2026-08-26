@@ -101,6 +101,17 @@ class Contract extends Model
         return $this->hasMany(ContractChange::class)->latest();
     }
 
+    /** Token para el registro por QR; se genera y guarda la primera vez. */
+    public function joinToken(): string
+    {
+        if (! $this->join_token) {
+            $this->join_token = \Illuminate\Support\Str::random(24);
+            $this->save();
+        }
+
+        return $this->join_token;
+    }
+
     /** Valor total del contrato (precio unitario × estudiantes) + cambios aprobados. */
     public function totalValue(): float
     {

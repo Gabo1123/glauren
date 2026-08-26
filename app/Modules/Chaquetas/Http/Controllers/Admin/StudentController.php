@@ -220,6 +220,23 @@ class StudentController extends Controller
         return back()->with('ok', $paid ? 'Pago revertido a pendiente.' : 'Alumno marcado como pagado.');
     }
 
+    /** Reinicia el PIN del estudiante (creará uno nuevo al entrar). O fija uno si se envía. */
+    public function resetPin(Request $request, Contract $contract, Student $student)
+    {
+        abort_unless($student->contract_id === $contract->id, 404);
+
+        $newPin = preg_replace('/\D/', '', (string) $request->input('pin'));
+        if ($newPin && strlen($newPin) === 4) {
+            $student->update(['pin' => \Illuminate\Support\Facades\Hash::make($newPin)]);
+
+            return back()->with('ok', "PIN de {$student->name} fijado en {$newPin}.");
+        }
+
+        $student->update(['pin' => null]);
+
+        return back()->with('ok', "PIN de {$student->name} reiniciado. Creará uno nuevo al entrar (o recupéralo por WhatsApp).");
+    }
+
     /** Activa/desactiva los avisos por WhatsApp para este alumno. */
     public function toggleNotify(Contract $contract, Student $student)
     {

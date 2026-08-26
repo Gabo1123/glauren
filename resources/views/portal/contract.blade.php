@@ -177,18 +177,19 @@
 <section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-bottom:22px">
     <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0 0 8px">📲 Registro rápido de estudiantes</h2>
     <p style="color:var(--g-muted);font-size:13px;margin:0 0 16px">Muestra este QR en el salón: cada estudiante lo escanea y se registra solo. O comparte el enlace.</p>
+    @php $joinUrl = route('join.show', $contract->joinToken()); @endphp
     <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center">
         <div id="qrbox" style="background:#fff;padding:12px;border-radius:12px;width:170px;height:170px;display:grid;place-items:center"></div>
         <div style="flex:1;min-width:200px">
-            <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--g-muted);word-break:break-all;background:var(--g-surface-2);padding:10px;border-radius:8px">{{ route('join.show', $contract->join_token) }}</div>
-            <button onclick="navigator.clipboard.writeText('{{ route('join.show', $contract->join_token) }}');this.textContent='✓ Enlace copiado'" style="margin-top:10px;background:var(--g-gold);color:#1a1405;border:0;border-radius:8px;padding:10px 16px;font-weight:600;cursor:pointer;font-size:13px">Copiar enlace</button>
-            <a href="https://wa.me/?text={{ urlencode('¡Regístrate en las chaquetas de nuestra promoción! '.route('join.show', $contract->join_token)) }}" target="_blank" style="display:inline-block;margin-top:10px;margin-left:6px;background:#25d366;color:#04240f;text-decoration:none;font-weight:600;font-size:13px;padding:10px 16px;border-radius:8px">Compartir por WhatsApp</a>
+            <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--g-muted);word-break:break-all;background:var(--g-surface-2);padding:10px;border-radius:8px">{{ $joinUrl }}</div>
+            <button onclick="navigator.clipboard.writeText('{{ $joinUrl }}');this.textContent='✓ Enlace copiado'" style="margin-top:10px;background:var(--g-gold);color:#1a1405;border:0;border-radius:8px;padding:10px 16px;font-weight:600;cursor:pointer;font-size:13px">Copiar enlace</button>
+            <a href="https://wa.me/?text={{ urlencode('¡Regístrate en las chaquetas de nuestra promoción! '.$joinUrl) }}" target="_blank" style="display:inline-block;margin-top:10px;margin-left:6px;background:#25d366;color:#04240f;text-decoration:none;font-weight:600;font-size:13px;padding:10px 16px;border-radius:8px">Compartir por WhatsApp</a>
         </div>
     </div>
 </section>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
-    new QRCode(document.getElementById('qrbox'), { text: @json(route('join.show', $contract->join_token)), width: 146, height: 146, colorDark:'#0d0d0f', colorLight:'#ffffff' });
+    new QRCode(document.getElementById('qrbox'), { text: @json($joinUrl), width: 146, height: 146, colorDark:'#0d0d0f', colorLight:'#ffffff' });
 </script>
 
 {{-- Diseño aprobado --}}
