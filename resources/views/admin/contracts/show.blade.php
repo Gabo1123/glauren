@@ -141,15 +141,40 @@
             <div class="g-card__title" style="color:var(--g-gold)">Agregar alumno</div>
             <form method="POST" action="{{ route('admin.students.store', $contract) }}">
                 @csrf
-                <div class="row g-2">
-                    <div class="col-md-6"><input type="text" name="document" class="form-control form-control-sm" placeholder="Tarjeta de identidad *" required></div>
-                    <div class="col-md-6"><input type="text" name="name" class="form-control form-control-sm" placeholder="Nombre *" required></div>
-                    <div class="col-md-4"><select name="gender" class="form-select form-select-sm"><option value="">Sexo</option><option value="hombre">Hombre</option><option value="mujer">Mujer</option></select></div>
-                    <div class="col-md-4"><input type="text" name="nickname" class="form-control form-control-sm" placeholder="Apodo"></div>
-                    <div class="col-md-4"><input type="text" name="size" class="form-control form-control-sm" placeholder="Talla"></div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small text-secondary mb-1">Tarjeta de identidad <span class="text-danger">*</span></label>
+                        <input type="text" name="document" class="form-control form-control-sm" placeholder="Ej. 1012345678" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-secondary mb-1">Nombre completo <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control form-control-sm" placeholder="Ej. Valentina Ríos" required>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small text-secondary mb-1">Sexo</label>
+                        <select name="gender" class="form-select form-select-sm"><option value="">—</option><option value="hombre">Hombre</option><option value="mujer">Mujer</option></select>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small text-secondary mb-1">Apodo</label>
+                        <input type="text" name="nickname" class="form-control form-control-sm" placeholder="Para bordar">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small text-secondary mb-1">Talla</label>
+                        <input type="text" name="size" class="form-control form-control-sm" placeholder="S / M / L">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small text-secondary mb-1">Combo</label>
+                        <select name="combo" class="form-select form-select-sm">
+                            @foreach(\App\Modules\Chaquetas\Models\Student::COMBOS as $ck => $cc)
+                                <option value="{{ $ck }}">{{ $cc['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
-                <button class="btn btn-primary btn-sm mt-2"><i class="bi bi-plus-lg"></i> Agregar</button>
-                <span class="text-secondary small ms-2">Las medidas se completan al editar el alumno.</span>
+                <div class="d-flex align-items-center gap-2 flex-wrap mt-3">
+                    <button class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Agregar alumno</button>
+                    <span class="text-secondary small"><i class="bi bi-info-circle"></i> Las medidas se completan al editar el alumno.</span>
+                </div>
             </form>
         </div>
     </div>
