@@ -1,90 +1,132 @@
-# Guía de despliegue en cPanel — Glauren
+# Despliegue en cPanel — Glauren (chaquetasdeprom.com)
 
-Esta guía deja la plataforma funcionando en tu hosting con cPanel. Tiempo estimado: 30–45 min.
+Servidor: `/home/oocbwivl/` · Dominio (document root): `/home/oocbwivl/chaquetasdeprom.com/`
+Repo: https://github.com/Gabo1123/glauren
 
-## 0) Requisitos del hosting
-- **PHP 8.3** (en cPanel → *Select PHP Version*). Activa extensiones: `mbstring, openssl, pdo_mysql, tokenizer, xml, ctype, json, bcmath, fileinfo, gd, curl`.
-- **MySQL/MariaDB**.
-- Acceso a **phpMyAdmin** y, si es posible, a **Terminal** (cPanel → Terminal) o SSH.
-
----
-
-## 1) Subir los archivos
-1. En tu PC, comprime la carpeta del proyecto **`C:\Chaquetas prom`** en un `.zip`.
-   - **NO incluyas**: `node_modules` (no hay), `.git`, ni la carpeta `deploy`.
-   - **SÍ incluye**: `app, bootstrap, config, database, public, resources, routes, storage, vendor, artisan, composer.json`, etc.
-   - Si `vendor` no está o pesa mucho, puedes subir sin él y ejecutar `composer install --no-dev` en el servidor (paso 6).
-2. Sube el `.zip` a una carpeta **privada** (fuera de `public_html`), por ejemplo `/home/USUARIO/glauren`, y descomprímelo ahí.
-
-### Document Root (importante)
-Laravel debe servirse desde la carpeta **`public/`**, nunca desde la raíz.
-- **Opción A (recomendada):** crea el dominio/subdominio en cPanel y pon su *Document Root* en `/home/USUARIO/glauren/public`.
-- **Opción B (si tu plan solo usa `public_html`):** mueve el **contenido** de `glauren/public/` a `public_html/`, deja el resto del proyecto en `glauren/`, y edita `public_html/index.php`:
-  ```php
-  require __DIR__.'/../glauren/vendor/autoload.php';
-  $app = require_once __DIR__.'/../glauren/bootstrap/app.php';
-  ```
+> Laravel debe servirse desde su carpeta **`public/`**. Como el document root del dominio ya es
+> `/home/oocbwivl/chaquetasdeprom.com/`, dejamos la app en una carpeta privada aparte
+> (`/home/oocbwivl/glauren/`) y conectamos el document root a su `public/`.
 
 ---
 
-## 2) Crear la base de datos
-1. cPanel → **MySQL Databases** → crea una base (ej. `usuario_glauren`).
-2. Crea un usuario MySQL con contraseña fuerte y **asígnalo a la base con TODOS los privilegios**.
-3. Anota: nombre de base, usuario y contraseña (van en el `.env`).
+## 0) Requisitos (cPanel → "Select PHP Version")
+PHP **8.3** con extensiones: `mbstring, openssl, pdo_mysql, tokenizer, xml, ctype, json, bcmath, fileinfo, gd, curl`.
 
-## 3) Importar los datos
-1. cPanel → **phpMyAdmin** → selecciona tu base → pestaña **Importar**.
-2. Sube el archivo **`db-chaquetas.sql`** (incluido en esta carpeta `deploy`) y ejecuta.
-   - Esto crea las 26 tablas con tus contenidos (colecciones, tipos, textos, etc.).
+---
 
-## 4) Configurar el `.env`
-1. En la raíz del proyecto (`glauren/`) crea un archivo **`.env`** copiando **`.env.produccion.example`** (incluido aquí).
-2. Rellena: `APP_URL`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`, y tus **llaves de Rapyd**.
-3. Genera la clave de la app:
-   ```bash
-   php artisan key:generate
-   ```
-   (Si no tienes Terminal/SSH: genera una en https://laravel-encryption-key-generator.vercel.app y pégala en `APP_KEY=base64:...`)
+## 1) Subir el código
 
-## 5) Enlazar el almacenamiento y permisos
+### Opción A — con Terminal/SSH (recomendada)
+cPanel → **Terminal** (o SSH) y ejecuta:
 ```bash
-php artisan storage:link
-chmod -R 775 storage bootstrap/cache
+cd ~
+git clone https://github.com/Gabo1123/glauren.git glauren
+cd glauren
 ```
-- Si el hosting **no permite symlinks**, crea a mano la carpeta `public/storage` y copia dentro el contenido de `storage/app/public` (ahí están el banner, logos y fotos subidas).
+> Al ser repo privado, usa un **token** de GitHub como contraseña, o configura una llave SSH.
 
-## 6) Instalar dependencias y optimizar (si subiste sin `vendor`)
+Instala dependencias (si tu hosting tiene Composer):
 ```bash
 composer install --no-dev --optimize-autoloader
-php artisan migrate --force        # solo si NO importaste el .sql; si ya importaste, omite
+```
+Si no hay Composer en el servidor, sube tú la carpeta `vendor` por FTP (comprímela desde tu PC).
+
+### Opción B — sin Terminal (Administrador de archivos)
+1. En tu PC, comprime el proyecto **incluyendo `vendor`** (sin `.git`, sin `node_modules`, sin `deploy`).
+2. Súbelo a `/home/oocbwivl/glauren/` y descomprime.
+
+---
+
+## 2) Base de datos
+1. cPanel → **MySQL Databases** → crea la base (ej. `oocbwivl_glauren`).
+2. Crea un usuario con contraseña fuerte y **asígnalo con TODOS los privilegios**.
+3. cPanel → **phpMyAdmin** → selecciona la base → **Importar** → sube `deploy/db-chaquetas.sql`.
+   (Ese archivo lo subes por FTP; no está en GitHub por contener datos.)
+
+---
+
+## 3) Archivo `.env` (en `/home/oocbwivl/glauren/.env`)
+Cópialo de `.env.example` y ajusta:
+```env
+APP_NAME="Glauren"
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://chaquetasdeprom.com
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=oocbwivl_glauren
+DB_USERNAME=oocbwivl_xxx
+DB_PASSWORD=tu_clave_db
+
+# Correo del hosting
+MAIL_MAILER=smtp
+MAIL_HOST=mail.chaquetasdeprom.com
+MAIL_PORT=465
+MAIL_ENCRYPTION=ssl
+MAIL_USERNAME=glauren@chaquetasdeprom.com
+MAIL_PASSWORD=la_clave_del_correo
+MAIL_FROM_ADDRESS=glauren@chaquetasdeprom.com
+MAIL_FROM_NAME="Glauren"
+
+# IA WhatsApp
+GEMINI_API_KEY=tu_llave_gemini
+GEMINI_MODEL=gemini-3.6-flash
+
+# WhatsApp Business (Meta)
+WHATSAPP_TOKEN=
+WHATSAPP_PHONE_ID=
+WHATSAPP_VERIFY_TOKEN=glauren_webhook_2026
+```
+
+Luego (con Terminal, dentro de `~/glauren`):
+```bash
+php artisan key:generate
+php artisan migrate --force
+php artisan storage:link
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 ```
-> Si importaste el `.sql` (paso 3), **no** corras `migrate` para no duplicar. Si prefieres, empieza con base vacía y usa `php artisan migrate --seed` en vez de importar el `.sql`.
+> Sin Terminal: pide a soporte del hosting correr estos comandos, o usa un "cron único".
+> `key:generate` es obligatorio (crea `APP_KEY`). `storage:link` es necesario para ver las imágenes.
 
 ---
 
-## 7) Primeros ajustes ya en producción
-1. Entra a `https://TU-DOMINIO.com/admin` con `admin@chaquetas.test` / `password` y **cambia la contraseña** (crea tu usuario real y borra el de prueba).
-2. Cambia también la clave del portal de colegios de prueba.
-3. En **Admin → Textos/Home**: revisa WhatsApp, teléfono, dirección, logo, banner.
-4. En **Admin → Rapyd**: verifica que las llaves sean las de **producción** (`api.rapyd.net`) y registra el webhook `https://TU-DOMINIO.com/rapyd/webhook` en tu panel Rapyd.
+## 4) Conectar el dominio a `public/`
 
-## 8) Seguridad
-- `APP_DEBUG=false` (ya viene así en el template).
-- Fuerza HTTPS (cPanel → SSL/TLS → AutoSSL / Let's Encrypt).
-- Haz una **copia de seguridad** periódica de la base (cPanel → Backup) o exporta el `.sql` cada semana.
+### Si puedes cambiar el Document Root
+cPanel → **Domains** → chaquetasdeprom.com → cambia su carpeta a
+`/home/oocbwivl/glauren/public`. ¡Listo!
+
+### Si NO puedes cambiarlo (el root queda en chaquetasdeprom.com/)
+1. Copia el **contenido** de `~/glauren/public/` dentro de `/home/oocbwivl/chaquetasdeprom.com/`.
+2. Edita `/home/oocbwivl/chaquetasdeprom.com/index.php` y cambia las dos rutas para que apunten a la app:
+   ```php
+   require __DIR__.'/../glauren/vendor/autoload.php';
+   $app = require_once __DIR__.'/../glauren/bootstrap/app.php';
+   ```
+3. Verifica que exista `.htaccess` en esa carpeta (viene en `public/`).
+4. El enlace de storage: si `storage:link` no funcionó, crea a mano una carpeta/symlink
+   `chaquetasdeprom.com/storage` → `~/glauren/storage/app/public`.
 
 ---
 
-### Checklist rápido
-- [ ] Archivos subidos, docroot → `public/`
-- [ ] Base creada + `db-chaquetas.sql` importado
-- [ ] `.env` configurado + `APP_KEY` generada
-- [ ] `storage:link` y permisos 775
-- [ ] Caché optimizada
-- [ ] Contraseñas de prueba cambiadas
-- [ ] HTTPS activo + webhook Rapyd
+## 5) Permisos
+Las carpetas `storage/` y `bootstrap/cache/` deben ser escribibles (755/775).
 
-¿Dudas en algún paso? Dime el nombre de tu hosting y te doy los clics exactos.
+---
+
+## 6) Después de publicar
+- Abre https://chaquetasdeprom.com — debe cargar el home.
+- Panel: **https://chaquetasdeprom.com/gtorres** (usuario admin de tu base).
+- En **/gtorres → Configuración (llaves API)** pega/confirma las llaves (WhatsApp, correo).
+- Activa **HTTPS** (cPanel → SSL/TLS Status → AutoSSL).
+- Webhook de WhatsApp en Meta: `https://chaquetasdeprom.com/whatsapp/webhook` (verify token: el de tu .env).
+
+## 7) Actualizaciones futuras
+Con Terminal:
+```bash
+cd ~/glauren && git pull && composer install --no-dev -o && php artisan migrate --force && php artisan config:cache && php artisan view:cache
+```
