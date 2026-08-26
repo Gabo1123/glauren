@@ -171,6 +171,12 @@ class Contract extends Model
         return strtr($tpl, $repl);
     }
 
+    /** ¿El contrato ya está firmado? (cierra la lista de alumnos) */
+    public function isSigned(): bool
+    {
+        return $this->contract_status === 'firmado' || $this->signed_at !== null;
+    }
+
     /** ¿Todos los firmantes registrados ya firmaron? */
     public function allSigned(): bool
     {

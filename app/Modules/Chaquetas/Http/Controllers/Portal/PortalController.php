@@ -152,6 +152,7 @@ class PortalController extends Controller
     {
         $school = $this->school();
         abort_unless($contract->school_id === $school->id, 403);
+        abort_if($contract->isSigned(), 403, 'El contrato ya está firmado; la lista de alumnos quedó cerrada.');
 
         $data = $request->validate([
             'name'     => 'required|string|max:160',
@@ -169,6 +170,7 @@ class PortalController extends Controller
     {
         $school = $this->school();
         abort_unless($contract->school_id === $school->id, 403);
+        abort_if($contract->isSigned(), 403, 'El contrato ya está firmado; la lista de alumnos quedó cerrada.');
 
         $student = $contract->students()->findOrFail($student);
 

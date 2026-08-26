@@ -234,13 +234,30 @@
 </section>
 
 {{-- Alumnos --}}
+@php $signed = $contract->isSigned(); @endphp
 <section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
         <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0">Alumnos <span style="color:var(--g-muted);font-family:var(--g-font-body);font-size:14px">({{ $contract->students->count() }})</span></h2>
-        <button onclick="document.getElementById('addForm').style.display='block';this.style.display='none'" style="background:none;border:1px solid var(--g-gold);color:var(--g-gold);padding:8px 14px;border-radius:var(--g-r-sm);cursor:pointer;font-size:13px"><i class="bi bi-plus-lg"></i> Agregar alumno</button>
+        @unless($signed)
+            <button onclick="document.getElementById('addForm').style.display='block';this.style.display='none'" style="background:none;border:1px solid var(--g-gold);color:var(--g-gold);padding:8px 14px;border-radius:var(--g-r-sm);cursor:pointer;font-size:13px"><i class="bi bi-plus-lg"></i> Agregar alumno</button>
+        @endunless
     </div>
 
+    @if($signed)
+        {{-- Lista cerrada: el contrato ya está firmado --}}
+        <div style="background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.3);border-radius:var(--g-r-sm);padding:14px 16px;margin-bottom:18px;font-size:13.5px;color:#cfeede">
+            <i class="bi bi-lock-fill" style="color:var(--g-ok)"></i> <b>Lista cerrada.</b> El contrato está firmado con <b>{{ $contract->students->count() }} alumno(s)</b>. Ya no se pueden agregar ni quitar estudiantes. Si necesitas un cambio, escríbenos por <a href="#mensajes" style="color:var(--g-gold)">mensajes</a>.
+        </div>
+    @else
+        {{-- Paso 1: agregar TODOS los alumnos antes de firmar --}}
+        <div style="background:rgba(224,164,34,.1);border:1px solid rgba(224,164,34,.35);border-radius:var(--g-r-sm);padding:14px 16px;margin-bottom:18px;font-size:13.5px;color:#f0e3c8">
+            <b style="color:var(--g-warn)"><i class="bi bi-1-circle-fill"></i> Paso 1 — Agrega a TODOS los alumnos</b><br>
+            Registra a cada estudiante de tu promoción antes de firmar. El total de alumnos define el contrato. <b>Una vez firmado, la lista se cierra.</b>
+        </div>
+    @endif
+
     {{-- Formulario para agregar (colegio solo captura datos básicos) --}}
+    @unless($signed)
     <form id="addForm" method="POST" action="{{ route('portal.students.store', $contract) }}" style="display:none;background:var(--g-surface-2);border:1px solid var(--g-line);border-radius:var(--g-r-sm);padding:18px;margin-bottom:18px">
         @csrf
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:12px">
@@ -255,6 +272,7 @@
         <div style="font-size:12px;color:var(--g-muted);margin-bottom:12px"><i class="bi bi-info-circle"></i> El equipo Glauren tomará y registrará las medidas de cada alumno.</div>
         <button style="background:var(--g-gold);color:#1a1405;border:none;padding:9px 18px;border-radius:6px;font-weight:700;cursor:pointer">Guardar alumno</button>
     </form>
+    @endunless
 
     @if($contract->students->isEmpty())
         <p style="color:var(--g-muted);font-size:14px;margin:0">Aún no hay alumnos. Agrégalos con el botón de arriba.</p>
@@ -294,7 +312,7 @@
                                 @endif
                             </td>
                             <td style="padding:10px 8px;border-bottom:1px solid var(--g-line);text-align:right">
-                                @unless($s->hasMeasurements())
+                                @unless($s->hasMeasurements() || $signed)
                                     <form method="POST" action="{{ route('portal.students.destroy', [$contract, $s]) }}" onsubmit="return confirm('¿Eliminar a {{ $s->name }}?')" style="display:inline">
                                         @csrf @method('DELETE')
                                         <button style="background:none;border:none;color:var(--g-muted);cursor:pointer" title="Eliminar"><i class="bi bi-trash"></i></button>
