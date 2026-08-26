@@ -96,7 +96,7 @@ class Contract extends Model
         return $this->hasMany(ContractSigner::class)->orderBy('sort')->orderBy('id');
     }
 
-    public function changes(): HasMany
+    public function priceChanges(): HasMany
     {
         return $this->hasMany(ContractChange::class)->latest();
     }
@@ -117,7 +117,7 @@ class Contract extends Model
     {
         $unit = (float) ($this->price_per_unit ?? 0);
         $base = $this->students->sum(fn ($s) => (float) ($s->amount ?? $unit));
-        $delta = (float) $this->changes->where('status', 'aprobado')->sum('amount_delta');
+        $delta = (float) $this->priceChanges->where('status', 'aprobado')->sum('amount_delta');
 
         return $base + $delta;
     }

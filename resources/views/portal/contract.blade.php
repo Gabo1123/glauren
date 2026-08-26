@@ -135,10 +135,10 @@
 </section>
 
 {{-- Cambios que afectan el precio --}}
-@if($contract->changes->count())
+@if($contract->priceChanges->count())
 <section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-bottom:22px">
     <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0 0 16px">Cambios por aprobar</h2>
-    @foreach($contract->changes as $ch)
+    @foreach($contract->priceChanges as $ch)
         <div style="border:1px solid var(--g-line);border-radius:var(--g-r-sm);padding:14px 16px;margin-bottom:10px">
             <div style="display:flex;justify-content:space-between;align-items:start;gap:10px">
                 <div><b>{{ $ch->title }}</b>@if($ch->description)<div style="color:var(--g-muted);font-size:13px">{{ $ch->description }}</div>@endif</div>

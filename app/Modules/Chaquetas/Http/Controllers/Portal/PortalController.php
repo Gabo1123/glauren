@@ -67,7 +67,7 @@ class PortalController extends Controller
         $school = $this->school();
         abort_unless($contract->school_id === $school->id, 403);
 
-        $contract->load(['jacketType', 'photos', 'students' => fn ($q) => $q->orderBy('name'), 'changes', 'signers']);
+        $contract->load(['jacketType', 'photos', 'students' => fn ($q) => $q->orderBy('name'), 'priceChanges', 'signers']);
         $stages = Contract::STAGES;
 
         // Resumen de pagos
@@ -120,7 +120,7 @@ class PortalController extends Controller
         abort_unless($contract->school_id === $school->id, 403);
         abort_unless($contract->production_status === 'entregado', 403, 'El certificado está disponible al entregar el pedido.');
 
-        $contract->load('school', 'jacketType', 'students', 'changes');
+        $contract->load('school', 'jacketType', 'students', 'priceChanges');
 
         return view('portal.certificate', compact('contract', 'school'));
     }
@@ -130,7 +130,7 @@ class PortalController extends Controller
     {
         $school = $this->school();
         abort_unless($contract->school_id === $school->id, 403);
-        $contract->load('school', 'jacketType', 'students', 'signers', 'changes');
+        $contract->load('school', 'jacketType', 'students', 'signers', 'priceChanges');
 
         return view('portal.contract-doc', compact('contract', 'school'));
     }
