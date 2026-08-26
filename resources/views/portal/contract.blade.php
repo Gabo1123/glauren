@@ -31,6 +31,62 @@
     </div>
 @endif
 
+{{-- Ruta de tu promoción (guía paso a paso) --}}
+@php
+    $sAlumnos  = $contract->students->count() > 0;
+    $sFirmado  = $contract->isSigned();
+    $sPagos    = $contract->allStudentsPaid();
+    $delivered = $contract->production_status === 'entregado';
+    $paidN     = $contract->students->where('payment_status', 'pagado')->count();
+    $totalN    = $contract->students->count();
+    $eta       = $contract->deliveryDate();
+
+    $steps = [
+        ['t' => 'Agrega a tus alumnos',  'd' => $sAlumnos ? ($totalN.' alumno(s) registrado(s)') : 'Registra a toda tu promoción', 'done' => $sAlumnos,  'active' => ! $sAlumnos,             'anchor' => 'alumnos'],
+        ['t' => 'Firma del contrato',    'd' => $sFirmado ? 'Contrato firmado ✓' : 'Revísalo y fírmalo para arrancar',            'done' => $sFirmado,  'active' => $sAlumnos && ! $sFirmado, 'anchor' => null],
+        ['t' => 'Pago del curso',        'd' => $sPagos ? 'Todos al día ✓' : ($paidN.' de '.$totalN.' han pagado'),                'done' => $sPagos,    'active' => $sFirmado && ! $sPagos,  'anchor' => null],
+        ['t' => 'Producción',            'd' => $delivered ? 'Producción terminada' : ($sFirmado ? 'Fabricando tus chaquetas' : 'Inicia al firmar'), 'done' => $delivered, 'active' => $sFirmado && ! $delivered, 'anchor' => null],
+        ['t' => 'Entrega',               'd' => $delivered ? '¡Entregado! 🎉' : (($eta && $sPagos) ? 'Estimada: '.$eta->locale('es')->isoFormat('D [de] MMM YYYY') : 'Cuando el curso complete el pago'), 'done' => $delivered, 'active' => false, 'anchor' => null],
+    ];
+    $doneN = collect($steps)->where('done', true)->count();
+    $pct   = (int) round($doneN / count($steps) * 100);
+@endphp
+<section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-bottom:22px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px">
+        <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0">🗺️ Ruta de tu promoción</h2>
+        <span style="color:var(--g-muted);font-size:13px"><b style="color:var(--g-gold)">{{ $doneN }}</b> de {{ count($steps) }} pasos</span>
+    </div>
+    <div style="height:7px;background:var(--g-surface-2);border-radius:99px;overflow:hidden;margin-bottom:22px">
+        <div style="height:100%;width:{{ $pct }}%;background:linear-gradient(90deg,var(--g-gold),#f2c14e);transition:width .4s"></div>
+    </div>
+    <div style="display:flex;flex-direction:column">
+        @foreach($steps as $i => $s)
+            @php $isLast = $loop->last; $c = $s['done'] ? 'var(--g-ok)' : ($s['active'] ? 'var(--g-gold)' : 'var(--g-line)'); @endphp
+            <div style="display:flex;gap:14px;align-items:flex-start">
+                <div style="display:flex;flex-direction:column;align-items:center;align-self:stretch">
+                    <div style="width:30px;height:30px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:700;
+                        background:{{ $s['done'] || $s['active'] ? $c : 'var(--g-surface-2)' }};
+                        color:{{ $s['done'] ? '#04240f' : ($s['active'] ? '#1a1405' : 'var(--g-muted)') }};
+                        border:2px solid {{ $c }}">
+                        @if($s['done'])<i class="bi bi-check-lg"></i>@else{{ $i + 1 }}@endif
+                    </div>
+                    @unless($isLast)<div style="width:2px;flex:1;min-height:22px;background:{{ $s['done'] ? 'var(--g-ok)' : 'var(--g-line)' }}"></div>@endunless
+                </div>
+                <div style="padding-bottom:{{ $isLast ? '0' : '18px' }};flex:1">
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                        <span style="font-weight:700;font-size:14.5px;color:{{ $s['active'] ? 'var(--g-gold)' : 'var(--g-bone)' }}">{{ $s['t'] }}</span>
+                        @if($s['active'])<span style="background:rgba(224,164,34,.15);color:var(--g-warn);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:2px 8px;border-radius:99px">Ahora</span>@endif
+                    </div>
+                    <div style="color:var(--g-muted);font-size:13px;margin-top:2px">{{ $s['d'] }}</div>
+                    @if($s['active'] && $s['anchor'])
+                        <a href="#{{ $s['anchor'] }}" style="display:inline-block;margin-top:8px;background:var(--g-gold);color:#1a1405;text-decoration:none;font-weight:700;font-size:12.5px;padding:7px 14px;border-radius:8px">Ir a agregar alumnos →</a>
+                    @endif
+                </div>
+            </div>
+        @endforeach
+    </div>
+</section>
+
 {{-- Línea de tiempo de fabricación --}}
 <section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-bottom:22px">
     <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0 0 22px">Avance de fabricación</h2>
@@ -235,7 +291,7 @@
 
 {{-- Alumnos --}}
 @php $signed = $contract->isSigned(); @endphp
-<section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px">
+<section id="alumnos" style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;scroll-margin-top:20px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
         <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0">Alumnos <span style="color:var(--g-muted);font-family:var(--g-font-body);font-size:14px">({{ $contract->students->count() }})</span></h2>
         @unless($signed)
