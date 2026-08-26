@@ -18,14 +18,42 @@
             <div class="col-md-4"><label class="form-label small">Talla</label><input type="text" name="size" class="form-control" value="{{ old('size', $student->size) }}"></div>
         </div>
 
-        <div class="g-card__title mt-3" style="color:var(--g-gold)">Toma de medidas (cm)</div>
-        <div class="row g-3 mb-2">
-            <div class="col-md-4"><label class="form-label small">Contorno de pecho</label><input type="number" step="0.1" name="chest" class="form-control" value="{{ old('chest', $student->chest) }}"></div>
-            <div class="col-md-4"><label class="form-label small">Contorno de cintura</label><input type="number" step="0.1" name="waist" class="form-control" value="{{ old('waist', $student->waist) }}"></div>
-            <div class="col-md-4"><label class="form-label small">Contorno de cadera</label><input type="number" step="0.1" name="hip" class="form-control" value="{{ old('hip', $student->hip) }}"></div>
-            <div class="col-md-6"><label class="form-label small">Largo de manga</label><input type="number" step="0.1" name="sleeve_length" class="form-control" value="{{ old('sleeve_length', $student->sleeve_length) }}"></div>
-            <div class="col-md-6"><label class="form-label small">Largo de talle</label><input type="number" step="0.1" name="talle_length" class="form-control" value="{{ old('talle_length', $student->talle_length) }}"></div>
+        {{-- Combo de prendas: al cambiarlo aparecen las medidas de cada prenda --}}
+        <div class="g-card__title mt-3" style="color:var(--g-gold)">Prendas (combo)</div>
+        <div class="row g-3 mb-1">
+            <div class="col-md-8">
+                <label class="form-label small">¿Qué va a llevar este alumno?</label>
+                <select name="combo" id="comboSel" class="form-select">
+                    @foreach(\App\Modules\Chaquetas\Models\Student::COMBOS as $key => $c)
+                        <option value="{{ $key }}" {{ ($student->combo ?: 'chaqueta') === $key ? 'selected' : '' }}>{{ $c['label'] }}</option>
+                    @endforeach
+                </select>
+                <div class="form-text">Según el combo aparecen abajo las medidas de cada prenda.</div>
+            </div>
         </div>
+
+        @php $garments = \App\Modules\Chaquetas\Models\Student::GARMENTS; @endphp
+        @foreach($garments as $gkey => $g)
+            @php $base = ! empty($g['base']); @endphp
+            <div class="garment-block" data-garment="{{ $gkey }}" style="display:none">
+                <div class="g-card__title mt-3" style="color:var(--g-gold)">{{ $g['icon'] }} Medidas · {{ $g['label'] }} <span class="text-secondary" style="font-size:12px;font-weight:400">(cm)</span></div>
+                <div class="row g-3 mb-2">
+                    @foreach($g['fields'] as $field => $label)
+                        @php
+                            if ($base) {
+                                $name = $field; $val = old($field, $student->$field);
+                            } else {
+                                $name = "measurements[$gkey][$field]"; $val = old("measurements.$gkey.$field", $student->measure($gkey, $field));
+                            }
+                        @endphp
+                        <div class="col-md-4">
+                            <label class="form-label small">{{ $label }}</label>
+                            <input type="number" step="0.1" name="{{ $name }}" class="form-control" value="{{ $val }}">
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endforeach
 
         <div class="g-card__title mt-3" style="color:var(--g-gold)">Pago</div>
         <div class="row g-3">
@@ -36,4 +64,20 @@
         <div class="mt-4"><button class="btn btn-primary"><i class="bi bi-save"></i> Guardar</button> <a href="{{ route('admin.contracts.show', $contract) }}" class="btn btn-outline-light">Cancelar</a></div>
     </form>
 </div>
+
+<script>
+(function(){
+    var combos = @json(collect(\App\Modules\Chaquetas\Models\Student::COMBOS)->map(fn($c) => $c['garments']));
+    var sel = document.getElementById('comboSel');
+    var blocks = document.querySelectorAll('.garment-block');
+    function refresh(){
+        var active = combos[sel.value] || ['chaqueta'];
+        blocks.forEach(function(b){
+            b.style.display = active.indexOf(b.getAttribute('data-garment')) !== -1 ? '' : 'none';
+        });
+    }
+    sel.addEventListener('change', refresh);
+    refresh();
+})();
+</script>
 @endsection

@@ -11,6 +11,70 @@ class Student extends Model
 {
     protected $hidden = ['pin'];
 
+    /** Prendas disponibles y las medidas (cm) que pide cada una. */
+    public const GARMENTS = [
+        'chaqueta' => [
+            'label'  => 'Chaqueta',
+            'icon'   => '🧥',
+            // La chaqueta usa las columnas base del alumno.
+            'fields' => [
+                'chest'         => 'Contorno de pecho',
+                'waist'         => 'Contorno de cintura',
+                'hip'           => 'Contorno de cadera',
+                'sleeve_length' => 'Largo de manga',
+                'talle_length'  => 'Largo de talle',
+            ],
+            'base' => true,
+        ],
+        'buzo' => [
+            'label'  => 'Buzo',
+            'icon'   => '👕',
+            'fields' => [
+                'chest'  => 'Contorno de pecho',
+                'waist'  => 'Contorno de cintura',
+                'length' => 'Largo total',
+                'sleeve' => 'Largo de manga',
+            ],
+        ],
+        'polo' => [
+            'label'  => 'Polo',
+            'icon'   => '🎽',
+            'fields' => [
+                'chest'  => 'Contorno de pecho',
+                'length' => 'Largo total',
+                'sleeve' => 'Largo de manga (corta)',
+            ],
+        ],
+    ];
+
+    /** Combos que el asesor puede escoger por alumno. */
+    public const COMBOS = [
+        'chaqueta'           => ['label' => 'Solo chaqueta',            'garments' => ['chaqueta']],
+        'buzo'               => ['label' => 'Solo buzo',                'garments' => ['buzo']],
+        'chaqueta_buzo'      => ['label' => 'Chaqueta + Buzo',          'garments' => ['chaqueta', 'buzo']],
+        'chaqueta_polo'      => ['label' => 'Chaqueta + Polo',          'garments' => ['chaqueta', 'polo']],
+        'chaqueta_buzo_polo' => ['label' => 'Chaqueta + Buzo + Polo',   'garments' => ['chaqueta', 'buzo', 'polo']],
+    ];
+
+    /** Lista de prendas del combo elegido (por defecto, chaqueta). */
+    public function garments(): array
+    {
+        $combo = $this->combo ?: 'chaqueta';
+
+        return self::COMBOS[$combo]['garments'] ?? ['chaqueta'];
+    }
+
+    public function comboLabel(): string
+    {
+        return self::COMBOS[$this->combo ?? '']['label'] ?? 'Solo chaqueta';
+    }
+
+    /** Medida de una prenda extra (buzo/polo) guardada en el JSON measurements. */
+    public function measure(string $garment, string $field): ?string
+    {
+        return data_get($this->measurements, "$garment.$field");
+    }
+
     public function posts(): HasMany
     {
         return $this->hasMany(StudentPost::class);
@@ -23,7 +87,7 @@ class Student extends Model
 
     protected $fillable = [
         'contract_id', 'document', 'phone', 'pin', 'photo', 'bio', 'notified_stage', 'notify_optin', 'name', 'gender', 'nickname',
-        'size', 'talle_length', 'sleeve_length', 'chest', 'waist', 'hip',
+        'size', 'combo', 'measurements', 'talle_length', 'sleeve_length', 'chest', 'waist', 'hip',
         'payment_status', 'amount', 'rapyd_checkout_id', 'paid_at',
         'payment_method', 'payment_proof', 'payment_declared_at',
     ];
@@ -37,6 +101,7 @@ class Student extends Model
             'waist'         => 'decimal:1',
             'hip'           => 'decimal:1',
             'amount'        => 'decimal:2',
+            'measurements'  => 'array',
             'paid_at'       => 'datetime',
             'payment_declared_at' => 'datetime',
         ];

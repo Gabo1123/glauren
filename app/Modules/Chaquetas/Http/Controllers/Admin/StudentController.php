@@ -158,6 +158,7 @@ class StudentController extends Controller
                 'gender'         => in_array(($d['gender'] ?? ''), ['hombre', 'mujer'], true) ? $d['gender'] : null,
                 'nickname'       => trim($d['nickname'] ?? '') ?: null,
                 'size'           => trim($d['size'] ?? '') ?: null,
+                'combo'          => array_key_exists(($d['combo'] ?? ''), Student::COMBOS) ? $d['combo'] : $s->combo,
                 'chest'          => $num($d['chest'] ?? null),
                 'waist'          => $num($d['waist'] ?? null),
                 'hip'            => $num($d['hip'] ?? null),
@@ -190,6 +191,7 @@ class StudentController extends Controller
                 'gender'         => in_array(($d['gender'] ?? ''), ['hombre', 'mujer'], true) ? $d['gender'] : null,
                 'nickname'       => trim($d['nickname'] ?? '') ?: null,
                 'size'           => trim($d['size'] ?? '') ?: null,
+                'combo'          => array_key_exists(($d['combo'] ?? ''), Student::COMBOS) ? $d['combo'] : 'chaqueta',
                 'chest'          => $num($d['chest'] ?? null),
                 'waist'          => $num($d['waist'] ?? null),
                 'hip'            => $num($d['hip'] ?? null),
@@ -250,12 +252,16 @@ class StudentController extends Controller
     {
         $unique = 'unique:students,document,'.($id ?? 'NULL').',id,contract_id,'.$contract->id;
 
-        return $request->validate([
+        $data = $request->validate([
             'document'      => 'required|string|max:40|'.$unique,
             'name'          => 'required|string|max:160',
             'gender'        => 'nullable|in:hombre,mujer',
             'nickname'      => 'nullable|string|max:60',
             'size'          => 'nullable|string|max:20',
+            'combo'         => 'nullable|in:'.implode(',', array_keys(Student::COMBOS)),
+            'measurements'      => 'nullable|array',
+            'measurements.*'    => 'nullable|array',
+            'measurements.*.*'  => 'nullable|numeric',
             'talle_length'  => 'nullable|numeric',
             'sleeve_length' => 'nullable|numeric',
             'chest'         => 'nullable|numeric',
@@ -264,5 +270,18 @@ class StudentController extends Controller
             'payment_status' => 'nullable|in:pendiente,pagado',
             'amount'        => 'nullable|numeric|min:0',
         ]);
+
+        // Limpia medidas vacías de las prendas extra (buzo/polo)
+        if (! empty($data['measurements'])) {
+            $data['measurements'] = collect($data['measurements'])
+                ->map(fn ($fields) => array_filter((array) $fields, fn ($v) => $v !== null && $v !== ''))
+                ->filter(fn ($fields) => ! empty($fields))
+                ->toArray();
+            if (empty($data['measurements'])) {
+                $data['measurements'] = null;
+            }
+        }
+
+        return $data;
     }
 }

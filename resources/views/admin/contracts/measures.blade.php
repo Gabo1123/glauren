@@ -95,6 +95,7 @@
                     <th>Sexo</th>
                     <th>Apodo</th>
                     <th>Talla</th>
+                    <th>Combo</th>
                     <th>Pecho <span class="u">cm</span></th>
                     <th>Cintura <span class="u">cm</span></th>
                     <th>Cadera <span class="u">cm</span></th>
@@ -118,6 +119,11 @@
                     </td>
                     <td class="cell"><input type="text" name="students[{{ $s->id }}][nickname]" value="{{ $s->nickname }}" data-col="3" autocomplete="off"></td>
                     <td class="cell"><input type="text" name="students[{{ $s->id }}][size]" value="{{ $s->size }}" data-col="4" placeholder="M" autocomplete="off"></td>
+                    <td class="cell"><select name="students[{{ $s->id }}][combo]" style="min-width:150px">
+                        @foreach(\App\Modules\Chaquetas\Models\Student::COMBOS as $ck => $cc)
+                            <option value="{{ $ck }}" {{ ($s->combo ?: 'chaqueta') === $ck ? 'selected' : '' }}>{{ $cc['label'] }}</option>
+                        @endforeach
+                    </select></td>
                     <td class="cell num"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][chest]" value="{{ $s->chest }}" data-col="5" placeholder="—"></td>
                     <td class="cell num"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][waist]" value="{{ $s->waist }}" data-col="6" placeholder="—"></td>
                     <td class="cell num"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][hip]" value="{{ $s->hip }}" data-col="7" placeholder="—"></td>
@@ -194,6 +200,7 @@
     // Agregar filas nuevas (se crean como alumnos al guardar)
     var newIdx = 0;
     var NUM = ['chest','waist','hip','sleeve_length','talle_length'];
+    var COMBO_OPTS = @json(collect(\App\Modules\Chaquetas\Models\Student::COMBOS)->map(fn($c, $k) => '<option value="'.$k.'">'.$c['label'].'</option>')->implode(''));
     function addRow(focus){
         var i = newIdx++;
         var n = tbody.querySelectorAll('tr').length + 1;
@@ -204,7 +211,8 @@
             + '<td class="cell"><input type="text" class="mz-doc" name="new['+i+'][document]" data-col="1" placeholder="Documento" autocomplete="off"></td>'
             + '<td class="cell"><select name="new['+i+'][gender]" data-col="2"><option value="">—</option><option value="mujer">Mujer</option><option value="hombre">Hombre</option></select></td>'
             + '<td class="cell"><input type="text" name="new['+i+'][nickname]" data-col="3" autocomplete="off"></td>'
-            + '<td class="cell"><input type="text" name="new['+i+'][size]" data-col="4" placeholder="M" autocomplete="off"></td>';
+            + '<td class="cell"><input type="text" name="new['+i+'][size]" data-col="4" placeholder="M" autocomplete="off"></td>'
+            + '<td class="cell"><select name="new['+i+'][combo]" style="min-width:150px">' + COMBO_OPTS + '</select></td>';
         NUM.forEach(function(f, k){
             html += '<td class="cell num"><input type="text" inputmode="decimal" name="new['+i+']['+f+']" data-col="'+(5+k)+'" placeholder="—"></td>';
         });
