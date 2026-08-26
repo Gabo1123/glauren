@@ -23,6 +23,9 @@ class Contract extends Model
         'school_id', 'jacket_type_id', 'code', 'year', 'production_status', 'price_per_unit',
         'terms', 'contract_status', 'sign_token', 'signed_by_name', 'signed_by_document',
         'signature_path', 'sent_at', 'signed_at', 'notes', 'payment_reminder_at',
+        'voting_enabled', 'voting_show_results',
+        'design_approved_at', 'join_token', 'delivery_date',
+        'objeto', 'product_details', 'combo_value', 'contract_total', 'total_words', 'delivery_business_days',
     ];
 
     protected function casts(): array
@@ -32,6 +35,8 @@ class Contract extends Model
             'sent_at'             => 'datetime',
             'signed_at'           => 'datetime',
             'payment_reminder_at' => 'datetime',
+            'voting_enabled'      => 'boolean',
+            'voting_show_results' => 'boolean',
         ];
     }
 
@@ -84,6 +89,114 @@ class Contract extends Model
     public function photos(): HasMany
     {
         return $this->hasMany(ContractPhoto::class);
+    }
+
+    public function signers(): HasMany
+    {
+        return $this->hasMany(ContractSigner::class)->orderBy('sort')->orderBy('id');
+    }
+
+    public function changes(): HasMany
+    {
+        return $this->hasMany(ContractChange::class)->latest();
+    }
+
+    /** Valor total del contrato (precio unitario × estudiantes) + cambios aprobados. */
+    public function totalValue(): float
+    {
+        $unit = (float) ($this->price_per_unit ?? 0);
+        $base = $this->students->sum(fn ($s) => (float) ($s->amount ?? $unit));
+        $delta = (float) $this->changes->where('status', 'aprobado')->sum('amount_delta');
+
+        return $base + $delta;
+    }
+
+    public function paidValue(): float
+    {
+        $unit = (float) ($this->price_per_unit ?? 0);
+
+        return (float) $this->students->where('payment_status', 'pagado')->sum(fn ($s) => (float) ($s->amount ?? $unit));
+    }
+
+    /** Contrato final: plantilla con los datos rellenados. */
+    public function renderedContract(): string
+    {
+        $tpl = Setting::get('contract_template', '');
+        if (! $tpl) {
+            return (string) $this->terms;
+        }
+        $money = fn ($v) => $v ? '$'.number_format((float) $v, 0, ',', '.').' pesos colombianos' : '[valor]';
+
+        // Lista de contratantes desde los firmantes
+        $contratantes = $this->signers->map(function ($s) {
+            $doc = $s->signed_document ?: '__________';
+
+            return '• Yo '.$s->name.' con cédula '.$doc.' de Bogotá en representación del Grado 11 para la promoción '
+                .$this->year.' del '.($this->school?->name ?? 'Colegio')
+                .', quien para todos los efectos del presente contrato se llamará EL CONTRATANTE.';
+        })->implode("\n");
+        if ($contratantes === '') {
+            $contratantes = '• [Acudiente(s) contratante(s)]';
+        }
+
+        $repl = [
+            '{codigo}'         => $this->code,
+            '{fecha}'          => now()->locale('es')->isoFormat('dddd, D [de] MMMM [de] YYYY'),
+            '{contratantes}'   => $contratantes,
+            '{colegio}'        => $this->school?->name ?? '',
+            '{promo}'          => $this->year,
+            '{objeto}'         => $this->objeto ?: '[Objeto: cantidad y tipo de prendas]',
+            '{detalle}'        => $this->product_details ?: '[Detalle y bordados de las prendas]',
+            '{valor_combo}'    => $money($this->combo_value ?: $this->price_per_unit),
+            '{valor_total}'    => $money($this->contract_total ?: $this->totalValue()),
+            '{valor_letras}'   => $this->total_words ?: '[valor en letras]',
+            '{contratista}'    => Setting::get('contratista_nombre', Setting::get('brand_name', 'Glauren')),
+            '{nit}'            => Setting::get('contratista_nit', ''),
+            '{cuenta}'         => Setting::get('contratista_cuenta', ''),
+            '{cuenta_direccion}' => Setting::get('contact_address', 'Bogotá, Colombia'),
+            '{correo}'         => Setting::get('contact_email', 'glauren@chaquetasdeprom.com'),
+        ];
+
+        return strtr($tpl, $repl);
+    }
+
+    /** ¿Todos los firmantes registrados ya firmaron? */
+    public function allSigned(): bool
+    {
+        $signers = $this->signers;
+
+        return $signers->count() > 0 && $signers->every(fn ($s) => $s->hasSigned());
+    }
+
+    /** ¿Todos los estudiantes ya pagaron? (o el colegio paga todo) */
+    public function allStudentsPaid(): bool
+    {
+        if ($this->school?->schoolPays()) {
+            return true;
+        }
+        $students = $this->students;
+
+        return $students->count() > 0 && $students->every(fn ($s) => $s->payment_status === 'pagado');
+    }
+
+    /**
+     * Fecha de entrega. Usa la fecha manual si existe; si no, calcula
+     * los días hábiles colombianos (con festivos) desde la firma del contrato.
+     */
+    public function deliveryDate(): ?\Carbon\Carbon
+    {
+        if ($this->delivery_date) {
+            return $this->delivery_date instanceof \Carbon\Carbon
+                ? $this->delivery_date
+                : \Carbon\Carbon::parse($this->delivery_date);
+        }
+        $start = $this->signed_at ?? $this->created_at;
+        if (! $start) {
+            return null;
+        }
+        $days = (int) ($this->delivery_business_days ?: 35);
+
+        return \App\Modules\Chaquetas\Support\ColombiaHolidays::addBusinessDays($start->copy(), $days);
     }
 
     /** Índice de la etapa actual (para dibujar la línea de tiempo) */

@@ -105,7 +105,9 @@ class SchoolController extends Controller
             'contact_phone' => 'nullable|string|max:40',
             'contact_email' => 'nullable|email|max:160',
             'active'        => 'nullable|boolean',
+            'payment_mode'  => 'nullable|in:estudiante,colegio',
         ]);
+        $data['payment_mode'] = $request->input('payment_mode', 'estudiante');
         $data['slug'] = Str::slug($data['name']).($id ? '' : '-'.Str::random(4));
         $data['active'] = $request->boolean('active');
 

@@ -20,7 +20,7 @@ class SeguimientoController extends Controller
             'document' => 'required|string|max:40',
         ]);
 
-        $student = Student::with(['contract.school', 'contract.jacketType', 'contract.photos'])
+        $student = Student::with(['contract.school', 'contract.jacketType', 'contract.photos', 'contract.students'])
             ->where('document', trim($data['document']))
             ->latest()
             ->first();
@@ -37,7 +37,7 @@ class SeguimientoController extends Controller
     /** El estudiante registra/actualiza su WhatsApp para recibir avisos del pedido. */
     public function savePhone(Request $request)
     {
-        $student = Student::with(['contract.school', 'contract.jacketType', 'contract.photos'])
+        $student = Student::with(['contract.school', 'contract.jacketType', 'contract.photos', 'contract.students'])
             ->where('id', $request->input('student_id'))
             ->where('document', trim((string) $request->input('document')))
             ->first();
@@ -66,7 +66,7 @@ class SeguimientoController extends Controller
     /** El estudiante registra su pago (efectivo/Nequi/Bancolombia) → queda pendiente por aprobación. */
     public function declarePayment(Request $request)
     {
-        $student = Student::with(['contract.school', 'contract.jacketType', 'contract.photos'])
+        $student = Student::with(['contract.school', 'contract.jacketType', 'contract.photos', 'contract.students'])
             ->where('id', $request->input('student_id'))
             ->where('document', trim((string) $request->input('document')))
             ->first();

@@ -29,3 +29,7 @@ Thumbs.db
 # Respaldos y dumps con datos personales (NO subir)
 /deploy/*.sql
 /storage/app/backups
+
+# Paquetes de despliegue (no versionar)
+/deploy/*.zip
+/deploy/galeria/

@@ -36,7 +36,7 @@ class ContractController extends Controller
 
     public function show(Contract $contract)
     {
-        $contract->load('school', 'jacketType', 'students', 'photos');
+        $contract->load('school', 'jacketType', 'students', 'photos', 'signers');
 
         // Resumen financiero del contrato
         $unit = (float) ($contract->price_per_unit ?? 0);
@@ -53,7 +53,77 @@ class ContractController extends Controller
         $messages = \App\Modules\Chaquetas\Models\ContractMessage::where('contract_id', $contract->id)->orderBy('id')->get();
         \App\Modules\Chaquetas\Models\ContractMessage::where('contract_id', $contract->id)->where('sender', 'colegio')->where('read', false)->update(['read' => true]);
 
-        return view('admin.contracts.show', ['contract' => $contract, 'stages' => Contract::STAGES, 'fin' => $fin, 'messages' => $messages]);
+        // Votación de diseño (opciones + conteo)
+        $designOptions = \App\Modules\Chaquetas\Models\DesignOption::where('contract_id', $contract->id)
+            ->withCount('votes')->orderBy('sort')->orderBy('id')->get();
+        $totalVotes = $designOptions->sum('votes_count');
+
+        return view('admin.contracts.show', ['contract' => $contract, 'stages' => Contract::STAGES, 'fin' => $fin, 'messages' => $messages, 'designOptions' => $designOptions, 'totalVotes' => $totalVotes]);
+    }
+
+    /** Agrega un firmante (acudiente) al contrato. */
+    public function addSigner(Request $request, Contract $contract)
+    {
+        $data = $request->validate([
+            'name'  => 'required|string|max:160',
+            'role'  => 'nullable|string|max:40',
+            'phone' => 'nullable|string|max:40',
+            'email' => 'nullable|email|max:160',
+        ]);
+        $contract->signers()->create($data);
+
+        return back()->with('ok', 'Firmante agregado. Envíale su enlace para firmar.');
+    }
+
+    public function deleteSigner(Contract $contract, \App\Modules\Chaquetas\Models\ContractSigner $signer)
+    {
+        abort_unless($signer->contract_id === $contract->id, 404);
+        if ($signer->signature_path) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($signer->signature_path);
+        }
+        $signer->delete();
+
+        return back()->with('ok', 'Firmante eliminado.');
+    }
+
+    /** Agrega una opción de diseño para que el curso vote. */
+    public function addDesignOption(Request $request, Contract $contract)
+    {
+        $request->validate([
+            'label' => 'nullable|string|max:80',
+            'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:6144',
+        ]);
+        $path = $request->file('image')->store('diseno-opciones', 'public');
+        \App\Modules\Chaquetas\Models\DesignOption::create([
+            'contract_id' => $contract->id,
+            'label'       => $request->input('label') ?: 'Opción',
+            'image_path'  => $path,
+        ]);
+
+        return back()->with('ok', 'Opción de diseño agregada para votación.');
+    }
+
+    /** Activa/desactiva la votación y si se muestra la ganadora. */
+    public function saveVotingSettings(Request $request, Contract $contract)
+    {
+        $contract->update([
+            'voting_enabled'      => $request->boolean('voting_enabled'),
+            'voting_show_results' => $request->boolean('voting_show_results'),
+        ]);
+
+        return back()->with('ok', 'Ajustes de votación guardados.');
+    }
+
+    public function deleteDesignOption(Contract $contract, \App\Modules\Chaquetas\Models\DesignOption $option)
+    {
+        abort_unless($option->contract_id === $contract->id, 404);
+        if ($option->image_path) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($option->image_path);
+        }
+        \App\Modules\Chaquetas\Models\DesignVote::where('design_option_id', $option->id)->delete();
+        $option->delete();
+
+        return back()->with('ok', 'Opción eliminada.');
     }
 
     /** El equipo Glauren responde al colegio. */
@@ -197,6 +267,13 @@ HTML;
             'price_per_unit'    => 'nullable|numeric|min:0',
             'production_status' => 'required|in:'.implode(',', array_keys(Contract::STAGES)),
             'notes'             => 'nullable|string',
+            'objeto'            => 'nullable|string',
+            'product_details'   => 'nullable|string',
+            'combo_value'       => 'nullable|numeric|min:0',
+            'contract_total'    => 'nullable|numeric|min:0',
+            'total_words'       => 'nullable|string|max:255',
+            'delivery_date'     => 'nullable|date',
+            'delivery_business_days' => 'nullable|integer|min:1|max:200',
         ]);
     }
 

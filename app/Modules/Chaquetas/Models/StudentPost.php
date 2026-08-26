@@ -24,4 +24,14 @@ class StudentPost extends Model
     {
         return $this->photo ? Storage::disk('public')->url($this->photo) : null;
     }
+
+    public function likes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(StudentPostLike::class);
+    }
+
+    public function comments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(StudentPostComment::class)->where('hidden', false)->with('student')->orderBy('id');
+    }
 }

@@ -16,6 +16,19 @@
             <div class="col-md-6"><label class="form-label small">Teléfono</label><input type="text" name="contact_phone" class="form-control" value="{{ old('contact_phone', $school->contact_phone) }}"></div>
             <div class="col-md-12"><label class="form-label small">Correo</label><input type="email" name="contact_email" class="form-control" value="{{ old('contact_email', $school->contact_email) }}"></div>
         </div>
+        <div class="mb-3 mt-3">
+            <label class="form-label small">¿Quién paga las chaquetas?</label>
+            @php $pm = old('payment_mode', $school->payment_mode ?? 'estudiante'); @endphp
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="payment_mode" value="estudiante" id="pm_est" {{ $pm === 'estudiante' ? 'checked' : '' }}>
+                <label class="form-check-label" for="pm_est"><b>Cada estudiante paga su parte</b> — cada alumno paga en línea con su documento.</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="payment_mode" value="colegio" id="pm_col" {{ $pm === 'colegio' ? 'checked' : '' }}>
+                <label class="form-check-label" for="pm_col"><b>El colegio paga todo</b> — los estudiantes no pagan en línea (lo gestiona el colegio).</label>
+            </div>
+        </div>
+
         <div class="form-check form-switch mt-3">
             <input class="form-check-input" type="checkbox" name="active" value="1" id="active" {{ old('active', $school->active ?? true) ? 'checked' : '' }}>
             <label class="form-check-label" for="active">Activo</label>

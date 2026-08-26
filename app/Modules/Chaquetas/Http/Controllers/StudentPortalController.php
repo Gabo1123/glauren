@@ -176,17 +176,108 @@ class StudentPortalController extends Controller
             return redirect()->route('student.login');
         }
 
-        // Muro: publicaciones del mismo contrato (curso)
-        $posts = StudentPost::with('student')
+        $student->loadMissing('contract.school', 'contract.jacketType', 'contract.students');
+
+        // Muro: publicaciones del mismo contrato (curso) + likes + comentarios
+        $posts = StudentPost::with('student', 'comments')
+            ->withCount('likes')
             ->where('contract_id', $student->contract_id)
             ->where('hidden', false)
             ->latest()->limit(80)->get();
+
+        // Qué publicaciones ya likeó este estudiante
+        $likedIds = \App\Modules\Chaquetas\Models\StudentPostLike::where('student_id', $student->id)
+            ->pluck('student_post_id')->all();
 
         // Compañeros del curso
         $classmates = Student::where('contract_id', $student->contract_id)
             ->where('id', '!=', $student->id)->get();
 
-        return view('chaquetas.portal.home', compact('student', 'posts', 'classmates'));
+        // Votación de diseño: se muestra si está activa O si se decide mostrar resultados
+        $canVote = (bool) ($student->contract?->voting_enabled);
+        $showResults = (bool) ($student->contract?->voting_show_results);
+        $designOptions = ($canVote || $showResults)
+            ? \App\Modules\Chaquetas\Models\DesignOption::where('contract_id', $student->contract_id)
+                ->where('active', true)->withCount('votes')->orderBy('sort')->orderBy('id')->get()
+            : collect();
+        $myVote = \App\Modules\Chaquetas\Models\DesignVote::where('contract_id', $student->contract_id)
+            ->where('student_id', $student->id)->value('design_option_id');
+        $totalDesignVotes = $designOptions->sum('votes_count');
+
+        return view('chaquetas.portal.home', compact('student', 'posts', 'classmates', 'likedIds', 'designOptions', 'myVote', 'totalDesignVotes', 'showResults', 'canVote'));
+    }
+
+    /** Comentar una publicación del muro. */
+    public function comment(Request $request, StudentPost $post)
+    {
+        $student = $this->current($request);
+        if (! $student || $post->contract_id !== $student->contract_id) {
+            abort(403);
+        }
+        $data = $request->validate(['body' => 'required|string|max:400']);
+        \App\Modules\Chaquetas\Models\StudentPostComment::create([
+            'student_post_id' => $post->id, 'student_id' => $student->id, 'body' => $data['body'],
+        ]);
+
+        return back()->with('ok', 'Comentario publicado.');
+    }
+
+    /** Anuario digital del curso. */
+    public function yearbook(Request $request)
+    {
+        $student = $this->current($request);
+        if (! $student) {
+            return redirect()->route('student.login');
+        }
+        $student->loadMissing('contract.school');
+
+        $classmates = Student::where('contract_id', $student->contract_id)->orderBy('name')->get();
+        // Álbum: todas las fotos publicadas en el muro del curso
+        $albumPhotos = StudentPost::where('contract_id', $student->contract_id)
+            ->where('hidden', false)->whereNotNull('photo')->latest()->get();
+
+        return view('chaquetas.portal.yearbook', compact('student', 'classmates', 'albumPhotos'));
+    }
+
+    /** El estudiante vota por un diseño. */
+    public function voteDesign(Request $request, \App\Modules\Chaquetas\Models\DesignOption $option)
+    {
+        $student = $this->current($request);
+        if (! $student || $option->contract_id !== $student->contract_id) {
+            abort(403);
+        }
+        if (! $student->contract?->voting_enabled) {
+            return back()->withErrors(['vote' => 'La votación está cerrada.']);
+        }
+
+        \App\Modules\Chaquetas\Models\DesignVote::updateOrCreate(
+            ['contract_id' => $student->contract_id, 'student_id' => $student->id],
+            ['design_option_id' => $option->id]
+        );
+
+        return back()->with('ok', '¡Tu voto quedó registrado! 🗳️');
+    }
+
+    /** Dar / quitar "me gusta" a una publicación. */
+    public function toggleLike(Request $request, StudentPost $post)
+    {
+        $student = $this->current($request);
+        if (! $student || $post->contract_id !== $student->contract_id) {
+            abort(403);
+        }
+
+        $like = \App\Modules\Chaquetas\Models\StudentPostLike::where('student_post_id', $post->id)
+            ->where('student_id', $student->id)->first();
+
+        if ($like) {
+            $like->delete();
+        } else {
+            \App\Modules\Chaquetas\Models\StudentPostLike::create([
+                'student_post_id' => $post->id, 'student_id' => $student->id,
+            ]);
+        }
+
+        return back();
     }
 
     /** Actualiza perfil (apodo, bio, foto). */

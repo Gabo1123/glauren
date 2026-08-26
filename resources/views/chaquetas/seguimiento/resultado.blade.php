@@ -20,15 +20,13 @@
     $finalPct  = (int) Setting::get('pay_final_pct', 50);
     $finalAmt  = round($payTotal * $finalPct / 100);
 
-    // Fecha estimada de entrega (~35 días hábiles desde la firma o creación del contrato)
-    $prodDays  = (int) Setting::get('production_days', 35);
-    $startDate = $c?->signed_at ?? $c?->created_at;
-    $eta       = $startDate ? $startDate->copy()->addWeekdays($prodDays) : null;
+    // Fecha de entrega con días hábiles de Colombia (festivos incluidos), solo si el curso ya pagó
+    $eta       = ($c && $c->allStudentsPaid()) ? $c->deliveryDate() : null;
     $delivered = $c?->production_status === 'entregado';
     $isReady   = $c?->production_status === 'listo';
 
     // Estado de pago (etiqueta corta para el resumen)
-    $payState  = $student->isPaid() ? ['✓ Pagado','ok'] : ($student->isUnderReview() ? ['⏳ En revisión','rev'] : ['Pendiente','pend']);
+    $payState  = ($c?->school?->schoolPays()) ? ['Lo paga el colegio','ok'] : ($student->isPaid() ? ['✓ Pagado','ok'] : ($student->isUnderReview() ? ['⏳ En revisión','rev'] : ['Pendiente','pend']));
 
     // ¿Qué sigue? mensaje según la etapa
     $nextStep = match($c?->production_status) {
@@ -231,7 +229,9 @@
     <div class="card">
         <h2>Tu pago</h2>
 
-        @if($student->isPaid())
+        @if($c?->school?->schoolPays())
+            <div class="note">💼 El pago de las chaquetas <b>lo gestiona tu colegio</b>. No necesitas pagar en línea; cualquier duda del pago, habla con tu representante de curso.</div>
+        @elseif($student->isPaid())
             <span class="badge ok">✓ Pagado</span>
             <div class="note">Recibimos y aprobamos tu pago. ¡Gracias! 🎉</div>
         @elseif($student->isUnderReview())

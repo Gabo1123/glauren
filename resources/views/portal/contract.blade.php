@@ -88,6 +88,109 @@
     @endif
 </section>
 
+@php
+    $money = fn ($v) => '$'.number_format((float) $v, 0, ',', '.');
+    $total = $contract->totalValue();
+    $paid  = $contract->paidValue();
+    $saldo = max(0, $total - $paid);
+    $schoolPaysAll = $contract->school?->schoolPays();
+    $deliver = $contract->deliveryDate();
+@endphp
+
+{{-- Resumen económico --}}
+<section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-bottom:22px">
+    <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0 0 18px">Valor del contrato</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        <div style="background:var(--g-surface-2);border:1px solid var(--g-line);border-radius:var(--g-r-sm);padding:16px;text-align:center">
+            <div style="font-family:var(--g-font-display);font-size:22px">{{ $money($total) }}</div>
+            <div style="color:var(--g-muted);font-size:11px;text-transform:uppercase">Valor total</div>
+        </div>
+        <div style="background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.35);border-radius:var(--g-r-sm);padding:16px;text-align:center">
+            <div style="font-family:var(--g-font-display);font-size:22px;color:var(--g-ok)">{{ $money($paid) }}</div>
+            <div style="color:var(--g-muted);font-size:11px;text-transform:uppercase">Pagado</div>
+        </div>
+        <div style="background:rgba(255,74,61,.08);border:1px solid rgba(255,74,61,.3);border-radius:var(--g-r-sm);padding:16px;text-align:center">
+            <div style="font-family:var(--g-font-display);font-size:22px;color:#ff6b60">{{ $money($saldo) }}</div>
+            <div style="color:var(--g-muted);font-size:11px;text-transform:uppercase">Saldo pendiente</div>
+        </div>
+    </div>
+    @if($schoolPaysAll)<div style="color:var(--g-muted);font-size:12px;margin-top:10px">💼 Modalidad: el colegio gestiona el pago total.</div>@endif
+</section>
+
+{{-- Fechas y compromisos --}}
+<section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-bottom:22px">
+    <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0 0 16px">Fechas y compromisos</h2>
+    @php $rows = [
+        ['bi-pen','Firma del contrato', $contract->signed_at ? $contract->signed_at->format('d/m/Y') : 'Pendiente'],
+        ['bi-gear','Inicio de producción', $contract->signed_at ? $contract->signed_at->format('d/m/Y') : 'Al firmar'],
+        ['bi-truck','Entrega estimada', $deliver ? $deliver->locale('es')->isoFormat('D [de] MMMM YYYY') : 'Por definir'],
+        ['bi-cash-coin','Saldo antes de entrega', $saldo > 0 ? $money($saldo) : 'Al día ✓'],
+    ]; @endphp
+    @foreach($rows as [$ic,$k,$v])
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--g-line)">
+            <span style="color:var(--g-muted);font-size:14px"><i class="bi {{ $ic }}"></i> {{ $k }}</span>
+            <b style="font-size:14px">{{ $v }}</b>
+        </div>
+    @endforeach
+</section>
+
+{{-- Cambios que afectan el precio --}}
+@if($contract->changes->count())
+<section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-bottom:22px">
+    <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0 0 16px">Cambios por aprobar</h2>
+    @foreach($contract->changes as $ch)
+        <div style="border:1px solid var(--g-line);border-radius:var(--g-r-sm);padding:14px 16px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:start;gap:10px">
+                <div><b>{{ $ch->title }}</b>@if($ch->description)<div style="color:var(--g-muted);font-size:13px">{{ $ch->description }}</div>@endif</div>
+                <b style="color:{{ $ch->amount_delta >= 0 ? '#ff6b60' : 'var(--g-ok)' }};white-space:nowrap">{{ $ch->amount_delta >= 0 ? '+' : '' }}{{ $money($ch->amount_delta) }}</b>
+            </div>
+            @if($ch->status === 'pendiente')
+                <div style="display:flex;gap:8px;margin-top:10px">
+                    <form method="POST" action="{{ route('portal.change.decide', [$contract, $ch]) }}"><input type="hidden" name="decision" value="aprobado">@csrf<button style="background:var(--g-ok);color:#04240f;border:0;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer;font-size:13px">✓ Aprobar</button></form>
+                    <form method="POST" action="{{ route('portal.change.decide', [$contract, $ch]) }}"><input type="hidden" name="decision" value="rechazado">@csrf<button style="background:none;border:1px solid var(--g-line);color:var(--g-muted);border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px">Rechazar</button></form>
+                </div>
+            @else
+                <div style="margin-top:6px;font-size:13px;color:{{ $ch->status==='aprobado'?'var(--g-ok)':'var(--g-muted)' }}">{{ $ch->status==='aprobado'?'✓ Aprobado':'Rechazado' }}@if($ch->decided_at) · {{ $ch->decided_at->format('d/m/Y') }}@endif</div>
+            @endif
+        </div>
+    @endforeach
+</section>
+@endif
+
+{{-- Garantías y documentos --}}
+<section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-bottom:22px">
+    <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0 0 14px">🛡️ Garantía y condiciones</h2>
+    <div style="color:#cfc9bd;font-size:14px;line-height:1.7">
+        • <b>Garantía</b> durante el año escolar por defectos de fabricación (confección, cremalleras). No cubre mal uso ni lavado inadecuado.<br>
+        • <b>Entrega</b> ~25–35 días hábiles desde la firma, primer pago y aprobación del diseño.<br>
+        • Cada prenda incluye etiqueta con instrucciones de cuidado.
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+        <a href="{{ route('portal.contract.doc', $contract) }}" target="_blank" style="background:var(--g-surface-2);border:1px solid var(--g-line);color:var(--g-bone);text-decoration:none;font-size:13px;padding:10px 16px;border-radius:var(--g-r-sm)"><i class="bi bi-file-earmark-text"></i> Ver contrato completo (PDF)</a>
+        @if($contract->production_status === 'entregado')
+            <a href="{{ route('portal.certificate', $contract) }}" target="_blank" style="background:var(--g-gold);color:#1a1405;text-decoration:none;font-weight:600;font-size:13px;padding:10px 16px;border-radius:var(--g-r-sm)"><i class="bi bi-award"></i> Certificado de entrega</a>
+        @endif
+    </div>
+</section>
+
+{{-- Registro rápido con QR --}}
+<section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-bottom:22px">
+    <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0 0 8px">📲 Registro rápido de estudiantes</h2>
+    <p style="color:var(--g-muted);font-size:13px;margin:0 0 16px">Muestra este QR en el salón: cada estudiante lo escanea y se registra solo. O comparte el enlace.</p>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center">
+        <div id="qrbox" style="background:#fff;padding:12px;border-radius:12px;width:170px;height:170px;display:grid;place-items:center"></div>
+        <div style="flex:1;min-width:200px">
+            <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--g-muted);word-break:break-all;background:var(--g-surface-2);padding:10px;border-radius:8px">{{ route('join.show', $contract->join_token) }}</div>
+            <button onclick="navigator.clipboard.writeText('{{ route('join.show', $contract->join_token) }}');this.textContent='✓ Enlace copiado'" style="margin-top:10px;background:var(--g-gold);color:#1a1405;border:0;border-radius:8px;padding:10px 16px;font-weight:600;cursor:pointer;font-size:13px">Copiar enlace</button>
+            <a href="https://wa.me/?text={{ urlencode('¡Regístrate en las chaquetas de nuestra promoción! '.route('join.show', $contract->join_token)) }}" target="_blank" style="display:inline-block;margin-top:10px;margin-left:6px;background:#25d366;color:#04240f;text-decoration:none;font-weight:600;font-size:13px;padding:10px 16px;border-radius:8px">Compartir por WhatsApp</a>
+        </div>
+    </div>
+</section>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+    new QRCode(document.getElementById('qrbox'), { text: @json(route('join.show', $contract->join_token)), width: 146, height: 146, colorDark:'#0d0d0f', colorLight:'#ffffff' });
+</script>
+
 {{-- Diseño aprobado --}}
 @if($design)
 <section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-bottom:22px">
@@ -99,6 +202,15 @@
         <div style="flex:1;min-width:200px;color:var(--g-muted);font-size:14px">
             <div style="color:var(--g-bone);font-weight:600;margin-bottom:4px">{{ $contract->jacketType?->name ?? 'Chaqueta' }}</div>
             Este es el diseño de la promoción. ¿Quieres ajustar algo? Escríbenos abajo por mensajes.
+            <div style="margin-top:14px">
+                @if($contract->design_approved_at)
+                    <span style="color:var(--g-ok);font-size:14px"><i class="bi bi-patch-check-fill"></i> Diseño aprobado el {{ $contract->design_approved_at->format('d/m/Y') }}</span>
+                @else
+                    <form method="POST" action="{{ route('portal.design.approve', $contract) }}" onsubmit="return confirm('¿Aprobar este diseño como definitivo?')">@csrf
+                        <button style="background:var(--g-ok);color:#04240f;border:0;border-radius:8px;padding:11px 20px;font-weight:700;cursor:pointer;font-size:14px"><i class="bi bi-check2-circle"></i> Aprobar diseño final</button>
+                    </form>
+                @endif
+            </div>
         </div>
     </div>
 </section>

@@ -65,9 +65,17 @@ Route::prefix('estudiante')->name('student.')->group(function () {
     Route::get('/mi-perfil', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'home'])->name('home');
     Route::post('/perfil', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'updateProfile'])->middleware('throttle:20,1')->name('profile');
     Route::post('/publicar', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'post'])->middleware('throttle:20,1')->name('post');
+    Route::post('/publicacion/{post}/like', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'toggleLike'])->middleware('throttle:60,1')->name('post.like');
+    Route::post('/votar-diseno/{option}', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'voteDesign'])->name('vote');
+    Route::post('/publicacion/{post}/comentar', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'comment'])->middleware('throttle:30,1')->name('comment');
+    Route::get('/anuario', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'yearbook'])->name('yearbook');
     Route::delete('/publicacion/{post}', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'deletePost'])->name('post.delete');
 });
 Route::post('/promo-gratis', [\App\Modules\Chaquetas\Http\Controllers\ContactController::class, 'popup'])->name('contacto.popup');
+
+// Registro público de estudiante por QR (link del contrato)
+Route::get('/unirme/{token}', [\App\Modules\Chaquetas\Http\Controllers\JoinController::class, 'show'])->name('join.show');
+Route::post('/unirme/{token}', [\App\Modules\Chaquetas\Http\Controllers\JoinController::class, 'store'])->middleware('throttle:20,10')->name('join.store');
 
 Route::get('/coleccion/{slug}', [PublicCollectionController::class, 'show'])->name('collection.show');
 
@@ -88,6 +96,12 @@ Route::get('/p/{slug}', [PageController::class, 'show'])->name('page.show');
 // Firma de contrato (enlace único para el colegio)
 Route::get('/contrato/{token}', [SignController::class, 'show'])->name('contrato.firmar');
 Route::post('/contrato/{token}', [SignController::class, 'sign'])->name('contrato.sign');
+
+// Firma múltiple (varios acudientes, cada uno con su enlace + código)
+Route::get('/firmar/{token}', [\App\Modules\Chaquetas\Http\Controllers\MultiSignController::class, 'show'])->name('firmar.multi');
+Route::post('/firmar/{token}/codigo', [\App\Modules\Chaquetas\Http\Controllers\MultiSignController::class, 'sendCode'])->middleware('throttle:5,10')->name('firmar.codigo');
+Route::post('/firmar/{token}/verificar', [\App\Modules\Chaquetas\Http\Controllers\MultiSignController::class, 'verify'])->middleware('throttle:10,10')->name('firmar.verificar');
+Route::post('/firmar/{token}/firmar', [\App\Modules\Chaquetas\Http\Controllers\MultiSignController::class, 'sign'])->name('firmar.guardar');
 
 // Pagos Rapyd
 Route::get('/pagar/{student}', [PaymentController::class, 'start'])->name('pay.start')->middleware('signed');
@@ -113,6 +127,10 @@ Route::prefix('colegio')->name('portal.')->group(function () {
         Route::get('/', [PortalController::class, 'dashboard'])->name('dashboard');
         Route::get('contrato/{contract}', [PortalController::class, 'contract'])->name('contract');
         Route::post('contrato/{contract}/mensaje', [PortalController::class, 'sendMessage'])->name('message');
+        Route::post('contrato/{contract}/aprobar-diseno', [PortalController::class, 'approveDesign'])->name('design.approve');
+        Route::post('contrato/{contract}/cambio/{change}', [PortalController::class, 'decideChange'])->name('change.decide');
+        Route::get('contrato/{contract}/certificado', [PortalController::class, 'certificate'])->name('certificate');
+        Route::get('contrato/{contract}/documento', [PortalController::class, 'contractDocument'])->name('contract.doc');
         Route::post('contrato/{contract}/alumnos', [PortalController::class, 'addStudent'])->name('students.store');
         Route::delete('contrato/{contract}/alumnos/{student}', [PortalController::class, 'deleteStudent'])->name('students.destroy');
     });
@@ -162,6 +180,11 @@ Route::prefix('gtorres')->name('admin.')->group(function () {
         Route::post('contratos', [ContractController::class, 'store'])->name('contracts.store');
         Route::get('contratos/{contract}', [ContractController::class, 'show'])->name('contracts.show');
         Route::post('contratos/{contract}/responder', [ContractController::class, 'reply'])->name('contracts.reply');
+        Route::post('contratos/{contract}/firmante', [ContractController::class, 'addSigner'])->name('contracts.signer.add');
+        Route::delete('contratos/{contract}/firmante/{signer}', [ContractController::class, 'deleteSigner'])->name('contracts.signer.delete');
+        Route::put('contratos/{contract}/votacion', [ContractController::class, 'saveVotingSettings'])->name('contracts.voting');
+        Route::post('contratos/{contract}/diseno-opcion', [ContractController::class, 'addDesignOption'])->name('contracts.design.add');
+        Route::delete('contratos/{contract}/diseno-opcion/{option}', [ContractController::class, 'deleteDesignOption'])->name('contracts.design.delete');
         Route::get('contratos/{contract}/editar', [ContractController::class, 'edit'])->name('contracts.edit');
         Route::put('contratos/{contract}', [ContractController::class, 'update'])->name('contracts.update');
         Route::put('contratos/{contract}/estado', [ContractController::class, 'updateStatus'])->name('contracts.status');

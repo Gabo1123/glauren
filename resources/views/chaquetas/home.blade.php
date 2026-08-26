@@ -535,7 +535,7 @@
         <a href="{{ route('home') }}" class="brand" aria-label="Glauren inicio">
             @php $brandLogo = Setting::get('brand_logo'); @endphp
             @if($brandLogo)
-                <img src="{{ $brandLogo }}" alt="{{ Setting::get('brand_name', 'Glauren') }}" style="height:46px;width:auto">
+                <img src="{{ $brandLogo }}" alt="{{ Setting::get('brand_name', 'Glauren') }}" title="{{ Setting::get('brand_name', 'Glauren') }}" style="height:46px;width:auto">
             @else
                 <span class="mk">G</span>
                 <span><span class="wm">{{ Setting::get('brand_name', 'Glauren') }}</span><span class="tg">Chaquetas de prom</span></span>
@@ -710,13 +710,13 @@
         @php $showcaseBanner = Setting::get('showcase_banner'); @endphp
         @if($showcaseBanner)
             <a href="{{ route('personalizar') }}" class="promo-banner reveal">
-                <img src="{{ $showcaseBanner }}" alt="Promoción {{ date('Y') }} · Glauren" loading="lazy" decoding="async">
+                <img src="{{ $showcaseBanner }}" alt="Promoción {{ date('Y') }} · Glauren" title="Promoción {{ date('Y') }} · Glauren" loading="lazy" decoding="async">
             </a>
         @endif
         <div class="gallery reveal">
             @foreach($gallery as $i => $g)
                 <a href="{{ route('personalizar') }}" class="{{ $i===0 ? 'big' : ($i===5 ? 'tall' : '') }}">
-                    <img src="{{ $g[0] }}" alt="Chaquetas de prom {{ $g[1] }} · Glauren Colombia" loading="lazy" decoding="async">
+                    <img src="{{ $g[0] }}" alt="Chaquetas de prom {{ $g[1] }} · Glauren Colombia" title="Chaquetas de prom {{ $g[1] }} · Glauren Colombia" loading="lazy" decoding="async">
                     <span>{{ $g[1] }}</span>
                 </a>
             @endforeach
@@ -765,7 +765,7 @@
         <div class="cols reveal">
             @foreach($collections as $c)
                 <a href="{{ $c->targetUrl() }}" class="col-card">
-                    <img src="{{ $c->imageUrl() }}" alt="Chaquetas de prom {{ $c->title }} · Glauren" loading="lazy" decoding="async">
+                    <img src="{{ $c->imageUrl() }}" alt="Chaquetas de prom {{ $c->title }} · Glauren" title="Chaquetas de prom {{ $c->title }} · Glauren" loading="lazy" decoding="async">
                     <div class="ov"></div>
                     <h3>{{ $c->title }}</h3>
                 </a>
@@ -790,7 +790,7 @@
                     <p>“{{ $q[0] }}”</p>
                     <div class="who">
                         @if(!empty($q[3]))
-                            <img src="{{ $q[3] }}" alt="{{ $q[1] }}" loading="lazy" decoding="async">
+                            <img src="{{ $q[3] }}" alt="{{ $q[1] }}" title="{{ $q[1] }}" loading="lazy" decoding="async">
                         @else
                             <span style="width:44px;height:44px;border-radius:50%;background:#e7dcc4;color:#8a6d1f;display:grid;place-items:center;font-family:'Big Shoulders Display',sans-serif;font-weight:800;flex-shrink:0">{{ mb_substr($q[1],0,1) }}</span>
                         @endif
@@ -815,7 +815,7 @@
                 <div class="feat"><div class="fi">🪪</div><div><h4>Alumnos por documento</h4><p>Cada estudiante verifica con su tarjeta de identidad y ve lo suyo.</p></div></div>
                 <a href="{{ route('colegios') }}" class="btn btn-blast" style="margin-top:8px">Conocer el portal</a>
             </div>
-            <div class="ph reveal"><img src="https://sp-ao.shortpixel.ai/client/to_auto,q_glossy,ret_img,w_1024,h_976/https://chaquetasdeprom.com/wp-content/uploads/2025/03/chaqueta-prom-madrid-cundinamarca-1024x976.jpg" alt="Promoción con chaquetas Glauren" loading="lazy" decoding="async"></div>
+            <div class="ph reveal"><img src="https://sp-ao.shortpixel.ai/client/to_auto,q_glossy,ret_img,w_1024,h_976/https://chaquetasdeprom.com/wp-content/uploads/2025/03/chaqueta-prom-madrid-cundinamarca-1024x976.jpg" alt="Promoción con chaquetas Glauren" title="Promoción con chaquetas Glauren" loading="lazy" decoding="async"></div>
         </div>
     </div>
 </section>
@@ -973,7 +973,7 @@
             {{-- Marca --}}
             <div class="foot-brand">
                 <div class="fb-logo">
-                    @if($brandLogo)<img src="{{ $brandLogo }}" alt="{{ Setting::get('brand_name','Glauren') }}" style="height:44px">
+                    @if($brandLogo)<img src="{{ $brandLogo }}" alt="{{ Setting::get('brand_name','Glauren') }}" title="{{ Setting::get('brand_name','Glauren') }}" style="height:44px">
                     @else<span class="mk">G</span><span class="wm">{{ Setting::get('brand_name', 'Glauren') }}</span>@endif
                 </div>
                 <p>{{ Setting::get('footer_note', 'Chaquetas de promoción de alta calidad para grado once en toda Colombia. Diseña la tuya en 3D y síguela hasta tus manos.') }}</p>

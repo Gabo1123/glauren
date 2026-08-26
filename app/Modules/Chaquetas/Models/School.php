@@ -10,8 +10,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class School extends Model
 {
     protected $fillable = [
-        'name', 'slug', 'city', 'contact_name', 'contact_phone', 'contact_email', 'user_id', 'active',
+        'name', 'slug', 'city', 'contact_name', 'contact_phone', 'contact_email', 'user_id', 'active', 'payment_mode',
     ];
+
+    /** ¿El colegio paga todo (los estudiantes no pagan en línea)? */
+    public function schoolPays(): bool
+    {
+        return $this->payment_mode === 'colegio';
+    }
 
     protected function casts(): array
     {

@@ -367,6 +367,87 @@
     </div>
 </div>
 
+{{-- Firmantes del contrato --}}
+<div class="card p-3 mt-4">
+    @php $signed = $contract->signers->where('signed_at','!=',null)->count(); $totalSign = $contract->signers->count(); @endphp
+    <h5 class="mb-2"><i class="bi bi-pen"></i> Firmantes del contrato @if($totalSign)<span class="badge {{ $signed===$totalSign ? 'bg-success' : 'bg-warning text-dark' }}">{{ $signed }}/{{ $totalSign }} firmaron</span>@endif</h5>
+    <p class="small text-secondary">Agrega los acudientes que deben firmar (papá, mamá, etc.). Cada uno recibe su <b>enlace único</b> y firma con un código por WhatsApp.</p>
+    @if($contract->signers->count())
+    <div class="table-responsive mb-3">
+        <table class="table table-sm align-middle mb-0">
+            <thead><tr><th>Nombre</th><th>Rol</th><th>WhatsApp</th><th>Estado</th><th class="text-end">Enlace</th></tr></thead>
+            <tbody>
+            @foreach($contract->signers as $sg)
+                <tr>
+                    <td>{{ $sg->name }}</td>
+                    <td class="text-secondary small">{{ $sg->role ?: '—' }}</td>
+                    <td class="small">{{ $sg->phone ?: '—' }}</td>
+                    <td>{!! $sg->hasSigned() ? '<span class="text-success"><i class="bi bi-check-circle-fill"></i> Firmó</span>' : '<span class="text-warning">Pendiente</span>' !!}</td>
+                    <td class="text-end" style="white-space:nowrap">
+                        @if(!$sg->hasSigned() && $sg->phone)
+                            <a href="https://wa.me/{{ preg_replace('/\D/','',$sg->phone) }}?text={{ urlencode('Hola '.$sg->name.', firma el contrato de la promoción aquí: '.$sg->signUrl()) }}" target="_blank" class="btn btn-sm" style="background:#25d366;color:#04240f"><i class="bi bi-whatsapp"></i> Enviar enlace</a>
+                        @endif
+                        <button type="button" class="btn btn-sm btn-outline-light" onclick="navigator.clipboard.writeText('{{ $sg->signUrl() }}');this.textContent='✓ Copiado'"><i class="bi bi-link-45deg"></i></button>
+                        <form method="POST" action="{{ route('admin.contracts.signer.delete', [$contract, $sg]) }}" class="d-inline" onsubmit="return confirm('¿Eliminar firmante?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form>
+                    </td>
+                </tr>
+            @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
+    <form method="POST" action="{{ route('admin.contracts.signer.add', $contract) }}" class="row g-2 align-items-end">
+        @csrf
+        <div class="col-md-4"><label class="form-label small">Nombre del acudiente *</label><input type="text" name="name" class="form-control form-control-sm" required></div>
+        <div class="col-md-3"><label class="form-label small">Rol</label><input type="text" name="role" class="form-control form-control-sm" placeholder="Papá / Mamá"></div>
+        <div class="col-md-3"><label class="form-label small">WhatsApp</label><input type="text" name="phone" class="form-control form-control-sm" placeholder="3001234567"></div>
+        <div class="col-md-2"><button class="btn btn-primary btn-sm w-100"><i class="bi bi-plus-lg"></i> Agregar</button></div>
+    </form>
+</div>
+
+{{-- Votación de diseño --}}
+<div class="card p-3 mt-4">
+    <h5 class="mb-3"><i class="bi bi-check2-square"></i> Votación de diseño del curso @if($totalVotes)<span class="badge bg-secondary">{{ $totalVotes }} votos</span>@endif</h5>
+    <p class="small text-secondary">Sube 2 o 3 opciones de diseño. Los estudiantes votan desde su portal cuál prefieren.</p>
+
+    <form method="POST" action="{{ route('admin.contracts.voting', $contract) }}" class="d-flex gap-4 flex-wrap mb-3 p-2 px-3" style="background:var(--g-surface-2,#22222a);border-radius:8px">
+        @csrf @method('PUT')
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="voting_enabled" value="1" id="v_en" {{ $contract->voting_enabled ? 'checked' : '' }}>
+            <label class="form-check-label small" for="v_en">Votación activa (los alumnos pueden votar)</label>
+        </div>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="voting_show_results" value="1" id="v_res" {{ $contract->voting_show_results ? 'checked' : '' }}>
+            <label class="form-check-label small" for="v_res">Mostrar la opción ganadora / resultados a los alumnos</label>
+        </div>
+        <button class="btn btn-sm btn-outline-warning py-0">Guardar</button>
+    </form>
+    @if($designOptions->count())
+    <div class="row g-3 mb-3">
+        @foreach($designOptions as $op)
+            @php $vpct = $totalVotes ? round($op->votes_count/$totalVotes*100) : 0; @endphp
+            <div class="col-6 col-md-4">
+                <div class="border rounded p-2" style="border-color:var(--g-line)!important">
+                    <img src="{{ $op->imageUrl() }}" alt="{{ $op->label }}" class="img-fluid rounded mb-2" style="width:100%;object-fit:cover;aspect-ratio:1;background:#fff">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <b class="small">{{ $op->label }}</b>
+                        <span class="badge bg-warning text-dark">{{ $op->votes_count }} · {{ $vpct }}%</span>
+                    </div>
+                    <div class="progress mt-1" style="height:6px"><div class="progress-bar bg-warning" style="width:{{ $vpct }}%"></div></div>
+                    <form method="POST" action="{{ route('admin.contracts.design.delete', [$contract, $op]) }}" onsubmit="return confirm('¿Eliminar opción?')" class="mt-2">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger w-100 py-0">Eliminar</button></form>
+                </div>
+            </div>
+        @endforeach
+    </div>
+    @endif
+    <form method="POST" action="{{ route('admin.contracts.design.add', $contract) }}" enctype="multipart/form-data" class="row g-2 align-items-end">
+        @csrf
+        <div class="col-md-5"><label class="form-label small">Nombre de la opción</label><input type="text" name="label" class="form-control form-control-sm" placeholder="Ej: Diseño A"></div>
+        <div class="col-md-4"><label class="form-label small">Imagen</label><input type="file" name="image" class="form-control form-control-sm" accept="image/*" required></div>
+        <div class="col-md-3"><button class="btn btn-primary btn-sm w-100"><i class="bi bi-plus-lg"></i> Agregar opción</button></div>
+    </form>
+</div>
+
 {{-- Mensajes con el colegio --}}
 <div class="card p-3 mt-4">
     <h5 class="mb-3"><i class="bi bi-chat-dots"></i> Mensajes con el colegio</h5>

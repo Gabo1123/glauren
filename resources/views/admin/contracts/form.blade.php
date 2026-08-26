@@ -41,6 +41,20 @@
             </div>
             <div class="col-12"><label class="form-label small">Notas internas</label><textarea name="notes" class="form-control" rows="2">{{ old('notes', $contract->notes) }}</textarea></div>
         </div>
+
+        <hr class="my-4" style="border-color:var(--g-line)">
+        <h6 class="mb-1"><i class="bi bi-file-earmark-text"></i> Datos para el contrato (se auto-rellenan en el documento)</h6>
+        <p class="small text-secondary">Estos campos completan la plantilla del contrato que firman los acudientes.</p>
+        <div class="row g-3">
+            <div class="col-12"><label class="form-label small">Objeto (cláusula primera)</label><textarea name="objeto" class="form-control" rows="2" placeholder="Ej: Diseño y confección de 17 chaquetas beisboleras y 18 busos para el grado once del Colegio X.">{{ old('objeto', $contract->objeto) }}</textarea></div>
+            <div class="col-md-4"><label class="form-label small">Valor combo (por unidad)</label><input type="number" step="0.01" name="combo_value" class="form-control" value="{{ old('combo_value', $contract->combo_value) }}" placeholder="310500"></div>
+            <div class="col-md-4"><label class="form-label small">Valor total del contrato</label><input type="number" step="0.01" name="contract_total" class="form-control" value="{{ old('contract_total', $contract->contract_total) }}" placeholder="5589000"></div>
+            <div class="col-md-4"><label class="form-label small">Días hábiles de entrega</label><input type="number" name="delivery_business_days" class="form-control" value="{{ old('delivery_business_days', $contract->delivery_business_days ?? 35) }}" placeholder="35"><div class="small text-secondary mt-1">Se calcula con festivos de Colombia desde la firma.</div></div>
+            <div class="col-md-4"><label class="form-label small">O fecha exacta (opcional)</label><input type="date" name="delivery_date" class="form-control" value="{{ old('delivery_date', optional($contract->delivery_date)->format('Y-m-d')) }}"><div class="small text-secondary mt-1">Si la pones, manda sobre los días hábiles.</div></div>
+            <div class="col-12"><label class="form-label small">Valor en letras</label><input type="text" name="total_words" class="form-control" value="{{ old('total_words', $contract->total_words) }}" placeholder="Cinco millones quinientos ochenta y nueve mil pesos"></div>
+            <div class="col-12"><label class="form-label small">Detalle y bordados de las prendas (cláusula quinta)</label><textarea name="product_details" class="form-control" rows="6" placeholder="CHAQUETA — Estilo: ... Tela: ... Bordados: Frente..., Manga..., Espalda...">{{ old('product_details', $contract->product_details) }}</textarea></div>
+        </div>
+
         <div class="mt-4"><button class="btn btn-primary"><i class="bi bi-save"></i> Guardar</button> <a href="{{ route('admin.contracts.index') }}" class="btn btn-outline-light">Cancelar</a></div>
     </form>
 </div>
