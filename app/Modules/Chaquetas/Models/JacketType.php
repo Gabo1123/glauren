@@ -41,12 +41,60 @@ class JacketType extends Model
         ['name' => 'Forro de capota', 'qty' => 0, 'unit' => 'm', 'cost' => 8000],
     ];
 
-    /** Lista de componentes efectiva (propia o la de por defecto). */
-    public function componentList(): array
+    /** Materiales por defecto del buzo. */
+    public const DEFAULT_COMPONENTS_BUZO = [
+        ['name' => 'Tela cuerpo (percha/algodón)', 'qty' => 1.4, 'unit' => 'm', 'cost' => 16000],
+        ['name' => 'Rib (puños y pretina)', 'qty' => 0.4, 'unit' => 'm', 'cost' => 12000],
+        ['name' => 'Capota (tela)', 'qty' => 0.8, 'unit' => 'm', 'cost' => 16000],
+        ['name' => 'Cordón capota', 'qty' => 1, 'unit' => 'u', 'cost' => 1500],
+        ['name' => 'Escudo / bordado', 'qty' => 1, 'unit' => 'u', 'cost' => 6000],
+    ];
+
+    /** Materiales por defecto del polo. */
+    public const DEFAULT_COMPONENTS_POLO = [
+        ['name' => 'Tela piqué', 'qty' => 1.0, 'unit' => 'm', 'cost' => 14000],
+        ['name' => 'Cuello tejido', 'qty' => 1, 'unit' => 'u', 'cost' => 3500],
+        ['name' => 'Botones', 'qty' => 3, 'unit' => 'u', 'cost' => 400],
+        ['name' => 'Escudo / bordado', 'qty' => 1, 'unit' => 'u', 'cost' => 6000],
+    ];
+
+    /** Materiales por defecto de una prenda. */
+    public static function defaultsFor(string $garment): array
+    {
+        return match ($garment) {
+            'buzo'  => self::DEFAULT_COMPONENTS_BUZO,
+            'polo'  => self::DEFAULT_COMPONENTS_POLO,
+            default => self::DEFAULT_COMPONENTS,
+        };
+    }
+
+    /**
+     * Lista de materiales de una prenda (chaqueta/buzo/polo).
+     * Soporta el formato nuevo por prenda y el viejo (lista plana = chaqueta).
+     */
+    public function componentsFor(string $garment): array
     {
         $c = $this->components;
 
-        return (is_array($c) && count($c)) ? $c : self::DEFAULT_COMPONENTS;
+        // Formato nuevo: {chaqueta:[...], buzo:[...], polo:[...]}
+        if (is_array($c) && (isset($c['chaqueta']) || isset($c['buzo']) || isset($c['polo']))) {
+            $list = $c[$garment] ?? null;
+            if (is_array($list) && count($list)) {
+                return $list;
+            }
+        }
+        // Formato viejo: lista plana → corresponde a la chaqueta
+        elseif ($garment === 'chaqueta' && is_array($c) && count($c) && isset($c[0])) {
+            return $c;
+        }
+
+        return self::defaultsFor($garment);
+    }
+
+    /** Lista de componentes efectiva de la chaqueta (compatibilidad). */
+    public function componentList(): array
+    {
+        return $this->componentsFor('chaqueta');
     }
 
     public function quotes(): HasMany

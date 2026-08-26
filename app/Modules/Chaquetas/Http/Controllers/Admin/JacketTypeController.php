@@ -72,10 +72,28 @@ class JacketTypeController extends Controller
             ];
         }
 
-        $type->components = $comps ?: null;
+        // Prenda a la que pertenecen estos materiales (chaqueta por defecto)
+        $garment = $request->input('garment', 'chaqueta');
+        if (! in_array($garment, ['chaqueta', 'buzo', 'polo'], true)) {
+            $garment = 'chaqueta';
+        }
+
+        // Estructura por prenda: normaliza formato viejo (lista plana = chaqueta)
+        $existing = $type->components;
+        if (is_array($existing) && isset($existing[0])) {
+            $existing = ['chaqueta' => $existing];
+        }
+        if (! is_array($existing)) {
+            $existing = [];
+        }
+        $existing[$garment] = $comps;
+
+        $type->components = array_filter($existing) ?: null;
         $type->save();
 
-        return back()->with('ok', 'Materiales del modelo '.$type->name.' actualizados.');
+        $label = ['chaqueta' => 'la chaqueta', 'buzo' => 'el buzo', 'polo' => 'el polo'][$garment];
+
+        return back()->with('ok', 'Materiales de '.$label.' ('.$type->name.') actualizados.')->withFragment('prodSheet');
     }
 
     private function validateData(Request $request, bool $creating): array

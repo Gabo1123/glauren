@@ -180,7 +180,20 @@
     </div>
 </div>
 
-@php $jackets = $contract->students->count(); $comps = $contract->jacketType?->componentList() ?? []; @endphp
+@php
+    // Cuenta prendas según el combo de cada alumno
+    $garmentCounts = ['chaqueta' => 0, 'buzo' => 0, 'polo' => 0];
+    foreach ($contract->students as $st) {
+        foreach ($st->garments() as $g) {
+            if (isset($garmentCounts[$g])) $garmentCounts[$g]++;
+        }
+    }
+    $usedGarments = array_filter($garmentCounts, fn ($n) => $n > 0);
+    if (empty($usedGarments)) {
+        $usedGarments = ['chaqueta' => max($contract->students->count(), 1)];
+    }
+    $GMETA = \App\Modules\Chaquetas\Models\Student::GARMENTS;
+@endphp
 <div class="card p-4 mt-4" id="prodSheet">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
         <div class="g-card__title mb-0" style="color:var(--g-gold)"><i class="bi bi-rulers"></i> Materiales a comprar @if($contract->jacketType)· {{ $contract->jacketType->name }}@endif</div>
@@ -192,63 +205,87 @@
     @else
         <div class="d-flex align-items-end gap-3 mb-3 flex-wrap no-print">
             <div>
-                <label class="form-label small mb-1">Nº de chaquetas</label>
-                <input type="number" id="jkCount" value="{{ max($jackets, 1) }}" min="1" class="form-control form-control-sm" style="width:120px">
-                <div class="small text-secondary">{{ $jackets }} alumno(s) cargado(s)</div>
-            </div>
-            <div>
                 <label class="form-label small mb-1">Desperdicio en telas (%)</label>
                 <input type="number" id="waste" value="12" min="0" max="60" class="form-control form-control-sm" style="width:120px">
                 <div class="small text-secondary">Merma por cortes/encogido</div>
             </div>
+            <div class="ms-auto text-end">
+                <div class="small text-secondary">Prendas del contrato</div>
+                <div class="fw-semibold">
+                    @foreach($usedGarments as $gk => $gn)<span class="me-2">{{ $GMETA[$gk]['icon'] ?? '' }} {{ $gn }} {{ $GMETA[$gk]['label'] ?? $gk }}</span>@endforeach
+                </div>
+            </div>
         </div>
-        <div class="d-none d-print-block mb-2"><b>Chaquetas:</b> <span id="jkPrint">{{ max($jackets, 1) }}</span> · {{ $contract->code }} · {{ $contract->school?->name }}</div>
+        <div class="d-none d-print-block mb-2"><b>{{ $contract->code }}</b> · {{ $contract->school?->name }} · @foreach($usedGarments as $gk => $gn){{ $gn }} {{ $GMETA[$gk]['label'] ?? $gk }}@if(!$loop->last) · @endif @endforeach</div>
 
-        <form method="POST" action="{{ route('admin.types.components', $contract->jacketType) }}" id="matForm">
-            @csrf @method('PUT')
-            <div class="table-responsive">
-                <table class="table align-middle mb-0">
-                    <thead><tr>
-                        <th style="min-width:170px">Material</th>
-                        <th class="text-center" style="min-width:150px">Por chaqueta</th>
-                        <th class="text-end">A comprar<span class="text-secondary">*</span></th>
-                        <th class="text-end" style="width:130px">$ / unidad</th>
-                        <th class="text-end">Subtotal</th>
-                        <th class="no-print" style="width:36px"></th>
-                    </tr></thead>
-                    <tbody id="matBody">
-                    @foreach($comps as $cp)
-                        @php $u = $cp['unit'] ?? 'u'; $cost = (int) ($cp['cost'] ?? 0); $qv = rtrim(rtrim(number_format((float)$cp['qty'],2,'.',''),'0'),'.'); @endphp
-                        <tr class="mat-row">
-                            <td><input type="text" name="name[]" value="{{ $cp['name'] }}" class="form-control form-control-sm" required></td>
-                            <td class="text-center">
-                                <div class="d-inline-flex gap-1">
-                                    <input type="number" step="0.01" min="0" name="qty[]" value="{{ $qv }}" class="form-control form-control-sm mat-qty" style="width:78px">
-                                    <select name="unit[]" class="form-select form-select-sm mat-unit" style="width:66px">
-                                        <option value="m" {{ $u==='m'?'selected':'' }}>m</option>
-                                        <option value="u" {{ $u==='u'?'selected':'' }}>u</option>
-                                    </select>
-                                </div>
-                            </td>
-                            <td class="text-end prod-buy fw-semibold">—</td>
-                            <td class="text-end"><input type="number" step="1" min="0" name="cost[]" value="{{ $cost }}" class="form-control form-control-sm mat-cost text-end" style="width:118px"></td>
-                            <td class="text-end fw-bold prod-sub" style="color:var(--g-gold)">—</td>
-                            <td class="no-print text-end"><button type="button" class="btn btn-sm btn-outline-danger mat-del" title="Quitar"><i class="bi bi-x"></i></button></td>
-                        </tr>
-                    @endforeach
-                    </tbody>
-                    <tfoot>
-                        <tr style="border-top:1px solid var(--g-line)"><td colspan="4" class="text-end text-secondary">Total de tela</td><td class="text-end" id="prodTela">—</td><td class="no-print"></td></tr>
-                        <tr style="border-top:2px solid var(--g-gold)"><th colspan="4" class="text-end">Total de la compra</th><th class="text-end" id="prodCost" style="color:var(--g-gold);font-size:18px">—</th><th class="no-print"></th></tr>
-                    </tfoot>
-                </table>
+        @foreach($usedGarments as $gk => $gn)
+            @php $comps = $contract->jacketType->componentsFor($gk); $meta = $GMETA[$gk] ?? ['label' => $gk, 'icon' => '']; @endphp
+            <div class="mat-sheet mb-4" data-garment="{{ $gk }}">
+                <div class="d-flex align-items-end gap-3 flex-wrap mb-2" style="border-bottom:1px solid var(--g-line);padding-bottom:8px">
+                    <div class="fw-bold" style="font-size:16px">{{ $meta['icon'] }} {{ $meta['label'] }}</div>
+                    <div class="no-print">
+                        <label class="form-label small mb-0 text-secondary">Nº de prendas</label>
+                        <input type="number" value="{{ $gn }}" min="0" class="form-control form-control-sm mat-count" style="width:90px">
+                    </div>
+                    <div class="d-none d-print-block"><b>{{ $gn }}</b> prenda(s)</div>
+                    <div class="ms-auto text-end">
+                        <span class="text-secondary small">Gasto de esta prenda</span>
+                        <div class="fw-bold sheet-cost" style="color:var(--g-gold);font-size:17px">—</div>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ route('admin.types.components', $contract->jacketType) }}">
+                    @csrf @method('PUT')
+                    <input type="hidden" name="garment" value="{{ $gk }}">
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead><tr>
+                                <th style="min-width:170px">Material</th>
+                                <th class="text-center" style="min-width:150px">Por prenda</th>
+                                <th class="text-end">A comprar<span class="text-secondary">*</span></th>
+                                <th class="text-end" style="width:130px">$ / unidad</th>
+                                <th class="text-end">Subtotal</th>
+                                <th class="no-print" style="width:36px"></th>
+                            </tr></thead>
+                            <tbody class="mat-body">
+                            @foreach($comps as $cp)
+                                @php $u = $cp['unit'] ?? 'u'; $cost = (int) ($cp['cost'] ?? 0); $qv = rtrim(rtrim(number_format((float) $cp['qty'], 2, '.', ''), '0'), '.'); @endphp
+                                <tr class="mat-row">
+                                    <td><input type="text" name="name[]" value="{{ $cp['name'] }}" class="form-control form-control-sm" required></td>
+                                    <td class="text-center">
+                                        <div class="d-inline-flex gap-1">
+                                            <input type="number" step="0.01" min="0" name="qty[]" value="{{ $qv }}" class="form-control form-control-sm mat-qty" style="width:78px">
+                                            <select name="unit[]" class="form-select form-select-sm mat-unit" style="width:66px">
+                                                <option value="m" {{ $u==='m'?'selected':'' }}>m</option>
+                                                <option value="u" {{ $u==='u'?'selected':'' }}>u</option>
+                                            </select>
+                                        </div>
+                                    </td>
+                                    <td class="text-end prod-buy fw-semibold">—</td>
+                                    <td class="text-end"><input type="number" step="1" min="0" name="cost[]" value="{{ $cost }}" class="form-control form-control-sm mat-cost text-end" style="width:118px"></td>
+                                    <td class="text-end fw-bold prod-sub" style="color:var(--g-gold)">—</td>
+                                    <td class="no-print text-end"><button type="button" class="btn btn-sm btn-outline-danger mat-del" title="Quitar"><i class="bi bi-x"></i></button></td>
+                                </tr>
+                            @endforeach
+                            </tbody>
+                            <tfoot>
+                                <tr style="border-top:1px solid var(--g-line)"><td colspan="4" class="text-end text-secondary">Total de tela</td><td class="text-end sheet-tela">—</td><td class="no-print"></td></tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="d-flex gap-2 mt-2 no-print">
+                        <button type="button" class="btn btn-outline-light btn-sm addMat"><i class="bi bi-plus-lg"></i> Agregar material</button>
+                        <button class="btn btn-primary btn-sm ms-auto"><i class="bi bi-save"></i> Guardar materiales de {{ $meta['label'] }}</button>
+                    </div>
+                </form>
             </div>
-            <div class="d-flex gap-2 mt-3 no-print">
-                <button type="button" id="addMat" class="btn btn-outline-light btn-sm"><i class="bi bi-plus-lg"></i> Agregar material</button>
-                <button class="btn btn-primary btn-sm ms-auto"><i class="bi bi-save"></i> Guardar materiales</button>
-            </div>
-        </form>
-        <div class="text-secondary small mt-2 no-print">* Las telas (<b>m</b>) incluyen el % de desperdicio; las unidades (<b>u</b>) se redondean hacia arriba. Al guardar, estos materiales quedan para el modelo <b>{{ $contract->jacketType->name }}</b>.</div>
+        @endforeach
+
+        <div class="d-flex justify-content-between align-items-center" style="border-top:2px solid var(--g-gold);padding-top:12px">
+            <div class="fw-bold" style="font-size:16px">Total de la compra (todas las prendas)</div>
+            <div class="fw-bold" id="grandCost" style="color:var(--g-gold);font-size:20px">—</div>
+        </div>
+        <div class="text-secondary small mt-2 no-print">* Las telas (<b>m</b>) incluyen el % de desperdicio; las unidades (<b>u</b>) se redondean hacia arriba. Cada prenda guarda su propia lista de materiales para el modelo <b>{{ $contract->jacketType->name }}</b>.</div>
     @endif
 </div>
 
@@ -266,12 +303,24 @@
 </style>
 <script>
 (function(){
-    var jk=document.getElementById('jkCount'), wp=document.getElementById('waste'), body=document.getElementById('matBody');
+    var wp=document.getElementById('waste');
+    var sheets=Array.prototype.slice.call(document.querySelectorAll('.mat-sheet'));
     function fmtN(n){return (Math.round(n*100)/100).toLocaleString('es-CO');}
     function fmtCOP(n){return '$'+Math.round(n).toLocaleString('es-CO');}
-    function calc(){
-        var n=parseFloat(jk.value)||0, w=(parseFloat(wp.value)||0)/100, tela=0, cost=0;
-        body.querySelectorAll('.mat-row').forEach(function(row){
+    function newRow(){
+        var tr=document.createElement('tr'); tr.className='mat-row';
+        tr.innerHTML='<td><input type="text" name="name[]" class="form-control form-control-sm" placeholder="Nuevo material" required></td>'+
+            '<td class="text-center"><div class="d-inline-flex gap-1"><input type="number" step="0.01" min="0" name="qty[]" value="1" class="form-control form-control-sm mat-qty" style="width:78px"><select name="unit[]" class="form-select form-select-sm mat-unit" style="width:66px"><option value="m">m</option><option value="u" selected>u</option></select></div></td>'+
+            '<td class="text-end prod-buy fw-semibold">—</td>'+
+            '<td class="text-end"><input type="number" step="1" min="0" name="cost[]" value="0" class="form-control form-control-sm mat-cost text-end" style="width:118px"></td>'+
+            '<td class="text-end fw-bold prod-sub" style="color:var(--g-gold)">—</td>'+
+            '<td class="no-print text-end"><button type="button" class="btn btn-sm btn-outline-danger mat-del" title="Quitar"><i class="bi bi-x"></i></button></td>';
+        return tr;
+    }
+    function calcSheet(sheet){
+        var n=parseFloat(sheet.querySelector('.mat-count').value)||0,
+            w=(parseFloat(wp.value)||0)/100, tela=0, cost=0;
+        sheet.querySelectorAll('.mat-row').forEach(function(row){
             var q=parseFloat(row.querySelector('.mat-qty').value)||0,
                 unit=row.querySelector('.mat-unit').value||'u',
                 c=parseFloat(row.querySelector('.mat-cost').value)||0,
@@ -283,25 +332,26 @@
             row.querySelector('.prod-sub').textContent=fmtCOP(sub);
             row.classList.toggle('text-secondary', q<=0);
         });
-        document.getElementById('prodTela').textContent=fmtN(tela)+' m';
-        document.getElementById('prodCost').textContent=fmtCOP(cost);
-        var jp=document.getElementById('jkPrint'); if(jp)jp.textContent=n;
+        sheet.querySelector('.sheet-tela').textContent=fmtN(tela)+' m';
+        sheet.querySelector('.sheet-cost').textContent=fmtCOP(cost);
+        return cost;
     }
-    function newRow(){
-        var tr=document.createElement('tr'); tr.className='mat-row';
-        tr.innerHTML='<td><input type="text" name="name[]" class="form-control form-control-sm" placeholder="Nuevo material" required></td>'+
-            '<td class="text-center"><div class="d-inline-flex gap-1"><input type="number" step="0.01" min="0" name="qty[]" value="1" class="form-control form-control-sm mat-qty" style="width:78px"><select name="unit[]" class="form-select form-select-sm mat-unit" style="width:66px"><option value="m">m</option><option value="u" selected>u</option></select></div></td>'+
-            '<td class="text-end prod-buy fw-semibold">—</td>'+
-            '<td class="text-end"><input type="number" step="1" min="0" name="cost[]" value="0" class="form-control form-control-sm mat-cost text-end" style="width:118px"></td>'+
-            '<td class="text-end fw-bold prod-sub" style="color:var(--g-gold)">—</td>'+
-            '<td class="no-print text-end"><button type="button" class="btn btn-sm btn-outline-danger mat-del" title="Quitar"><i class="bi bi-x"></i></button></td>';
-        return tr;
+    function calcAll(){
+        var grand=0;
+        sheets.forEach(function(s){ grand+=calcSheet(s); });
+        document.getElementById('grandCost').textContent=fmtCOP(grand);
     }
-    jk.addEventListener('input',calc); wp.addEventListener('input',calc);
-    body.addEventListener('input',calc);
-    body.addEventListener('click',function(e){ var b=e.target.closest('.mat-del'); if(b){ b.closest('tr').remove(); calc(); } });
-    document.getElementById('addMat').addEventListener('click',function(){ body.appendChild(newRow()); calc(); });
-    calc();
+    wp.addEventListener('input',calcAll);
+    sheets.forEach(function(sheet){
+        sheet.addEventListener('input',calcAll);
+        sheet.addEventListener('click',function(e){
+            var del=e.target.closest('.mat-del');
+            if(del){ del.closest('tr').remove(); calcAll(); return; }
+            var add=e.target.closest('.addMat');
+            if(add){ sheet.querySelector('.mat-body').appendChild(newRow()); calcAll(); }
+        });
+    });
+    calcAll();
 })();
 </script>
 @endif
