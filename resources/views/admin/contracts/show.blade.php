@@ -184,8 +184,8 @@
     // Cuenta prendas según el combo de cada alumno
     $garmentCounts = ['chaqueta' => 0, 'buzo' => 0, 'polo' => 0, 'gorra' => 0];
     foreach ($contract->students as $st) {
-        foreach ($st->garments() as $g) {
-            if (isset($garmentCounts[$g])) $garmentCounts[$g]++;
+        foreach ($st->garmentUnits() as $g => $qty) {
+            if (isset($garmentCounts[$g])) $garmentCounts[$g] += $qty;
         }
     }
     $usedGarments = array_filter($garmentCounts, fn ($n) => $n > 0);

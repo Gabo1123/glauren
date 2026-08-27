@@ -30,9 +30,92 @@ class StudentController extends Controller
     public function update(Request $request, Contract $contract, Student $student)
     {
         abort_unless($student->contract_id === $contract->id, 404);
-        $student->update($this->validated($request, $contract, $student->id));
+
+        $data = $this->validated($request, $contract, $student->id);
+        $items = $this->parseItems($request);
+
+        if ($items !== null) {
+            $data['items'] = $items;
+
+            // Sincroniza la primera línea de chaqueta a las columnas planas (hoja/export)
+            $chaq = collect($items)->firstWhere('garment', 'chaqueta');
+            $data['size']          = $chaq['size'] ?? null;
+            $data['chest']         = $chaq['m']['chest'] ?? null;
+            $data['waist']         = $chaq['m']['waist'] ?? null;
+            $data['hip']           = $chaq['m']['hip'] ?? null;
+            $data['sleeve_length'] = $chaq['m']['sleeve_length'] ?? null;
+            $data['talle_length']  = $chaq['m']['talle_length'] ?? null;
+
+            // Medidas de las prendas extra (buzo/polo/gorra) al JSON measurements
+            $meas = [];
+            foreach ($items as $it) {
+                if ($it['garment'] !== 'chaqueta') {
+                    $entry = (array) ($it['m'] ?? []);
+                    if (! empty($it['size'])) {
+                        $entry['size'] = $it['size'];
+                    }
+                    if ($entry) {
+                        $meas[$it['garment']] = $entry;
+                    }
+                }
+            }
+            $data['measurements'] = $meas ?: null;
+
+            // Ajusta el combo al conjunto de prendas (para la vista rápida)
+            $data['combo'] = $this->matchCombo($items) ?? $student->combo;
+        }
+
+        $student->update($data);
 
         return redirect()->route('admin.contracts.show', $contract)->with('ok', 'Alumno actualizado.');
+    }
+
+    /** Normaliza las líneas de prendas enviadas desde la ficha del alumno. */
+    private function parseItems(Request $request): ?array
+    {
+        $raw = $request->input('items', []);
+        if (! is_array($raw)) {
+            return null;
+        }
+        $num = fn ($v) => ($v === null || $v === '') ? null : (float) str_replace(',', '.', (string) $v);
+
+        $out = [];
+        foreach ($raw as $line) {
+            $g = $line['garment'] ?? null;
+            if (! array_key_exists($g, Student::GARMENTS)) {
+                continue;
+            }
+            $m = [];
+            foreach ((array) ($line['m'] ?? []) as $f => $v) {
+                $n = $num($v);
+                if ($n !== null) {
+                    $m[$f] = $n;
+                }
+            }
+            $out[] = [
+                'garment' => $g,
+                'size'    => trim((string) ($line['size'] ?? '')) ?: null,
+                'qty'     => max(1, (int) ($line['qty'] ?? 1)),
+                'price'   => (float) preg_replace('/[^\d.]/', '', (string) ($line['price'] ?? 0)),
+                'm'       => $m ?: null,
+            ];
+        }
+
+        return $out ?: null;
+    }
+
+    /** Busca un combo conocido que coincida con el conjunto de prendas. */
+    private function matchCombo(array $items): ?string
+    {
+        $set = collect($items)->pluck('garment')->unique()->sort()->values()->all();
+        foreach (Student::COMBOS as $key => $c) {
+            $g = collect($c['garments'])->unique()->sort()->values()->all();
+            if ($g === $set) {
+                return $key;
+            }
+        }
+
+        return null;
     }
 
     public function destroy(Contract $contract, Student $student)

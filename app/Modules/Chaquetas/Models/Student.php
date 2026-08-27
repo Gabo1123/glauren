@@ -85,6 +85,58 @@ class Student extends Model
         return data_get($this->measurements, "$garment.$field");
     }
 
+    /**
+     * Líneas de prendas del alumno. Si no tiene 'items', las siembra desde
+     * el combo (una por prenda) usando las medidas ya guardadas.
+     */
+    public function lines(): array
+    {
+        if (is_array($this->items) && count($this->items)) {
+            return $this->items;
+        }
+
+        $lines = [];
+        foreach ($this->garments() as $g) {
+            if ($g === 'chaqueta') {
+                $lines[] = [
+                    'garment' => 'chaqueta',
+                    'size'    => $this->size,
+                    'qty'     => 1,
+                    'm'       => array_filter([
+                        'chest'         => $this->chest,
+                        'waist'         => $this->waist,
+                        'hip'           => $this->hip,
+                        'sleeve_length' => $this->sleeve_length,
+                        'talle_length'  => $this->talle_length,
+                    ], fn ($v) => $v !== null),
+                ];
+            } else {
+                $lines[] = [
+                    'garment' => $g,
+                    'size'    => data_get($this->measurements, "$g.size"),
+                    'qty'     => 1,
+                    'm'       => (array) data_get($this->measurements, $g, []),
+                ];
+            }
+        }
+
+        return $lines;
+    }
+
+    /** Total de unidades por prenda (suma cantidades de las líneas). */
+    public function garmentUnits(): array
+    {
+        $out = ['chaqueta' => 0, 'buzo' => 0, 'polo' => 0, 'gorra' => 0];
+        foreach ($this->lines() as $line) {
+            $g = $line['garment'] ?? null;
+            if (isset($out[$g])) {
+                $out[$g] += max(1, (int) ($line['qty'] ?? 1));
+            }
+        }
+
+        return array_filter($out, fn ($n) => $n > 0);
+    }
+
     public function posts(): HasMany
     {
         return $this->hasMany(StudentPost::class);
@@ -97,7 +149,7 @@ class Student extends Model
 
     protected $fillable = [
         'contract_id', 'document', 'phone', 'pin', 'photo', 'bio', 'notified_stage', 'notify_optin', 'name', 'gender', 'nickname',
-        'size', 'combo', 'measurements', 'talle_length', 'sleeve_length', 'chest', 'waist', 'hip',
+        'size', 'combo', 'measurements', 'items', 'talle_length', 'sleeve_length', 'chest', 'waist', 'hip',
         'payment_status', 'amount', 'rapyd_checkout_id', 'paid_at',
         'payment_method', 'payment_proof', 'payment_declared_at',
     ];
@@ -112,6 +164,7 @@ class Student extends Model
             'hip'           => 'decimal:1',
             'amount'        => 'decimal:2',
             'measurements'  => 'array',
+            'items'         => 'array',
             'paid_at'       => 'datetime',
             'payment_declared_at' => 'datetime',
         ];
