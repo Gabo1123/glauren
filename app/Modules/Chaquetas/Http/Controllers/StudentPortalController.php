@@ -204,7 +204,11 @@ class StudentPortalController extends Controller
             ->where('student_id', $student->id)->value('design_option_id');
         $totalDesignVotes = $designOptions->sum('votes_count');
 
-        return view('chaquetas.portal.home', compact('student', 'posts', 'classmates', 'likedIds', 'designOptions', 'myVote', 'totalDesignVotes', 'showResults', 'canVote'));
+        // Diseño final aprobado que sube el equipo (fotos con etapa 'diseno')
+        $finalDesign = \App\Modules\Chaquetas\Models\ContractPhoto::where('contract_id', $student->contract_id)
+            ->where('phase', 'diseno')->latest()->get();
+
+        return view('chaquetas.portal.home', compact('student', 'posts', 'classmates', 'likedIds', 'designOptions', 'myVote', 'totalDesignVotes', 'showResults', 'canVote', 'finalDesign'));
     }
 
     /** Comentar una publicación del muro. */

@@ -16,7 +16,7 @@ class ContractPhotoController extends Controller
             'photos'   => 'required|array|max:20',
             'photos.*' => 'image|max:8192',
             'caption'  => 'nullable|string|max:160',
-            'phase'    => 'required|in:proceso,final',
+            'phase'    => 'required|in:proceso,final,diseno',
         ]);
 
         foreach ($request->file('photos') as $file) {

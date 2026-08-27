@@ -145,6 +145,22 @@
         </div>
         @endif
 
+        {{-- Diseño final aprobado --}}
+        @if(isset($finalDesign) && $finalDesign->count())
+        <div class="card">
+            <div class="h2">🎨 El diseño final de tu chaqueta</div>
+            <p style="color:var(--muted);font-size:13px;margin-bottom:12px">Así quedará tu prenda. ¡Este es el diseño aprobado para tu promoción!</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">
+                @foreach($finalDesign as $d)
+                    <a href="{{ $d->url() }}" target="_blank" style="display:block;border-radius:12px;overflow:hidden;border:1px solid var(--line)">
+                        <img src="{{ $d->url() }}" alt="Diseño final" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;display:block">
+                        @if($d->caption)<div style="padding:6px 8px;font-size:12px;color:var(--muted)">{{ $d->caption }}</div>@endif
+                    </a>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
         {{-- Votación de diseño --}}
         @if($designOptions->count())
         <div class="card">

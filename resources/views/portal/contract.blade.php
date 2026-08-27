@@ -248,6 +248,22 @@
     new QRCode(document.getElementById('qrbox'), { text: @json($joinUrl), width: 146, height: 146, colorDark:'#0d0d0f', colorLight:'#ffffff' });
 </script>
 
+{{-- Diseño final subido por el equipo --}}
+@php $designPhotos = $contract->photos->where('phase', 'diseno'); @endphp
+@if($designPhotos->count())
+<section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-bottom:22px">
+    <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0 0 8px">🎨 Diseño final</h2>
+    <p style="color:var(--g-muted);font-size:13px;margin:0 0 16px">El diseño aprobado de las prendas de la promoción.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">
+        @foreach($designPhotos as $dp)
+            <a href="{{ $dp->url() }}" target="_blank" style="display:block;border-radius:var(--g-r-sm);overflow:hidden;border:1px solid var(--g-line)">
+                <img src="{{ $dp->url() }}" alt="Diseño final" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;display:block">
+            </a>
+        @endforeach
+    </div>
+</section>
+@endif
+
 {{-- Diseño aprobado --}}
 @if($design)
 <section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-bottom:22px">
@@ -276,11 +292,12 @@
 {{-- Fotos del proceso --}}
 <section style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:26px;margin-bottom:22px">
     <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0 0 18px">Fotos de tu producción</h2>
-    @if($contract->photos->isEmpty())
+    @php $processPhotos = $contract->photos->where('phase', '!=', 'diseno'); @endphp
+    @if($processPhotos->isEmpty())
         <p style="color:var(--g-muted);font-size:14px;margin:0">Aún no hay fotos. Aparecerán aquí cuando el equipo las cargue.</p>
     @else
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">
-            @foreach($contract->photos as $photo)
+            @foreach($processPhotos as $photo)
                 <a href="{{ $photo->url() }}" target="_blank" style="display:block;aspect-ratio:1;border-radius:var(--g-r-sm);overflow:hidden;border:1px solid var(--g-line)">
                     <img src="{{ $photo->url() }}" alt="Producción" loading="lazy" style="width:100%;height:100%;object-fit:cover">
                 </a>

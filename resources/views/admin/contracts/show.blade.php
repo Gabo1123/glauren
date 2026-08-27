@@ -361,7 +361,7 @@
     <form method="POST" action="{{ route('admin.contracts.photos.store', $contract) }}" enctype="multipart/form-data" class="row g-2 align-items-end mb-3">
         @csrf
         <div class="col-md-5"><label class="form-label small">Fotos (puedes elegir varias)</label><input type="file" name="photos[]" class="form-control form-control-sm" accept="image/*" multiple required></div>
-        <div class="col-md-3"><label class="form-label small">Etapa</label><select name="phase" class="form-select form-select-sm"><option value="proceso">Proceso</option><option value="final">Final</option></select></div>
+        <div class="col-md-3"><label class="form-label small">Etapa</label><select name="phase" class="form-select form-select-sm"><option value="diseno">🎨 Diseño final (lo ven todos)</option><option value="proceso">Proceso</option><option value="final">Final</option></select></div>
         <div class="col-md-3"><label class="form-label small">Descripción (opcional)</label><input type="text" name="caption" class="form-control form-control-sm"></div>
         <div class="col-md-1"><button class="btn btn-primary btn-sm w-100"><i class="bi bi-upload"></i></button></div>
     </form>
