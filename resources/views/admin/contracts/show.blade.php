@@ -143,30 +143,30 @@
                 @csrf
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label small text-secondary mb-1">Tarjeta de identidad <span class="text-danger">*</span></label>
+                        <label class="form-label small mb-1" style="color:var(--g-bone)">Tarjeta de identidad <span class="text-danger">*</span></label>
                         <input type="text" name="document" class="form-control form-control-sm" placeholder="Ej. 1012345678" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small text-secondary mb-1">Nombre completo <span class="text-danger">*</span></label>
+                        <label class="form-label small mb-1" style="color:var(--g-bone)">Nombre completo <span class="text-danger">*</span></label>
                         <input type="text" name="name" class="form-control form-control-sm" placeholder="Ej. Valentina Ríos" required>
                     </div>
                     <div class="col-6 col-md-3">
-                        <label class="form-label small text-secondary mb-1">Sexo</label>
+                        <label class="form-label small mb-1" style="color:var(--g-bone)">Sexo</label>
                         <select name="gender" class="form-select form-select-sm"><option value="">—</option><option value="hombre">Hombre</option><option value="mujer">Mujer</option></select>
                     </div>
                     <div class="col-6 col-md-3">
-                        <label class="form-label small text-secondary mb-1">Apodo</label>
+                        <label class="form-label small mb-1" style="color:var(--g-bone)">Apodo</label>
                         <input type="text" name="nickname" class="form-control form-control-sm" placeholder="Para bordar">
                     </div>
                     <div class="col-6 col-md-3">
-                        <label class="form-label small text-secondary mb-1">Talla</label>
+                        <label class="form-label small mb-1" style="color:var(--g-bone)">Talla</label>
                         <input type="text" name="size" class="form-control form-control-sm" placeholder="S / M / L">
                     </div>
                     <div class="col-6 col-md-3">
-                        <label class="form-label small text-secondary mb-1">Combo</label>
+                        <label class="form-label small mb-1" style="color:var(--g-bone)">Combo</label>
                         <select name="combo" class="form-select form-select-sm">
                             @foreach(\App\Modules\Chaquetas\Models\Student::COMBOS as $ck => $cc)
-                                <option value="{{ $ck }}">{{ $cc['label'] }}</option>
+                                <option value="{{ $ck }}" {{ $contract->defaultCombo() === $ck ? 'selected' : '' }}>{{ $cc['label'] }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -182,7 +182,7 @@
 
 @php
     // Cuenta prendas según el combo de cada alumno
-    $garmentCounts = ['chaqueta' => 0, 'buzo' => 0, 'polo' => 0];
+    $garmentCounts = ['chaqueta' => 0, 'buzo' => 0, 'polo' => 0, 'gorra' => 0];
     foreach ($contract->students as $st) {
         foreach ($st->garments() as $g) {
             if (isset($garmentCounts[$g])) $garmentCounts[$g]++;

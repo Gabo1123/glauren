@@ -12,6 +12,9 @@ class StudentController extends Controller
     public function store(Request $request, Contract $contract)
     {
         $data = $this->validated($request, $contract, null);
+        if (empty($data['combo'])) {
+            $data['combo'] = $contract->defaultCombo();
+        }
         $contract->students()->create($data);
 
         return back()->with('ok', 'Alumno agregado.');

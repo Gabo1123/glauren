@@ -30,6 +30,15 @@
                     @foreach($types as $t)<option value="{{ $t->id }}" {{ old('jacket_type_id', $contract->jacket_type_id)==$t->id?'selected':'' }}>{{ $t->name }}</option>@endforeach
                 </select>
             </div>
+            <div class="col-md-6">
+                <label class="form-label small">🧥 Combo de prendas del contrato</label>
+                <select name="default_combo" class="form-select">
+                    @foreach(\App\Modules\Chaquetas\Models\Student::COMBOS as $ck => $cc)
+                        <option value="{{ $ck }}" {{ old('default_combo', $contract->default_combo ?: 'chaqueta')===$ck?'selected':'' }}>{{ $cc['label'] }}</option>
+                    @endforeach
+                </select>
+                <div class="small text-secondary mt-1">Los alumnos que agregues heredan este combo (puedes cambiarlo por alumno).</div>
+            </div>
             <div class="col-md-6"><label class="form-label small">Código (opcional — se genera solo)</label><input type="text" name="code" class="form-control" value="{{ old('code', $contract->code) }}" placeholder="CTR-{{ date('Y') }}-001"></div>
 
             <div class="col-md-6"><label class="form-label small">Precio por unidad</label><input type="number" step="0.01" name="price_per_unit" class="form-control" value="{{ old('price_per_unit', $contract->price_per_unit) }}"></div>

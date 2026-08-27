@@ -161,6 +161,7 @@ class PortalController extends Controller
             'nickname' => 'nullable|string|max:60',
         ]);
 
+        $data['combo'] = $contract->defaultCombo();
         $contract->students()->create($data);
 
         return back()->with('ok', 'Alumno agregado. El equipo Glauren tomará las medidas.');

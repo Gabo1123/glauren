@@ -45,15 +45,25 @@ class Student extends Model
                 'sleeve' => 'Largo de manga (corta)',
             ],
         ],
+        'gorra' => [
+            'label'  => 'Gorra',
+            'icon'   => '🧢',
+            'fields' => [
+                'head' => 'Contorno de cabeza',
+            ],
+        ],
     ];
 
-    /** Combos que el asesor puede escoger por alumno. */
+    /** Combos que el asesor puede escoger (por contrato o por alumno). */
     public const COMBOS = [
-        'chaqueta'           => ['label' => 'Solo chaqueta',            'garments' => ['chaqueta']],
-        'buzo'               => ['label' => 'Solo buzo',                'garments' => ['buzo']],
-        'chaqueta_buzo'      => ['label' => 'Chaqueta + Buzo',          'garments' => ['chaqueta', 'buzo']],
-        'chaqueta_polo'      => ['label' => 'Chaqueta + Polo',          'garments' => ['chaqueta', 'polo']],
-        'chaqueta_buzo_polo' => ['label' => 'Chaqueta + Buzo + Polo',   'garments' => ['chaqueta', 'buzo', 'polo']],
+        'chaqueta'                 => ['label' => 'Solo chaqueta',                  'garments' => ['chaqueta']],
+        'buzo'                     => ['label' => 'Solo buzo',                      'garments' => ['buzo']],
+        'chaqueta_gorra'           => ['label' => 'Chaqueta + Gorra',              'garments' => ['chaqueta', 'gorra']],
+        'chaqueta_buzo'            => ['label' => 'Chaqueta + Buzo',               'garments' => ['chaqueta', 'buzo']],
+        'chaqueta_polo'            => ['label' => 'Chaqueta + Polo',               'garments' => ['chaqueta', 'polo']],
+        'chaqueta_buzo_gorra'      => ['label' => 'Chaqueta + Buzo + Gorra',       'garments' => ['chaqueta', 'buzo', 'gorra']],
+        'chaqueta_buzo_polo'       => ['label' => 'Chaqueta + Buzo + Polo',        'garments' => ['chaqueta', 'buzo', 'polo']],
+        'chaqueta_buzo_polo_gorra' => ['label' => 'Chaqueta + Buzo + Polo + Gorra', 'garments' => ['chaqueta', 'buzo', 'polo', 'gorra']],
     ];
 
     /** Lista de prendas del combo elegido (por defecto, chaqueta). */

@@ -31,7 +31,7 @@
     .ok{background:rgba(37,211,102,.12);border:1px solid var(--ok);color:#bff5d0;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:14px}
     .err{background:rgba(255,74,61,.12);border:1px solid #ff4a3d;color:#ffb0a8;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:14px}
     /* Header premium con portada */
-    .cover{position:relative;border-radius:0 0 20px 20px;overflow:hidden;background:
+    .cover{position:relative;border-radius:0 0 20px 20px;background:
         radial-gradient(600px 240px at 20% -20%,rgba(233,184,63,.35),transparent 60%),
         linear-gradient(120deg,#1c1c22,#2a2015);border-bottom:1px solid var(--line);padding:40px 16px 0;margin-bottom:70px}
     .cover-in{max-width:680px;margin:0 auto;position:relative}

@@ -24,7 +24,7 @@ class Contract extends Model
         'terms', 'contract_status', 'sign_token', 'signed_by_name', 'signed_by_document',
         'signature_path', 'sent_at', 'signed_at', 'notes', 'payment_reminder_at',
         'voting_enabled', 'voting_show_results',
-        'design_approved_at', 'join_token', 'delivery_date',
+        'design_approved_at', 'join_token', 'delivery_date', 'default_combo',
         'objeto', 'product_details', 'combo_value', 'contract_total', 'total_words', 'delivery_business_days',
     ];
 
@@ -169,6 +169,12 @@ class Contract extends Model
         ];
 
         return strtr($tpl, $repl);
+    }
+
+    /** Combo por defecto del contrato (lo heredan los alumnos nuevos). */
+    public function defaultCombo(): string
+    {
+        return $this->default_combo ?: 'chaqueta';
     }
 
     /** ¿El contrato ya está firmado? (cierra la lista de alumnos) */

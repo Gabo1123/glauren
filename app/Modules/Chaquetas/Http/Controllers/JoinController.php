@@ -39,6 +39,7 @@ class JoinController extends Controller
             return back()->withInput()->withErrors(['document' => 'Ya estás registrado en este curso con ese documento.']);
         }
 
+        $data['combo'] = $contract->defaultCombo();
         $contract->students()->create($data);
 
         return view('chaquetas.join', ['contract' => $contract, 'done' => true, 'name' => $data['name']]);

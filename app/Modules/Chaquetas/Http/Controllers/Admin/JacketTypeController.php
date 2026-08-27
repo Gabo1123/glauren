@@ -74,7 +74,7 @@ class JacketTypeController extends Controller
 
         // Prenda a la que pertenecen estos materiales (chaqueta por defecto)
         $garment = $request->input('garment', 'chaqueta');
-        if (! in_array($garment, ['chaqueta', 'buzo', 'polo'], true)) {
+        if (! in_array($garment, ['chaqueta', 'buzo', 'polo', 'gorra'], true)) {
             $garment = 'chaqueta';
         }
 
@@ -91,7 +91,7 @@ class JacketTypeController extends Controller
         $type->components = array_filter($existing) ?: null;
         $type->save();
 
-        $label = ['chaqueta' => 'la chaqueta', 'buzo' => 'el buzo', 'polo' => 'el polo'][$garment];
+        $label = ['chaqueta' => 'la chaqueta', 'buzo' => 'el buzo', 'polo' => 'el polo', 'gorra' => 'la gorra'][$garment];
 
         return back()->with('ok', 'Materiales de '.$label.' ('.$type->name.') actualizados.')->withFragment('prodSheet');
     }

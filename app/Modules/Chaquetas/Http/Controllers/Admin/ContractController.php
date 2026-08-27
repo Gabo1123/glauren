@@ -262,6 +262,7 @@ HTML;
         return $request->validate([
             'school_id'         => 'required|exists:schools,id',
             'jacket_type_id'    => 'nullable|exists:jacket_types,id',
+            'default_combo'     => 'nullable|in:'.implode(',', array_keys(\App\Modules\Chaquetas\Models\Student::COMBOS)),
             'code'              => 'nullable|string|max:60|unique:contracts,code'.($id ? ",$id" : ''),
             'year'             => 'nullable|integer|min:2020|max:2100',
             'price_per_unit'    => 'nullable|numeric|min:0',

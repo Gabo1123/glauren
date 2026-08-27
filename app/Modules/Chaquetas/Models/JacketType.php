@@ -58,12 +58,20 @@ class JacketType extends Model
         ['name' => 'Escudo / bordado', 'qty' => 1, 'unit' => 'u', 'cost' => 6000],
     ];
 
+    /** Materiales por defecto de la gorra. */
+    public const DEFAULT_COMPONENTS_GORRA = [
+        ['name' => 'Tela (paño/gabardina)', 'qty' => 0.3, 'unit' => 'm', 'cost' => 14000],
+        ['name' => 'Broche / hebilla ajuste', 'qty' => 1, 'unit' => 'u', 'cost' => 1200],
+        ['name' => 'Escudo / bordado', 'qty' => 1, 'unit' => 'u', 'cost' => 6000],
+    ];
+
     /** Materiales por defecto de una prenda. */
     public static function defaultsFor(string $garment): array
     {
         return match ($garment) {
             'buzo'  => self::DEFAULT_COMPONENTS_BUZO,
             'polo'  => self::DEFAULT_COMPONENTS_POLO,
+            'gorra' => self::DEFAULT_COMPONENTS_GORRA,
             default => self::DEFAULT_COMPONENTS,
         };
     }
@@ -76,8 +84,8 @@ class JacketType extends Model
     {
         $c = $this->components;
 
-        // Formato nuevo: {chaqueta:[...], buzo:[...], polo:[...]}
-        if (is_array($c) && (isset($c['chaqueta']) || isset($c['buzo']) || isset($c['polo']))) {
+        // Formato nuevo: {chaqueta:[...], buzo:[...], polo:[...], gorra:[...]}
+        if (is_array($c) && (isset($c['chaqueta']) || isset($c['buzo']) || isset($c['polo']) || isset($c['gorra']))) {
             $list = $c[$garment] ?? null;
             if (is_array($list) && count($list)) {
                 return $list;
