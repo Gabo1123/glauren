@@ -159,6 +159,7 @@ class StudentController extends Controller
                 'nickname'       => trim($d['nickname'] ?? '') ?: null,
                 'size'           => trim($d['size'] ?? '') ?: null,
                 'combo'          => array_key_exists(($d['combo'] ?? ''), Student::COMBOS) ? $d['combo'] : $s->combo,
+                'measurements'   => $this->cleanMeasurements($d['measurements'] ?? null),
                 'chest'          => $num($d['chest'] ?? null),
                 'waist'          => $num($d['waist'] ?? null),
                 'hip'            => $num($d['hip'] ?? null),
@@ -192,6 +193,7 @@ class StudentController extends Controller
                 'nickname'       => trim($d['nickname'] ?? '') ?: null,
                 'size'           => trim($d['size'] ?? '') ?: null,
                 'combo'          => array_key_exists(($d['combo'] ?? ''), Student::COMBOS) ? $d['combo'] : 'chaqueta',
+                'measurements'   => $this->cleanMeasurements($d['measurements'] ?? null),
                 'chest'          => $num($d['chest'] ?? null),
                 'waist'          => $num($d['waist'] ?? null),
                 'hip'            => $num($d['hip'] ?? null),
@@ -207,6 +209,27 @@ class StudentController extends Controller
         $msg .= $created ? ". $created alumno(s) nuevo(s) agregado(s)." : '.';
 
         return back()->with('ok', $msg);
+    }
+
+    /** Limpia el arreglo de medidas por prenda (buzo/polo): quita vacíos, castea a número. */
+    private function cleanMeasurements($raw): ?array
+    {
+        if (! is_array($raw)) {
+            return null;
+        }
+        $num = fn ($v) => ($v === null || $v === '') ? null : (float) str_replace(',', '.', (string) $v);
+        $out = [];
+        foreach ($raw as $garment => $fields) {
+            if (! is_array($fields)) {
+                continue;
+            }
+            $clean = array_filter(array_map($num, $fields), fn ($v) => $v !== null);
+            if (! empty($clean)) {
+                $out[$garment] = $clean;
+            }
+        }
+
+        return $out ?: null;
     }
 
     /** Alterna el estado de pago (para cobros manuales: efectivo/transferencia). */

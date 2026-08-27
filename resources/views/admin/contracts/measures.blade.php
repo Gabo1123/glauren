@@ -14,7 +14,7 @@
     .mz-saved b{ color:var(--g-gold); }
     /* Hoja tipo Excel */
     .mz-sheet{ overflow:auto; max-height:calc(100vh - 210px); border:1px solid var(--g-line); border-radius:var(--g-r); background:var(--g-surface); }
-    table.mz{ border-collapse:separate; border-spacing:0; width:100%; font-size:13px; min-width:1160px; }
+    table.mz{ border-collapse:separate; border-spacing:0; width:100%; font-size:13px; min-width:1720px; }
     table.mz th, table.mz td{ border-right:1px solid var(--g-line); border-bottom:1px solid var(--g-line); padding:0; }
     table.mz thead th{ position:sticky; top:0; z-index:12; background:var(--g-surface-2); color:var(--g-muted);
         font-family:var(--g-font-label); text-transform:uppercase; letter-spacing:.06em; font-size:10.5px;
@@ -47,6 +47,13 @@
     .mz-pay input:checked + span{ background:rgba(37,211,102,.22); border-color:var(--g-ok); }
     .mz-pay input:checked + span::after{ left:22px; background:var(--g-ok); }
     .mz-pay input:focus-visible + span{ box-shadow:0 0 0 3px rgba(201,165,75,.3); }
+    /* Columnas por prenda (buzo/polo) */
+    table.mz .gar-buzo{ border-left:2px solid rgba(90,160,255,.45); }
+    table.mz .gar-polo{ border-left:2px solid rgba(180,120,255,.45); }
+    table.mz thead th.gar-buzo{ color:#8fb8ff; }
+    table.mz thead th.gar-polo{ color:#c6a5ff; }
+    table.mz td.gar-off{ background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(255,255,255,.03) 6px,rgba(255,255,255,.03) 12px); }
+    table.mz td.gar-off input{ opacity:.22; pointer-events:none; }
     .mz-empty{ text-align:center; color:var(--g-muted); padding:46px 20px; }
     .mz-legend{ font-size:12px; color:var(--g-muted); margin-top:12px; display:flex; gap:18px; flex-wrap:wrap; }
     .mz-legend kbd{ background:var(--g-surface-2); border:1px solid var(--g-line); border-radius:5px; padding:1px 7px; font-size:11px; color:var(--g-bone); }
@@ -101,6 +108,13 @@
                     <th>Cadera <span class="u">cm</span></th>
                     <th>Manga <span class="u">cm</span></th>
                     <th>Talle <span class="u">cm</span></th>
+                    <th class="gar-buzo">👕 Buzo pecho <span class="u">cm</span></th>
+                    <th class="gar-buzo">Buzo cintura <span class="u">cm</span></th>
+                    <th class="gar-buzo">Buzo largo <span class="u">cm</span></th>
+                    <th class="gar-buzo">Buzo manga <span class="u">cm</span></th>
+                    <th class="gar-polo">🎽 Polo pecho <span class="u">cm</span></th>
+                    <th class="gar-polo">Polo largo <span class="u">cm</span></th>
+                    <th class="gar-polo">Polo manga <span class="u">cm</span></th>
                     <th class="col-pay">Pagado</th>
                 </tr>
             </thead>
@@ -124,11 +138,18 @@
                             <option value="{{ $ck }}" {{ ($s->combo ?: 'chaqueta') === $ck ? 'selected' : '' }}>{{ $cc['label'] }}</option>
                         @endforeach
                     </select></td>
-                    <td class="cell num"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][chest]" value="{{ $s->chest }}" data-col="5" placeholder="—"></td>
-                    <td class="cell num"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][waist]" value="{{ $s->waist }}" data-col="6" placeholder="—"></td>
-                    <td class="cell num"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][hip]" value="{{ $s->hip }}" data-col="7" placeholder="—"></td>
-                    <td class="cell num"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][sleeve_length]" value="{{ $s->sleeve_length }}" data-col="8" placeholder="—"></td>
-                    <td class="cell num"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][talle_length]" value="{{ $s->talle_length }}" data-col="9" placeholder="—"></td>
+                    <td class="cell num gar-cell" data-gar="chaqueta"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][chest]" value="{{ $s->chest }}" data-col="5" placeholder="—"></td>
+                    <td class="cell num gar-cell" data-gar="chaqueta"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][waist]" value="{{ $s->waist }}" data-col="6" placeholder="—"></td>
+                    <td class="cell num gar-cell" data-gar="chaqueta"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][hip]" value="{{ $s->hip }}" data-col="7" placeholder="—"></td>
+                    <td class="cell num gar-cell" data-gar="chaqueta"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][sleeve_length]" value="{{ $s->sleeve_length }}" data-col="8" placeholder="—"></td>
+                    <td class="cell num gar-cell" data-gar="chaqueta"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][talle_length]" value="{{ $s->talle_length }}" data-col="9" placeholder="—"></td>
+                    <td class="cell num gar-cell gar-buzo" data-gar="buzo"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][measurements][buzo][chest]" value="{{ $s->measure('buzo','chest') }}" placeholder="—"></td>
+                    <td class="cell num gar-cell gar-buzo" data-gar="buzo"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][measurements][buzo][waist]" value="{{ $s->measure('buzo','waist') }}" placeholder="—"></td>
+                    <td class="cell num gar-cell gar-buzo" data-gar="buzo"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][measurements][buzo][length]" value="{{ $s->measure('buzo','length') }}" placeholder="—"></td>
+                    <td class="cell num gar-cell gar-buzo" data-gar="buzo"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][measurements][buzo][sleeve]" value="{{ $s->measure('buzo','sleeve') }}" placeholder="—"></td>
+                    <td class="cell num gar-cell gar-polo" data-gar="polo"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][measurements][polo][chest]" value="{{ $s->measure('polo','chest') }}" placeholder="—"></td>
+                    <td class="cell num gar-cell gar-polo" data-gar="polo"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][measurements][polo][length]" value="{{ $s->measure('polo','length') }}" placeholder="—"></td>
+                    <td class="cell num gar-cell gar-polo" data-gar="polo"><input type="text" inputmode="decimal" name="students[{{ $s->id }}][measurements][polo][sleeve]" value="{{ $s->measure('polo','sleeve') }}" placeholder="—"></td>
                     <td class="cell-pay">
                         <input type="hidden" name="students[{{ $s->id }}][paid]" value="0">
                         <label class="mz-pay">
@@ -200,7 +221,26 @@
     // Agregar filas nuevas (se crean como alumnos al guardar)
     var newIdx = 0;
     var NUM = ['chest','waist','hip','sleeve_length','talle_length'];
+    var GAR = [['buzo','chest'],['buzo','waist'],['buzo','length'],['buzo','sleeve'],['polo','chest'],['polo','length'],['polo','sleeve']];
     var COMBO_OPTS = @json(collect(\App\Modules\Chaquetas\Models\Student::COMBOS)->map(fn($c, $k) => '<option value="'.$k.'">'.$c['label'].'</option>')->implode(''));
+
+    // Muestra/oculta las celdas de cada prenda según el combo de la fila.
+    var COMBOS_MAP = @json(collect(\App\Modules\Chaquetas\Models\Student::COMBOS)->map(fn($c) => $c['garments']));
+    function syncRow(tr){
+        var sel = tr.querySelector('select[name*="[combo]"]');
+        var gs = COMBOS_MAP[sel ? sel.value : 'chaqueta'] || ['chaqueta'];
+        tr.querySelectorAll('.gar-cell').forEach(function(td){
+            var on = gs.indexOf(td.getAttribute('data-gar')) !== -1;
+            var inp = td.querySelector('input');
+            if(inp) inp.disabled = !on;
+            td.classList.toggle('gar-off', !on);
+        });
+    }
+    function syncAll(){ Array.prototype.slice.call(tbody.querySelectorAll('tr')).forEach(syncRow); }
+    form.addEventListener('change', function(e){
+        if(e.target.matches && e.target.matches('select[name*="[combo]"]')){ syncRow(e.target.closest('tr')); markDirty(); }
+    });
+    syncAll();
     function addRow(focus){
         var i = newIdx++;
         var n = tbody.querySelectorAll('tr').length + 1;
@@ -214,11 +254,15 @@
             + '<td class="cell"><input type="text" name="new['+i+'][size]" data-col="4" placeholder="M" autocomplete="off"></td>'
             + '<td class="cell"><select name="new['+i+'][combo]" style="min-width:150px">' + COMBO_OPTS + '</select></td>';
         NUM.forEach(function(f, k){
-            html += '<td class="cell num"><input type="text" inputmode="decimal" name="new['+i+']['+f+']" data-col="'+(5+k)+'" placeholder="—"></td>';
+            html += '<td class="cell num gar-cell" data-gar="chaqueta"><input type="text" inputmode="decimal" name="new['+i+']['+f+']" data-col="'+(5+k)+'" placeholder="—"></td>';
+        });
+        GAR.forEach(function(g){
+            html += '<td class="cell num gar-cell gar-'+g[0]+'" data-gar="'+g[0]+'"><input type="text" inputmode="decimal" name="new['+i+'][measurements]['+g[0]+']['+g[1]+']" placeholder="—"></td>';
         });
         html += '<td class="cell-pay"><input type="hidden" name="new['+i+'][paid]" value="0"><label class="mz-pay"><input type="checkbox" name="new['+i+'][paid]" value="1"><span></span></label></td>';
         tr.innerHTML = html;
         tbody.appendChild(tr);
+        syncRow(tr);
         rebuild(); markDirty();
         if(focus){ var f2 = tr.querySelector('input'); if(f2) f2.focus(); }
     }
