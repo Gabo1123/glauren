@@ -198,6 +198,9 @@
         @if(!empty($phoneSaved))
             <div class="note ok-note">✅ ¡Listo! Te avisaremos por WhatsApp en cada avance de tu pedido.</div>
         @endif
+        @if(!empty($phoneLocked))
+            <div class="note" style="border-color:#e0a422;color:#f0e3c8">🔒 {{ $phoneLocked }}</div>
+        @endif
         @if($student->phone)
             <div class="note">Recibirás novedades de tu {{ $c?->jacketType?->name ?? 'chaqueta' }} en el WhatsApp <b>+{{ $student->phone }}</b> 📲</div>
             <details style="margin-top:10px">

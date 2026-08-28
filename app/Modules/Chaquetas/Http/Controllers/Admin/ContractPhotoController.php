@@ -14,7 +14,7 @@ class ContractPhotoController extends Controller
     {
         $data = $request->validate([
             'photos'   => 'required|array|max:20',
-            'photos.*' => 'image|max:8192',
+            'photos.*' => 'image|mimes:jpg,jpeg,png,webp|mimetypes:image/jpeg,image/png,image/webp|max:8192',
             'caption'  => 'nullable|string|max:160',
             'phase'    => 'required|in:proceso,final,diseno',
         ]);

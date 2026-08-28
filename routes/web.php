@@ -44,9 +44,9 @@ Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/mi-chaqueta', [SeguimientoController::class, 'index'])->name('seguimiento');
-Route::post('/mi-chaqueta', [SeguimientoController::class, 'search'])->name('seguimiento.search');
-Route::post('/mi-chaqueta/pago', [SeguimientoController::class, 'declarePayment'])->name('seguimiento.pay');
-Route::post('/mi-chaqueta/telefono', [SeguimientoController::class, 'savePhone'])->name('seguimiento.phone');
+Route::post('/mi-chaqueta', [SeguimientoController::class, 'search'])->middleware('throttle:15,1')->name('seguimiento.search');
+Route::post('/mi-chaqueta/pago', [SeguimientoController::class, 'declarePayment'])->middleware('throttle:10,10')->name('seguimiento.pay');
+Route::post('/mi-chaqueta/telefono', [SeguimientoController::class, 'savePhone'])->middleware('throttle:10,10')->name('seguimiento.phone');
 Route::get('/colegios', [HomeController::class, 'colegios'])->name('colegios');
 Route::get('/contacto', [\App\Modules\Chaquetas\Http\Controllers\ContactController::class, 'show'])->name('contacto');
 Route::post('/contacto', [\App\Modules\Chaquetas\Http\Controllers\ContactController::class, 'submit'])->name('contacto.submit');
@@ -144,7 +144,7 @@ Route::prefix('colegio')->name('portal.')->group(function () {
 // Panel administrativo. La URL es privada (/gtorres); los nombres de ruta siguen siendo admin.*
 Route::prefix('gtorres')->name('admin.')->group(function () {
     Route::get('login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('login', [AuthController::class, 'login'])->name('login.post');
+    Route::post('login', [AuthController::class, 'login'])->middleware('throttle:5,1')->name('login.post');
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
     // Verificación en dos pasos (2FA) por WhatsApp

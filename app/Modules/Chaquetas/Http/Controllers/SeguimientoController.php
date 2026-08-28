@@ -46,6 +46,16 @@ class SeguimientoController extends Controller
             return redirect()->route('seguimiento')->withErrors(['document' => 'No pudimos validar tus datos. Busca de nuevo por tu documento.']);
         }
 
+        // Seguridad: si la cuenta ya tiene PIN, solo el dueño (sesión del portal)
+        // puede cambiar el WhatsApp. Evita robo de cuenta vía "Olvidé mi PIN".
+        $isOwner = (int) $request->session()->get('student_id') === (int) $student->id;
+        if ($student->pin && ! $isOwner) {
+            return view('chaquetas.seguimiento.resultado', [
+                'student'     => $student,
+                'phoneLocked' => 'Para cambiar un WhatsApp ya registrado, entra a tu portal con tu PIN en /estudiante.',
+            ]);
+        }
+
         $data = $request->validate([
             'phone' => 'required|string|min:7|max:20',
         ], [
@@ -89,13 +99,14 @@ class SeguimientoController extends Controller
             return view('chaquetas.seguimiento.resultado', ['student' => $student]);
         }
 
+        $proofRules = 'image|mimes:jpg,jpeg,png,webp|mimetypes:image/jpeg,image/png,image/webp|max:5120';
         $rules = [
             'method' => 'required|in:'.implode(',', $allowed),
-            'proof'  => 'nullable|image|max:5120',
+            'proof'  => 'nullable|'.$proofRules,
         ];
         // Comprobante obligatorio en transferencias
         if (in_array($request->input('method'), ['nequi', 'bancolombia'], true)) {
-            $rules['proof'] = 'required|image|max:5120';
+            $rules['proof'] = 'required|'.$proofRules;
         }
 
         $v = Validator::make($request->all(), $rules, [
