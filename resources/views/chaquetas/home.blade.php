@@ -1058,7 +1058,11 @@
     // Popup "chaqueta o buso gratis"
     (function(){
         const ov=document.getElementById('promoPop'); if(!ov) return;
-        const KEY='glauren_promo_seen';
+        const DONE='glauren_promo_done';   // ya se registró (permanente)
+        const KEY='glauren_promo_seen';    // visto hoy (si cerró sin registrarse)
+        // Si ya se registró en este dispositivo, no volver a mostrar nunca.
+        let done=false; try{ done=localStorage.getItem(DONE)==='1'; }catch(e){}
+        if(done) return;
         const today=new Date().toDateString();
         let seen=false; try{ seen=localStorage.getItem(KEY)===today; }catch(e){}
         function openPop(){ ov.classList.add('on'); try{localStorage.setItem(KEY,today);}catch(e){} }
@@ -1068,9 +1072,12 @@
         ov.addEventListener('click',e=>{ if(e.target===ov) closePop(); });
         document.getElementById('popForm').addEventListener('submit',async e=>{
             e.preventDefault();
+            const btn=e.target.querySelector('button[type="submit"]');
             const name=document.getElementById('popName').value.trim(), phone=document.getElementById('popPhone').value.trim();
             if(!name||!phone) return;
+            if(btn){ if(btn.disabled) return; btn.disabled=true; }
             try{ await fetch('{{ route('contacto.popup') }}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'},body:JSON.stringify({name,phone})}); }catch(err){}
+            try{ localStorage.setItem(DONE,'1'); }catch(e){}   // no volver a pedir en este dispositivo
             const msg=encodeURIComponent('¡Hola Glauren! Soy '+name+' y quiero que mi colegio sea el primero en llevarse la chaqueta o buso GRATIS.');
             window.open('https://wa.me/{{ $wa }}?text='+msg,'_blank');
             closePop();

@@ -106,13 +106,31 @@ class ContactController extends Controller
             'phone' => 'required|string|max:40',
         ]);
 
-        Lead::create([
-            'name'           => $data['name'],
-            'phone'          => $data['phone'],
-            'source'         => 'popup-gratis',
-            'accepted_terms' => true,
-        ]);
+        $phone = preg_replace('/\D/', '', $data['phone']);
+        $ip    = $request->ip();
 
-        return response()->json(['ok' => true]);
+        // Evita duplicados: si ya se registró este teléfono o esta IP, no lo repite.
+        $already = Lead::where('source', 'popup-gratis')
+            ->where(function ($q) use ($phone, $ip) {
+                if ($phone !== '') {
+                    $q->whereRaw("REPLACE(REPLACE(REPLACE(phone,' ',''),'-',''),'+','') LIKE ?", ['%'.$phone]);
+                }
+                if ($ip) {
+                    $q->orWhere('ip', $ip);
+                }
+            })
+            ->exists();
+
+        if (! $already) {
+            Lead::create([
+                'name'           => $data['name'],
+                'phone'          => $data['phone'],
+                'source'         => 'popup-gratis',
+                'ip'             => $ip,
+                'accepted_terms' => true,
+            ]);
+        }
+
+        return response()->json(['ok' => true, 'already' => $already]);
     }
 }

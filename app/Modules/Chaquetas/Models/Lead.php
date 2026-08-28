@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Lead extends Model
 {
-    protected $fillable = ['name', 'email', 'phone', 'school', 'message', 'source', 'jacket_type', 'accepted_terms', 'ai_paused', 'human_requested_at'];
+    protected $fillable = ['name', 'email', 'phone', 'school', 'message', 'source', 'ip', 'jacket_type', 'accepted_terms', 'ai_paused', 'human_requested_at'];
 
     protected function casts(): array
     {
