@@ -101,7 +101,7 @@ Route::post('/contrato/{token}', [SignController::class, 'sign'])->name('contrat
 Route::get('/firmar/{token}', [\App\Modules\Chaquetas\Http\Controllers\MultiSignController::class, 'show'])->name('firmar.multi');
 Route::post('/firmar/{token}/codigo', [\App\Modules\Chaquetas\Http\Controllers\MultiSignController::class, 'sendCode'])->middleware('throttle:5,10')->name('firmar.codigo');
 Route::post('/firmar/{token}/verificar', [\App\Modules\Chaquetas\Http\Controllers\MultiSignController::class, 'verify'])->middleware('throttle:10,10')->name('firmar.verificar');
-Route::post('/firmar/{token}/firmar', [\App\Modules\Chaquetas\Http\Controllers\MultiSignController::class, 'sign'])->name('firmar.guardar');
+Route::post('/firmar/{token}/firmar', [\App\Modules\Chaquetas\Http\Controllers\MultiSignController::class, 'sign'])->middleware('throttle:10,10')->name('firmar.guardar');
 
 // Pagos Rapyd
 Route::get('/pagar/{student}', [PaymentController::class, 'start'])->name('pay.start')->middleware('signed');
@@ -149,8 +149,8 @@ Route::prefix('gtorres')->name('admin.')->group(function () {
 
     // Verificación en dos pasos (2FA) por WhatsApp
     Route::get('verificar', [AuthController::class, 'showTwoFactor'])->name('2fa');
-    Route::post('verificar', [AuthController::class, 'verifyTwoFactor'])->name('2fa.verify');
-    Route::post('verificar/reenviar', [AuthController::class, 'resendTwoFactor'])->name('2fa.resend');
+    Route::post('verificar', [AuthController::class, 'verifyTwoFactor'])->middleware('throttle:6,1')->name('2fa.verify');
+    Route::post('verificar/reenviar', [AuthController::class, 'resendTwoFactor'])->middleware('throttle:3,1')->name('2fa.resend');
 
     Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');

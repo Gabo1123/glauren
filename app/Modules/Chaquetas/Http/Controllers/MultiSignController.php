@@ -138,6 +138,11 @@ class MultiSignController extends Controller
         if ($binary === false) {
             return null;
         }
+        // Debe ser una imagen real (evita guardar bytes arbitrarios como .png)
+        $info = @getimagesizefromstring($binary);
+        if (! $info || ! in_array($info[2], [IMAGETYPE_PNG, IMAGETYPE_JPEG, IMAGETYPE_WEBP], true)) {
+            return null;
+        }
         $name = 'firmas/'.date('Ymd_His').'_'.bin2hex(random_bytes(6)).'.png';
         Storage::disk('public')->put($name, $binary);
 

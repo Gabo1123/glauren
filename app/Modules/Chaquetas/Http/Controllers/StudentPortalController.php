@@ -90,6 +90,7 @@ class StudentPortalController extends Controller
         }
 
         $request->session()->forget('login_document');
+        $request->session()->regenerate();               // evita fijación de sesión
         $request->session()->put('student_id', $student->id);
 
         return redirect()->route('student.home');
@@ -163,6 +164,7 @@ class StudentPortalController extends Controller
 
         $student->update(['pin' => Hash::make($data['pin'])]);
         $request->session()->forget(['pin_reset', 'login_document']);
+        $request->session()->regenerate();               // evita fijación de sesión
         $request->session()->put('student_id', $student->id);
 
         return redirect()->route('student.home')->with('ok', 'PIN actualizado. ¡Bienvenido!');
