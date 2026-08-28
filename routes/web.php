@@ -188,6 +188,7 @@ Route::prefix('gtorres')->name('admin.')->group(function () {
         Route::get('contratos/{contract}/editar', [ContractController::class, 'edit'])->name('contracts.edit');
         Route::put('contratos/{contract}', [ContractController::class, 'update'])->name('contracts.update');
         Route::put('contratos/{contract}/estado', [ContractController::class, 'updateStatus'])->name('contracts.status');
+        Route::put('contratos/{contract}/materiales', [ContractController::class, 'saveMaterials'])->name('contracts.materials');
         Route::get('contratos/{contract}/contrato', [ContractController::class, 'contract'])->name('contracts.contract');
         Route::put('contratos/{contract}/contrato', [ContractController::class, 'saveTerms'])->name('contracts.terms');
         Route::post('contratos/{contract}/enviar', [ContractController::class, 'send'])->name('contracts.send');

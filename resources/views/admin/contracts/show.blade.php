@@ -219,7 +219,7 @@
         <div class="d-none d-print-block mb-2"><b>{{ $contract->code }}</b> · {{ $contract->school?->name }} · @foreach($usedGarments as $gk => $gn){{ $gn }} {{ $GMETA[$gk]['label'] ?? $gk }}@if(!$loop->last) · @endif @endforeach</div>
 
         @foreach($usedGarments as $gk => $gn)
-            @php $comps = $contract->jacketType->componentsFor($gk); $meta = $GMETA[$gk] ?? ['label' => $gk, 'icon' => '']; @endphp
+            @php $comps = $contract->materialsFor($gk); $meta = $GMETA[$gk] ?? ['label' => $gk, 'icon' => '']; @endphp
             <div class="mat-sheet mb-4" data-garment="{{ $gk }}">
                 <div class="d-flex align-items-end gap-3 flex-wrap mb-2" style="border-bottom:1px solid var(--g-line);padding-bottom:8px">
                     <div class="fw-bold" style="font-size:16px">{{ $meta['icon'] }} {{ $meta['label'] }}</div>
@@ -234,7 +234,7 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ route('admin.types.components', $contract->jacketType) }}">
+                <form method="POST" action="{{ route('admin.contracts.materials', $contract) }}">
                     @csrf @method('PUT')
                     <input type="hidden" name="garment" value="{{ $gk }}">
                     <div class="table-responsive">
@@ -285,7 +285,7 @@
             <div class="fw-bold" style="font-size:16px">Total de la compra (todas las prendas)</div>
             <div class="fw-bold" id="grandCost" style="color:var(--g-gold);font-size:20px">—</div>
         </div>
-        <div class="text-secondary small mt-2 no-print">* Las telas (<b>m</b>) incluyen el % de desperdicio; las unidades (<b>u</b>) se redondean hacia arriba. Cada prenda guarda su propia lista de materiales para el modelo <b>{{ $contract->jacketType->name }}</b>.</div>
+        <div class="text-secondary small mt-2 no-print">* Las telas (<b>m</b>) incluyen el % de desperdicio; las unidades (<b>u</b>) se redondean hacia arriba. Los materiales y costos se guardan <b>solo para este contrato</b> ({{ $contract->code }}) — no afectan a otros.</div>
     @endif
 </div>
 

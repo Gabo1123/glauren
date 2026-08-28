@@ -24,7 +24,7 @@ class Contract extends Model
         'terms', 'contract_status', 'sign_token', 'signed_by_name', 'signed_by_document',
         'signature_path', 'sent_at', 'signed_at', 'notes', 'payment_reminder_at',
         'voting_enabled', 'voting_show_results',
-        'design_approved_at', 'join_token', 'delivery_date', 'default_combo',
+        'design_approved_at', 'join_token', 'delivery_date', 'default_combo', 'materials',
         'objeto', 'product_details', 'combo_value', 'contract_total', 'total_words', 'delivery_business_days',
     ];
 
@@ -37,7 +37,25 @@ class Contract extends Model
             'payment_reminder_at' => 'datetime',
             'voting_enabled'      => 'boolean',
             'voting_show_results' => 'boolean',
+            'materials'           => 'array',
         ];
+    }
+
+    /**
+     * Materiales de una prenda para ESTE contrato.
+     * Usa los propios del contrato; si no, los del modelo de chaqueta; si no, los por defecto.
+     */
+    public function materialsFor(string $garment): array
+    {
+        $own = data_get($this->materials, $garment);
+        if (is_array($own) && count($own)) {
+            return $own;
+        }
+        if ($this->jacketType) {
+            return $this->jacketType->componentsFor($garment);
+        }
+
+        return \App\Modules\Chaquetas\Models\JacketType::defaultsFor($garment);
     }
 
     protected static function booted(): void

@@ -61,6 +61,43 @@ class ContractController extends Controller
         return view('admin.contracts.show', ['contract' => $contract, 'stages' => Contract::STAGES, 'fin' => $fin, 'messages' => $messages, 'designOptions' => $designOptions, 'totalVotes' => $totalVotes]);
     }
 
+    /** Guarda los materiales de una prenda para ESTE contrato (no el modelo global). */
+    public function saveMaterials(Request $request, Contract $contract)
+    {
+        $garment = $request->input('garment', 'chaqueta');
+        if (! in_array($garment, ['chaqueta', 'buzo', 'polo', 'gorra'], true)) {
+            $garment = 'chaqueta';
+        }
+
+        $names = (array) $request->input('name', []);
+        $qtys  = (array) $request->input('qty', []);
+        $units = (array) $request->input('unit', []);
+        $costs = (array) $request->input('cost', []);
+
+        $comps = [];
+        foreach ($names as $i => $n) {
+            $n = trim((string) $n);
+            if ($n === '') {
+                continue;
+            }
+            $unit = in_array(($units[$i] ?? 'u'), ['m', 'u'], true) ? $units[$i] : 'u';
+            $comps[] = [
+                'name' => $n,
+                'qty'  => (float) str_replace(',', '.', (string) ($qtys[$i] ?? 0)),
+                'unit' => $unit,
+                'cost' => (float) preg_replace('/[^\d.]/', '', (string) ($costs[$i] ?? 0)),
+            ];
+        }
+
+        $materials = is_array($contract->materials) ? $contract->materials : [];
+        $materials[$garment] = $comps;
+        $contract->update(['materials' => array_filter($materials) ?: null]);
+
+        $label = ['chaqueta' => 'la chaqueta', 'buzo' => 'el buzo', 'polo' => 'el polo', 'gorra' => 'la gorra'][$garment];
+
+        return back()->with('ok', 'Materiales de '.$label.' guardados para este contrato.')->withFragment('prodSheet');
+    }
+
     /** Agrega un firmante (acudiente) al contrato. */
     public function addSigner(Request $request, Contract $contract)
     {
