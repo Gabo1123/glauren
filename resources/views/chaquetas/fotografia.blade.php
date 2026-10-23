@@ -147,6 +147,48 @@
     /* lightbox */
     .lb{ position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:200; display:none; place-items:center; padding:20px } .lb.on{ display:grid }
     .lb img{ max-width:92vw; max-height:88vh; border-radius:10px } .lb .x{ position:absolute; top:18px; right:24px; font-size:34px; color:#fff; cursor:pointer }
+
+    /* ===== Premium & dinámico ===== */
+    /* grano de cine */
+    body::after{ content:''; position:fixed; inset:0; pointer-events:none; z-index:1; opacity:.04;
+        background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E") }
+    .nav,.hero,section,footer,.contact-wrap,.gal-wrap{ position:relative; z-index:2 }
+    /* aurora animada en hero */
+    .hero::before{ content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
+        background:
+          radial-gradient(500px 300px at 15% 20%, rgba(201,165,75,.18), transparent 60%),
+          radial-gradient(480px 320px at 85% 70%, rgba(120,90,200,.14), transparent 60%),
+          radial-gradient(420px 260px at 60% 10%, rgba(37,211,102,.08), transparent 60%);
+        filter:blur(6px); animation:aurora 14s ease-in-out infinite alternate }
+    .hero .wrap{ position:relative; z-index:2 }
+    @keyframes aurora{ 0%{ transform:translate3d(0,0,0) scale(1) } 50%{ transform:translate3d(-20px,14px,0) scale(1.08) } 100%{ transform:translate3d(18px,-10px,0) scale(1.04) } }
+    /* titulo con degradado sutil */
+    .hero h1 span{ background:linear-gradient(120deg,var(--gold),var(--gold2) 60%,#fff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent }
+    /* reveal al hacer scroll */
+    .rv{ opacity:0; transform:translateY(26px); transition:opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1) }
+    .rv.in{ opacity:1; transform:none }
+    @media(prefers-reduced-motion:reduce){ .rv{ opacity:1; transform:none; transition:none } .hero::before,.cam{ animation:none } }
+    /* cámara parallax */
+    .cam{ transition:transform .2s ease-out }
+    .cam .lens{ box-shadow:0 0 0 3px #15130f, inset 0 0 22px rgba(0,0,0,.8), 0 0 40px rgba(201,165,75,.25) }
+    /* marquee */
+    .marquee{ border-top:1px solid var(--line); border-bottom:1px solid var(--line); background:#121009; overflow:hidden; padding:14px 0 }
+    .marquee .track{ display:inline-flex; gap:40px; white-space:nowrap; animation:scrollx 26s linear infinite; will-change:transform }
+    .marquee span{ font-family:'Big Shoulders Display',sans-serif; text-transform:uppercase; letter-spacing:.06em; font-size:18px; color:var(--muted) }
+    .marquee span b{ color:var(--gold) }
+    @keyframes scrollx{ to{ transform:translateX(-50%) } }
+    /* tarjetas premium: brillo dorado en hover */
+    .step,.svc,.pk{ position:relative; overflow:hidden; background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01)) , var(--panel) }
+    .step::before,.svc::before{ content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--gold),transparent); opacity:0; transition:.3s }
+    .step:hover::before,.svc:hover::before{ opacity:1 }
+    .step:hover,.svc:hover{ box-shadow:0 20px 40px rgba(0,0,0,.4) }
+    /* badge grande de categoría */
+    .cat-ico{ width:46px; height:46px; border-radius:13px; background:linear-gradient(135deg,rgba(201,165,75,.22),rgba(201,165,75,.05)); border:1px solid rgba(201,165,75,.3); display:inline-grid; place-items:center; font-size:22px; margin-right:4px }
+    /* testimonios */
+    .tst{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px } @media(max-width:800px){ .tst{ grid-template-columns:1fr } }
+    .tcard{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:24px }
+    .tcard .stars{ color:var(--gold); letter-spacing:2px; margin-bottom:8px }
+    .tcard p{ font-size:15px } .tcard .who{ color:var(--muted); font-size:13px; margin-top:12px; font-weight:600 }
 </style>
 </head>
 <body>
@@ -195,8 +237,14 @@
     </div>
 </div></header>
 
+<div class="marquee"><div class="track">
+    @for($i=0;$i<2;$i++)
+    <span>📷 Fotos de grado</span><span><b>·</b></span><span>🎓 Togas y birretes</span><span><b>·</b></span><span>📕 Anuarios</span><span><b>·</b></span><span>📜 Diplomas y actas</span><span><b>·</b></span><span>🎁 Souvenirs</span><span><b>·</b></span><span>🏫 Colegios y universidades</span><span><b>·</b></span><span>📸 Toda Colombia</span><span><b>·</b></span>
+    @endfor
+</div></div>
+
 <section><div class="wrap">
-    <div class="sec-head"><div class="eyebrow">Fácil y rápido</div><h2>¿Cómo funciona?</h2><p>En 3 pasos tu promoción tiene sus fotos listas.</p></div>
+    <div class="sec-head rv"><div class="eyebrow">Fácil y rápido</div><h2>¿Cómo funciona?</h2><p>En 3 pasos tu promoción tiene sus fotos listas.</p></div>
     <div class="steps">
         <div class="step"><div class="n">1</div><h4>Cotiza por WhatsApp</h4><p>Cuéntanos tu colegio, ciudad y número de estudiantes. Te armamos un paquete a la medida.</p></div>
         <div class="step"><div class="n">2</div><h4>Agendamos la sesión</h4><p>Coordinamos fecha y lugar: estudio, ceremonia o el sitio favorito del curso.</p></div>
@@ -208,7 +256,7 @@
     <div class="sec-head"><div class="eyebrow">Nuestros servicios</div><h2>Todo para tu graduación</h2><p>Desde la sesión en estudio hasta el anuario impreso, togas y souvenirs.</p></div>
     @foreach($categories as $cat)
         <div class="cat" id="cat-{{ $cat->slug }}">
-            <div class="cat-h"><h3>{{ $cat->icon }} {{ $cat->name }}</h3>@if($cat->subtitle)<span class="s">{{ $cat->subtitle }}</span>@endif</div>
+            <div class="cat-h"><span class="cat-ico">{{ $cat->icon }}</span><h3>{{ $cat->name }}</h3>@if($cat->subtitle)<span class="s">{{ $cat->subtitle }}</span>@endif</div>
             @if($cat->services->count())
             <div class="grid">
                 @foreach($cat->services as $s)
@@ -260,6 +308,15 @@
     <details><summary>¿Cómo entregan las fotos?</summary><p>En galería digital en alta resolución y, según el paquete, con impresiones, photobook y el anuario del colegio.</p></details>
     <details><summary>¿Alquilan togas y birretes?</summary><p>Sí. Alquilamos togas y birretes según la talla de cada estudiante (negro, azul y vino tinto) y elaboramos estolas bordadas con el escudo de la institución.</p></details>
     <details><summary>¿Atienden colegios y universidades de otras ciudades?</summary><p>Cubrimos graduaciones en toda Colombia. Escríbenos por WhatsApp con tu ciudad y número de estudiantes para tu cotización.</p></details>
+</div></section>
+
+<section><div class="wrap">
+    <div class="sec-head rv"><div class="eyebrow">Lo que dicen</div><h2>Promociones felices</h2></div>
+    <div class="tst">
+        <div class="tcard rv"><div class="stars">★★★★★</div><p>“Las fotos quedaron hermosas y la entrega fue súper rápida. Todo el curso quedó feliz con el anuario.”</p><div class="who">— Mariana G. · Estudiante de once</div></div>
+        <div class="tcard rv"><div class="stars">★★★★★</div><p>“Nos cubrieron la ceremonia completa y las togas llegaron perfectas. Muy profesionales y atentos.”</p><div class="who">— Colegio San José · Coordinación</div></div>
+        <div class="tcard rv"><div class="stars">★★★★★</div><p>“El retrato individual quedó increíble. Se nota la calidad en la edición. ¡100% recomendados!”</p><div class="who">— Andrés P. · Graduado</div></div>
+    </div>
 </div></section>
 
 <div class="contact-wrap" id="contacto"><section><div class="wrap">
@@ -323,6 +380,39 @@
     function closeLb(){ lb.classList.remove('on'); }
     document.getElementById('lbx').addEventListener('click', closeLb);
     lb.addEventListener('click', function(e){ if(e.target===lb) closeLb(); });
+
+    // Reveal al hacer scroll (aparecen con fade + subida, escalonado)
+    var revealEls = document.querySelectorAll('.step,.svc,.pk,.tcard,.cat,.sec-head,.ph,.contact,.marquee');
+    revealEls.forEach(function(el){ el.classList.add('rv'); });
+    if('IntersectionObserver' in window){
+        var io = new IntersectionObserver(function(entries){
+            entries.forEach(function(e,i){
+                if(e.isIntersecting){ var el=e.target; setTimeout(function(){ el.classList.add('in'); }, Math.min(i*60,240)); io.unobserve(el); }
+            });
+        }, { threshold:.12 });
+        revealEls.forEach(function(el){ io.observe(el); });
+    } else { revealEls.forEach(function(el){ el.classList.add('in'); }); }
+
+    // Parallax de la cámara al mover el mouse
+    var cam = document.getElementById('cam');
+    if(cam && window.matchMedia('(pointer:fine)').matches){
+        window.addEventListener('mousemove', function(ev){
+            var rx = (ev.clientY/window.innerHeight - .5) * -10;
+            var ry = (ev.clientX/window.innerWidth - .5) * 14;
+            cam.style.transform = 'perspective(700px) rotateX('+rx+'deg) rotateY('+ry+'deg)';
+        });
+    }
+
+    // Contador animado de las estadísticas del hero
+    document.querySelectorAll('.trust .t b').forEach(function(b){
+        var txt = b.textContent.trim();
+        var m = txt.match(/^\+?(\d+)/);
+        if(!m) return;
+        var end = parseInt(m[1],10), pre = txt.startsWith('+')?'+':'', suf = txt.replace(/^\+?\d+/,'');
+        var start=null;
+        function step(ts){ if(!start) start=ts; var p=Math.min((ts-start)/900,1); b.textContent=pre+Math.floor(p*end)+suf; if(p<1) requestAnimationFrame(step); }
+        requestAnimationFrame(step);
+    });
 })();
 </script>
 </body>
