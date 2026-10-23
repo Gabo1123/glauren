@@ -4,6 +4,7 @@ namespace App\Modules\Chaquetas\Http\Controllers\Foto;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Chaquetas\Models\PhotoCategory;
+use App\Modules\Chaquetas\Models\PhotoGalleryImage;
 use App\Modules\Chaquetas\Models\PhotoPackage;
 use App\Modules\Chaquetas\Models\PhotoService;
 use Illuminate\Http\Request;
@@ -17,8 +18,47 @@ class PanelController extends Controller
     {
         $categories = PhotoCategory::with('services')->orderBy('sort')->orderBy('id')->get();
         $packages = PhotoPackage::orderBy('sort')->orderBy('id')->get();
+        $gallery = PhotoGalleryImage::orderBy('sort')->latest()->get();
 
-        return view('foto.dashboard', compact('categories', 'packages'));
+        return view('foto.dashboard', compact('categories', 'packages', 'gallery'));
+    }
+
+    /* ---------------- Galería (fotos de ejemplo) ---------------- */
+
+    public function storeGallery(Request $request)
+    {
+        $request->validate([
+            'images'            => 'required|array|max:30',
+            'images.*'          => 'image|mimes:jpg,jpeg,png,webp|mimetypes:image/jpeg,image/png,image/webp|max:8192',
+            'photo_category_id' => 'nullable|exists:photo_categories,id',
+            'caption'           => 'nullable|string|max:160',
+        ]);
+
+        $n = 0;
+        foreach ((array) $request->file('images', []) as $file) {
+            if (! @getimagesize($file->getRealPath())) {
+                continue;
+            }
+            PhotoGalleryImage::create([
+                'photo_category_id' => $request->input('photo_category_id') ?: null,
+                'image_path'        => $file->store('fotografia/galeria', 'public'),
+                'caption'           => $request->input('caption'),
+                'active'            => true,
+            ]);
+            $n++;
+        }
+
+        return back()->with('ok', "$n foto(s) agregada(s) a la galería.");
+    }
+
+    public function deleteGalleryImage(PhotoGalleryImage $image)
+    {
+        if ($image->image_path) {
+            Storage::disk('public')->delete($image->image_path);
+        }
+        $image->delete();
+
+        return back()->with('ok', 'Foto eliminada.');
     }
 
     /* ---------------- Categorías ---------------- */

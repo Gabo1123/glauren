@@ -98,6 +98,7 @@ Route::get('/p/{slug}', [PageController::class, 'show'])->name('page.show');
 
 // Fotografía de grados (página pública independiente del prom)
 Route::get('/fotografia-de-grados', [PhotographyController::class, 'index'])->name('fotografia');
+Route::post('/fotografia-de-grados/contacto', [PhotographyController::class, 'lead'])->middleware('throttle:10,10')->name('fotografia.lead');
 
 // Firma de contrato (enlace único para el colegio)
 Route::get('/contrato/{token}', [SignController::class, 'show'])->name('contrato.firmar');
@@ -168,6 +169,10 @@ Route::prefix('gfoto')->name('foto.')->group(function () {
         Route::get('servicio/{service}', [FotoPanelController::class, 'editService'])->name('services.edit');
         Route::put('servicio/{service}', [FotoPanelController::class, 'updateService'])->name('services.update');
         Route::delete('servicio/{service}', [FotoPanelController::class, 'deleteService'])->name('services.destroy');
+
+        // Galería (fotos de ejemplo / muestras)
+        Route::post('galeria', [FotoPanelController::class, 'storeGallery'])->name('gallery.store');
+        Route::delete('galeria/{image}', [FotoPanelController::class, 'deleteGalleryImage'])->name('gallery.destroy');
 
         // Paquetes
         Route::get('paquetes/crear', [FotoPanelController::class, 'createPackage'])->name('packages.create');

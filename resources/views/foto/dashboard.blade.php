@@ -45,6 +45,43 @@
 @endforelse
 
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-4 mb-3">
+    <h4 class="mb-0">Galería de muestras</h4>
+    <span class="text-muted2" style="font-size:13px">{{ $gallery->count() }} foto(s)</span>
+</div>
+<div class="card p-3 mb-3">
+    <form method="POST" action="{{ route('foto.gallery.store') }}" enctype="multipart/form-data" class="row g-2 align-items-end">
+        @csrf
+        <div class="col-md-5">
+            <label class="form-label">Fotos (puedes elegir varias)</label>
+            <input type="file" name="images[]" class="form-control" accept="image/*" multiple required>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Categoría (para los filtros)</label>
+            <select name="photo_category_id" class="form-select">
+                <option value="">— General —</option>
+                @foreach($categories as $c)<option value="{{ $c->id }}">{{ $c->icon }} {{ $c->name }}</option>@endforeach
+            </select>
+        </div>
+        <div class="col-md-3"><button class="btn btn-gold w-100"><i class="bi bi-upload"></i> Subir fotos</button></div>
+    </form>
+    @if($gallery->count())
+        <div class="row g-2 mt-2">
+            @foreach($gallery as $img)
+                <div class="col-4 col-md-2">
+                    <div style="position:relative">
+                        <img src="{{ $img->url() }}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid var(--line)">
+                        @if($img->category)<span class="chip" style="position:absolute;left:4px;bottom:4px;font-size:10px">{{ $img->category->name }}</span>@endif
+                        <form method="POST" action="{{ route('foto.gallery.destroy', $img) }}" style="position:absolute;top:4px;right:4px" onsubmit="return confirm('¿Eliminar foto?')">@csrf @method('DELETE')<button class="btn btn-sm btn-danger py-0 px-1"><i class="bi bi-x"></i></button></form>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    @else
+        <p class="text-muted2 mt-2 mb-0" style="font-size:13px">Sube fotos de ejemplo para que los clientes vean tu trabajo. Elige la categoría para que aparezcan en los filtros de la página.</p>
+    @endif
+</div>
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-4 mb-3">
     <h4 class="mb-0">Paquetes de grado</h4>
     <a href="{{ route('foto.packages.create') }}" class="btn btn-gold btn-sm"><i class="bi bi-plus-lg"></i> Nuevo paquete</a>
 </div>
