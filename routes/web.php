@@ -26,6 +26,9 @@ use App\Modules\Chaquetas\Http\Controllers\HomeController;
 use App\Modules\Chaquetas\Http\Controllers\LeadController;
 use App\Modules\Chaquetas\Http\Controllers\NewsController;
 use App\Modules\Chaquetas\Http\Controllers\PageController;
+use App\Modules\Chaquetas\Http\Controllers\PhotographyController;
+use App\Modules\Chaquetas\Http\Controllers\Foto\AuthController as FotoAuthController;
+use App\Modules\Chaquetas\Http\Controllers\Foto\PanelController as FotoPanelController;
 use App\Modules\Chaquetas\Http\Controllers\PaymentController;
 use App\Modules\Chaquetas\Http\Controllers\Portal\AuthController as PortalAuthController;
 use App\Modules\Chaquetas\Http\Controllers\Portal\PortalController;
@@ -93,6 +96,9 @@ Route::get('/noticias', [NewsController::class, 'index'])->name('news.index');
 Route::get('/noticias/{slug}', [NewsController::class, 'show'])->name('news.show');
 Route::get('/p/{slug}', [PageController::class, 'show'])->name('page.show');
 
+// Fotografía de grados (página pública independiente del prom)
+Route::get('/fotografia-de-grados', [PhotographyController::class, 'index'])->name('fotografia');
+
 // Firma de contrato (enlace único para el colegio)
 Route::get('/contrato/{token}', [SignController::class, 'show'])->name('contrato.firmar');
 Route::post('/contrato/{token}', [SignController::class, 'sign'])->name('contrato.sign');
@@ -133,6 +139,42 @@ Route::prefix('colegio')->name('portal.')->group(function () {
         Route::get('contrato/{contract}/documento', [PortalController::class, 'contractDocument'])->name('contract.doc');
         Route::post('contrato/{contract}/alumnos', [PortalController::class, 'addStudent'])->name('students.store');
         Route::delete('contrato/{contract}/alumnos/{student}', [PortalController::class, 'deleteStudent'])->name('students.destroy');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Panel de Fotografía de Grados (rol: foto) — separado del prom
+|--------------------------------------------------------------------------
+*/
+Route::prefix('gfoto')->name('foto.')->group(function () {
+    Route::get('login', [FotoAuthController::class, 'showLogin'])->name('login');
+    Route::post('login', [FotoAuthController::class, 'login'])->middleware('throttle:5,1')->name('login.post');
+    Route::post('logout', [FotoAuthController::class, 'logout'])->name('logout');
+
+    Route::middleware(['auth', 'role:foto'])->group(function () {
+        Route::get('/', [FotoPanelController::class, 'dashboard'])->name('dashboard');
+
+        // Categorías
+        Route::get('categorias/crear', [FotoPanelController::class, 'createCategory'])->name('categories.create');
+        Route::post('categorias', [FotoPanelController::class, 'storeCategory'])->name('categories.store');
+        Route::get('categorias/{category}', [FotoPanelController::class, 'editCategory'])->name('categories.edit');
+        Route::put('categorias/{category}', [FotoPanelController::class, 'updateCategory'])->name('categories.update');
+        Route::delete('categorias/{category}', [FotoPanelController::class, 'deleteCategory'])->name('categories.destroy');
+
+        // Servicios
+        Route::get('categorias/{category}/servicio', [FotoPanelController::class, 'createService'])->name('services.create');
+        Route::post('categorias/{category}/servicio', [FotoPanelController::class, 'storeService'])->name('services.store');
+        Route::get('servicio/{service}', [FotoPanelController::class, 'editService'])->name('services.edit');
+        Route::put('servicio/{service}', [FotoPanelController::class, 'updateService'])->name('services.update');
+        Route::delete('servicio/{service}', [FotoPanelController::class, 'deleteService'])->name('services.destroy');
+
+        // Paquetes
+        Route::get('paquetes/crear', [FotoPanelController::class, 'createPackage'])->name('packages.create');
+        Route::post('paquetes', [FotoPanelController::class, 'storePackage'])->name('packages.store');
+        Route::get('paquetes/{package}', [FotoPanelController::class, 'editPackage'])->name('packages.edit');
+        Route::put('paquetes/{package}', [FotoPanelController::class, 'updatePackage'])->name('packages.update');
+        Route::delete('paquetes/{package}', [FotoPanelController::class, 'deletePackage'])->name('packages.destroy');
     });
 });
 

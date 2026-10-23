@@ -20,7 +20,11 @@ class EnsureRole
         if (! $user || ($user->role ?? 'admin') !== $role) {
             Auth::logout();
 
-            $loginRoute = $role === 'colegio' ? 'portal.login' : 'admin.login';
+            $loginRoute = match ($role) {
+                'colegio' => 'portal.login',
+                'foto'    => 'foto.login',
+                default   => 'admin.login',
+            };
 
             return redirect()->route($loginRoute)
                 ->withErrors(['email' => 'Inicia sesión con una cuenta autorizada.']);
