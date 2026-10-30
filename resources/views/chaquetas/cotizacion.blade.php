@@ -105,6 +105,61 @@ h2{font-size:clamp(34px,6vw,52px);margin:.25em 0 .4em}
 .tag s{font-family:'Anton';font-size:26px;text-decoration-color:#D7261E;text-decoration-thickness:4px;opacity:.75}
 .tag b{display:block;font-family:'Anton';font-weight:400;font-size:56px;line-height:1}
 
+
+/* Seguimiento */
+.track{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;counter-reset:st}
+.track div{position:relative;background:#fff;border:2px solid #ddd;border-radius:14px;padding:12px 10px;font-size:12px;font-weight:700;text-align:center;color:#777}
+.track div:before{counter-increment:st;content:counter(st);display:block;margin:0 auto 6px;width:28px;height:28px;line-height:28px;border-radius:50%;background:#e9e7e0;color:#555;font-family:'Anton'}
+.track div.done{border-color:var(--k);color:var(--k)}
+.track div.done:before{content:"✓";background:var(--k);color:var(--y)}
+.track div.cur{border-color:var(--o);color:var(--k);box-shadow:0 0 0 3px rgba(255,107,26,.25)}
+.track div.cur:before{background:var(--o);color:var(--k)}
+/* Quiénes somos */
+.about{display:grid;grid-template-columns:1.2fr .8fr;gap:30px;align-items:center}
+.about .pic{position:relative}
+.about .pic img{width:100%;height:340px;object-fit:cover;border-radius:18px;border:3px solid var(--k);box-shadow:12px 12px 0 var(--y)}
+.about .seal{position:absolute;left:-18px;bottom:-14px;width:96px;height:96px;border-radius:50%;background:var(--o);border:3px solid var(--k);display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(-8deg);font-family:'Anton';font-size:30px;line-height:1}
+.about .seal small{font-family:'Montserrat';font-size:10px;font-weight:800}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:26px}
+.stats div{background:#fff;border:2px solid var(--k);border-radius:16px;padding:14px;box-shadow:4px 4px 0 var(--y)}
+.stats b{display:block;font-family:'Anton';font-weight:400;font-size:38px;line-height:1}
+.stats span{font-size:12px;font-weight:700}
+/* Plataforma */
+.portals{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.portal{background:var(--k2);border:1.5px solid #333;border-radius:20px;padding:22px}
+.portal h3{font-family:'Anton';font-weight:400;font-size:26px;margin:0 0 12px;color:#fff}
+.portal ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.portal li{font-size:14px;color:#e2e2e2;padding-left:26px;position:relative}
+.portal li:before{content:"✓";position:absolute;left:0;top:0;width:18px;height:18px;border-radius:50%;background:var(--y);color:var(--k);font-size:11px;font-weight:800;text-align:center;line-height:18px}
+/* Galerías */
+.gal{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.gal img{width:100%;height:220px;object-fit:cover;border-radius:14px;border:3px solid var(--k);display:block}
+.gal .wide{grid-column:span 2}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chips span{border:1.5px solid #444;background:#1a1a1a;color:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700}
+.brands{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.brands div{background:#fff;border:1.5px solid var(--line);border-radius:16px;height:130px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.brands img{max-width:100%;max-height:100%;object-fit:contain}
+.tech{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:16px}
+.tech img{width:100%;height:110px;object-fit:contain;background:#fff;border-radius:14px;padding:8px;box-sizing:border-box}
+.cat{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.cat img{width:100%;height:170px;object-fit:contain;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:6px;box-sizing:border-box}
+.cat .ph{grid-row:span 2;object-fit:cover;padding:0;border:3px solid var(--k);height:350px}
+.cat-h{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:34px 0 14px;flex-wrap:wrap}
+.cat-h h3{font-family:'Anton';font-weight:400;font-size:32px;text-transform:uppercase;margin:0}
+.cat-h span{background:var(--k);color:var(--y);font-family:'Anton';font-size:22px;padding:6px 14px;border-radius:10px}
+/* Proceso */
+.phase{display:grid;grid-template-columns:120px 1fr;gap:14px;margin-bottom:14px}
+.phase .tab{border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12px}
+.phase .tab b{font-family:'Anton';font-weight:400;font-size:46px;line-height:1}
+.phase .tab small{font-size:10px;font-weight:800;letter-spacing:2px}
+.phase .tab span{font-size:11px;font-weight:800;text-transform:uppercase}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.step{background:#fff;border:2px solid var(--k);border-radius:16px;padding:14px;box-shadow:4px 4px 0 var(--y)}
+.step i{font-style:normal;display:inline-block;width:32px;height:32px;line-height:32px;text-align:center;border-radius:50%;background:var(--k);color:var(--y);font-family:'Anton'}
+.step b{display:block;font-family:'Anton';font-weight:400;font-size:18px;text-transform:uppercase;margin:8px 0 4px}
+.step p{margin:0;font-size:13px;color:#2a2a2a}
+
 /* CTA */
 .cta{background:var(--y);text-align:center}
 .cta h2{margin-top:0}
@@ -120,6 +175,14 @@ h2{font-size:clamp(34px,6vw,52px);margin:.25em 0 .4em}
   .client .wrap,.big3,.inc .g,.cond,.combos,.ad,.pkg,.pkg ul,.photos{grid-template-columns:1fr}
   .photos img{height:220px}
   .tb th:nth-child(3),.tb td:nth-child(3){display:none}
+  .track{grid-template-columns:repeat(2,1fr)}
+  .about,.portals,.stats,.brands,.phase,.steps{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr 1fr}
+  .gal,.cat{grid-template-columns:1fr 1fr}
+  .gal .wide{grid-column:span 2}
+  .tech{grid-template-columns:repeat(3,1fr)}
+  .cat .ph{grid-column:span 2;grid-row:auto;height:260px}
+
   .num{position:static;display:inline-block;margin:16px 20px 0}
 }
 @page{size:A4;margin:10mm 0}
@@ -155,6 +218,17 @@ h2{font-size:clamp(34px,6vw,52px);margin:.25em 0 .4em}
     </div>
 </div>
 
+<section style="padding:34px 0 0">
+    <div class="wrap">
+        <div class="kick">Estado de tu proceso</div>
+        <div class="track" style="margin-top:14px">
+            @foreach($quote->customerSteps() as $st)
+                <div class="{{ $st['done'] ? 'done' : '' }} {{ $st['current'] ? 'cur' : '' }}">{{ $st['label'] }}</div>
+            @endforeach
+        </div>
+    </div>
+</section>
+
 @if(count($summary['lines']))
 <section>
     <div class="wrap">
@@ -175,6 +249,25 @@ h2{font-size:clamp(34px,6vw,52px);margin:.25em 0 .4em}
 </section>
 @endif
 
+<section>
+    <div class="wrap">
+        <div class="about">
+            <div>
+                <div class="kick">Quiénes somos</div>
+                <h2 class="d">Hacemos que cada prom sea <span class="hl">única y memorable</span></h2>
+                <p style="font-size:16px;line-height:1.7;margin:0">Estimados padres de familia: nos enorgullece presentarles <b>G'Lauren</b>. Llevamos más de 10 años creando chaquetas y prendas personalizadas para promociones escolares y empresas, con dedicación, compromiso y alta calidad.</p>
+            </div>
+            <div class="pic"><img src="/img/cotizacion/trabajos/trabajo-2.jpg" alt="Promoción con chaquetas G'Lauren"><div class="seal">+10<small>AÑOS</small></div></div>
+        </div>
+        <div class="stats">
+            <div><b>+10</b><span>años vistiendo promociones</span></div>
+            <div><b>+25</b><span>colegios ya visten G'Lauren</span></div>
+            <div><b>3</b><span>marcas aliadas: Lafayette, Patprimo y YES</span></div>
+            <div><b>2</b><span>portales para seguir tu pedido</span></div>
+        </div>
+    </div>
+</section>
+
 <section class="dark">
     <div class="wrap">
         <div class="kick" style="color:var(--y)">Por qué G'Lauren</div>
@@ -194,6 +287,72 @@ h2{font-size:clamp(34px,6vw,52px);margin:.25em 0 .4em}
     </div>
 </section>
 
+<section class="dark">
+    <div class="wrap">
+        <div class="kick" style="color:var(--y)">Plataforma G'Lauren</div>
+        <h2 class="d">No vendemos una prenda, <span style="color:var(--y)">vendemos una experiencia</span></h2>
+        <p style="color:#e2e2e2;max-width:700px;margin:0 0 22px">Dos portales, toda una experiencia: el colegio administra su pedido y cada estudiante sigue su chaqueta, arma su perfil, sube sus fotos y comparte con su curso. Más que una chaqueta: un recuerdo.</p>
+        <div class="portals">
+            <div class="portal"><h3>Para el colegio</h3><ul><li>Contrato y firma en línea</li><li>Avance de fabricación con fotos reales</li><li>Control de pagos por estudiante</li><li>Lista del curso y medidas</li></ul></div>
+            <div class="portal"><h3>Para el estudiante</h3><ul><li>Seguimiento de su pedido con fotos</li><li>Su perfil con foto y datos</li><li>Subir sus propias fotos</li><li>Muro del curso: escribirse entre compañeros</li></ul></div>
+        </div>
+    </div>
+</section>
+
+<section>
+    <div class="wrap">
+        <div class="kick">Portafolio</div>
+        <h2 class="d">Nuestros <span class="hl">trabajos</span></h2>
+        <div class="gal">
+            <img class="wide" src="/img/cotizacion/trabajos/trabajo-3.jpg" alt="Promoción con busos Prom" loading="lazy">
+            <img src="/img/cotizacion/trabajos/trabajo-6.jpg" alt="Estudiantes con chaquetas personalizadas" loading="lazy">
+            <img src="/img/cotizacion/trabajos/trabajo-1.jpg" alt="Promoción con bandera" loading="lazy">
+            <img src="/img/cotizacion/trabajos/trabajo-5.jpg" alt="Promoción con globos" loading="lazy">
+            <img src="/img/cotizacion/trabajos/trabajo-4.jpg" alt="Estudiantes con busos Eleven" loading="lazy">
+            <img src="/img/cotizacion/trabajos/trabajo-7.jpg" alt="Promoción en el salón" loading="lazy">
+            <img class="wide" src="/img/cotizacion/trabajos/trabajo-2.jpg" alt="Promoción con chaquetas vinotinto" loading="lazy">
+        </div>
+    </div>
+</section>
+
+<section class="dark" style="padding-top:40px">
+    <div class="wrap">
+        <h2 class="d" style="font-size:34px">Colegios que ya <span style="color:var(--y)">visten G'Lauren</span></h2>
+        <div class="chips"><span>Universidad Católica</span><span>Colegio La Giralda</span><span>George Williams</span><span>Colegio Montreal</span><span>Generación Enoc</span><span>Liceo Freire</span><span>Liceo Campestre Cristiano</span><span>Liceo ICAM</span><span>Campestre Jaime Garzón</span><span>Liceo Alta Blanca</span><span>Marco Fidel Suárez</span><span>Camino a La Cima</span><span>Campestre San Nicolás de Tolentino</span><span>Colegio ICCK</span><span>Colegio Portillo</span><span>Gimnasio La Arboleda</span><span>IET Cualamán</span><span>Campestre Siquima</span><span>Gimnasio Campestre Cristiano</span><span>San Luis Vitelma</span><span>Instituto Nazareno Modelia</span><span>Colegio Andrés Bello</span><span>Nazareno Cundinamarca</span><span>Colegio Ubaté</span><span>Windsports</span></div>
+    </div>
+</section>
+
+<section>
+    <div class="wrap">
+        <div class="kick">Materiales premium</div>
+        <h2 class="d">Telas y cremalleras <span class="hl">que usamos</span></h2>
+        <div class="brands">
+            <div><img src="/img/cotizacion/marcas/lafayette.jpg" alt="Telas Lafayette" style="width:100%;height:100%;object-fit:cover"></div>
+            <div style="padding:14px"><img src="/img/cotizacion/marcas/yes.jpg" alt="Cremalleras YES"></div>
+            <div><img src="/img/cotizacion/marcas/patprimo.jpg" alt="Telas Patprimo" style="width:150%;max-width:none"></div>
+        </div>
+        <h3 class="d" style="font-size:24px;margin:26px 0 0">Tecnología en nuestras telas <small style="font-family:Montserrat;font-size:12px;text-transform:none">· según aplique la tela</small></h3>
+        <div class="tech"><img src="/img/cotizacion/marcas/laftech-1.jpg" alt="Tecnología Laftech 1" loading="lazy"><img src="/img/cotizacion/marcas/laftech-2.jpg" alt="Tecnología Laftech 2" loading="lazy"><img src="/img/cotizacion/marcas/laftech-3.jpg" alt="Tecnología Laftech 3" loading="lazy"><img src="/img/cotizacion/marcas/laftech-4.jpg" alt="Tecnología Laftech 4" loading="lazy"><img src="/img/cotizacion/marcas/laftech-5.jpg" alt="Tecnología Laftech 5" loading="lazy"><img src="/img/cotizacion/marcas/laftech-6.jpg" alt="Tecnología Laftech 6" loading="lazy"></div>
+    </div>
+</section>
+
+<section style="padding-top:0">
+    <div class="wrap">
+        <div class="kick">Catálogo de diseños</div>
+        <h2 class="d">Inspírate para tu <span class="hl">diseño</span></h2>
+        <p style="margin:0">Diseños de referencia: personalizamos colores, bordados y nombres para tu promoción.</p>
+
+        <div class="cat-h"><h3>Chaqueta con cortes</h3><span>{{ $m($products['estructurada']['price']) }}</span></div>
+        <div class="cat"><img class="ph" src="/img/cotizacion/chaqueta.jpg" alt="Estudiante con chaqueta con cortes"><img src="/img/cotizacion/disenos/cortes-1.jpg" alt="Diseño de chaqueta con cortes 1" loading="lazy"><img src="/img/cotizacion/disenos/cortes-2.jpg" alt="Diseño de chaqueta con cortes 2" loading="lazy"><img src="/img/cotizacion/disenos/cortes-3.jpg" alt="Diseño de chaqueta con cortes 3" loading="lazy"><img src="/img/cotizacion/disenos/cortes-4.jpg" alt="Diseño de chaqueta con cortes 4" loading="lazy"><img src="/img/cotizacion/disenos/cortes-5.jpg" alt="Diseño de chaqueta con cortes 5" loading="lazy"><img src="/img/cotizacion/disenos/cortes-6.jpg" alt="Diseño de chaqueta con cortes 6" loading="lazy"><img src="/img/cotizacion/disenos/cortes-7.jpg" alt="Diseño de chaqueta con cortes 7" loading="lazy"><img src="/img/cotizacion/disenos/cortes-8.jpg" alt="Diseño de chaqueta con cortes 8" loading="lazy"></div>
+
+        <div class="cat-h"><h3>Busos</h3><span>{{ $m($products['buso']['price']) }}</span></div>
+        <div class="cat"><img class="ph" src="/img/cotizacion/buso.jpg" alt="Estudiante con buso canguro"><img src="/img/cotizacion/disenos/buso-1.jpg" alt="Diseño de buso 1" loading="lazy"><img src="/img/cotizacion/disenos/buso-2.jpg" alt="Diseño de buso 2" loading="lazy"><img src="/img/cotizacion/disenos/buso-3.jpg" alt="Diseño de buso 3" loading="lazy"><img class="ph" src="/img/cotizacion/buso-cremallera.jpg" alt="Estudiante con buso con cremallera"><img src="/img/cotizacion/disenos/buso-4.jpg" alt="Diseño de buso 4" loading="lazy"><img src="/img/cotizacion/disenos/buso-5.jpg" alt="Diseño de buso 5" loading="lazy"><img src="/img/cotizacion/disenos/buso-6.jpg" alt="Diseño de buso 6" loading="lazy"><img src="/img/cotizacion/disenos/buso-7.jpg" alt="Diseño de buso 7" loading="lazy"><img src="/img/cotizacion/disenos/buso-8.jpg" alt="Diseño de buso 8" loading="lazy"></div>
+
+        <div class="cat-h"><h3>Beisboleras</h3><span>{{ $m($products['beisbolera']['price']) }}</span></div>
+        <div class="cat"><img class="ph" src="/img/cotizacion/beisbolera.jpg" alt="Estudiante con beisbolera estilo varsity" style="object-position:40% 40%"><img src="/img/cotizacion/disenos/beisbolera-1.jpg" alt="Diseño de beisbolera 1" loading="lazy"><img src="/img/cotizacion/disenos/beisbolera-2.jpg" alt="Diseño de beisbolera 2" loading="lazy"><img src="/img/cotizacion/disenos/beisbolera-3.jpg" alt="Diseño de beisbolera 3" loading="lazy"><img src="/img/cotizacion/disenos/beisbolera-4.jpg" alt="Diseño de beisbolera 4" loading="lazy"><img src="/img/cotizacion/disenos/beisbolera-5.jpg" alt="Diseño de beisbolera 5" loading="lazy"><img src="/img/cotizacion/disenos/beisbolera-6.jpg" alt="Diseño de beisbolera 6" loading="lazy"><img src="/img/cotizacion/disenos/beisbolera-7.jpg" alt="Diseño de beisbolera 7" loading="lazy"><img src="/img/cotizacion/disenos/beisbolera-8.jpg" alt="Diseño de beisbolera 8" loading="lazy"><img src="/img/cotizacion/disenos/beisbolera-9.jpg" alt="Diseño de beisbolera 9" loading="lazy"></div>
+    </div>
+</section>
+
 <section>
     <div class="wrap">
         <div class="kick">Costo al por mayor</div>
@@ -206,11 +365,7 @@ h2{font-size:clamp(34px,6vw,52px);margin:.25em 0 .4em}
             @endforeach
             </tbody>
         </table></div>
-        <div class="photos">
-            <img src="/img/cotizacion/chaqueta.jpg" alt="Chaqueta con cortes Prom">
-            <img src="/img/cotizacion/beisbolera.jpg" alt="Beisbolera estilo varsity">
-            <img src="/img/cotizacion/buso.jpg" alt="Buso tipo canguro">
-        </div>
+
     </div>
 </section>
 
@@ -227,6 +382,30 @@ h2{font-size:clamp(34px,6vw,52px);margin:.25em 0 .4em}
                 </div>
             @endforeach
         </div>
+    </div>
+</section>
+
+<section>
+    <div class="wrap">
+        <div class="kick">Cómo trabajamos</div>
+        <h2 class="d">Proceso de <span class="hl">elaboración</span></h2>
+        <div class="phase"><div class="tab" style="background:var(--k);color:var(--y)"><small>FASE</small><b>01</b><span style="color:#fff">Planeación y aprobación</span></div>
+            <div class="steps">
+                <div class="step"><i>01</i><b>Diseño y aprobación</b><p>Convertimos la idea de su promoción en una propuesta de diseño y la ajustamos hasta que la aprueben.</p></div>
+                <div class="step"><i>02</i><b>Ficha de producción</b><p>Reunimos nombres, tallas y personalizaciones de cada estudiante para producir sin errores.</p></div>
+                <div class="step"><i>03</i><b>Pagos 50/50</b><p>50% al firmar el contrato y 50% al finalizar, por transferencia a Bancolombia.</p></div>
+            </div></div>
+        <div class="phase"><div class="tab" style="background:var(--o)"><small>FASE</small><b>02</b><span>Producción y control</span></div>
+            <div class="steps">
+                <div class="step"><i>04</i><b>Pedido de telas</b><p>Telas Lafayette o Patprimo y cremalleras YES, según las prendas elegidas.</p></div>
+                <div class="step"><i>05</i><b>Corte, confección y bordado</b><p>Compartimos el avance con fotos reales en la plataforma.</p></div>
+                <div class="step"><i>06</i><b>Calidad y empaque</b><p>Revisamos costuras, bordados y cremalleras antes de empacar.</p></div>
+            </div></div>
+        <div class="phase"><div class="tab" style="background:var(--y)"><small>FASE</small><b>03</b><span>Entrega</span></div>
+            <div class="steps" style="grid-template-columns:2fr 1fr">
+                <div class="step" style="background:var(--k);color:#fff"><i style="background:var(--y);color:var(--k)">07</i><b style="color:var(--y)">Entrega de prendas</b><p style="color:#e2e2e2">Entregamos en el colegio con globos, bandera y fotografía. Más que prendas: un recuerdo para toda la vida.</p></div>
+                <div class="step" style="background:var(--o);text-align:center"><b style="font-size:14px">Tiempo total</b><b style="font-size:40px;margin:0">25–35</b><p>días hábiles</p></div>
+            </div></div>
     </div>
 </section>
 

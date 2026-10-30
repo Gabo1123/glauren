@@ -5,7 +5,7 @@
 <div class="g-topbar">
     <div>
         <h3 class="mb-1">Leads / Contactos</h3>
-        <p class="small text-secondary mb-0">Personas que dejaron su correo antes de entrar al diseñador 3D.</p>
+        <p class="small text-secondary mb-0">Personas que dejaron sus datos. Envíales la cotización y sigue cada cliente hasta convertirlo en colegio.</p>
     </div>
     <div class="d-flex gap-2">
         @if($needHuman)<span class="badge bg-warning text-dark" style="font-size:14px;padding:8px 12px"><i class="bi bi-hand-index-thumb"></i> {{ $needHuman }} piden asesor</span>@endif
@@ -16,7 +16,7 @@
 <div class="card p-0">
     <div class="table-responsive">
         <table class="table align-middle mb-0">
-            <thead><tr><th>Nombre</th><th>Contacto</th><th>Colegio</th><th>Mensaje</th><th>Origen</th><th>Fecha</th><th></th></tr></thead>
+            <thead><tr><th>Nombre</th><th>Contacto</th><th>Colegio</th><th>Mensaje</th><th>Seguimiento</th><th>Fecha</th><th></th></tr></thead>
             <tbody>
             @forelse($leads as $l)
                 <tr>
@@ -30,7 +30,20 @@
                     </td>
                     <td class="text-secondary small">{{ $l->school ?: '—' }}</td>
                     <td class="small" style="max-width:260px">{{ \Illuminate\Support\Str::limit($l->message ?: ($l->jacket_type ? 'Interés: '.$l->jacket_type : '—'), 90) }}</td>
-                    <td><span class="badge bg-secondary">{{ $l->source ?: 'web' }}</span></td>
+                    <td style="white-space:nowrap">
+                        @if($l->quote)
+                            <a href="{{ route('admin.quotes.show', $l->quote) }}" class="text-decoration-none">
+                                <span class="badge bg-{{ $l->quote->statusColor() }}">{{ $l->quote->statusLabel() }}</span>
+                                <span class="small text-secondary d-block mt-1">{{ $l->quote->code() }}@if($l->quote->viewed_at) · <i class="bi bi-eye"></i>@endif</span>
+                                @if($l->quote->needsFollowUp())<span class="small text-warning fw-bold d-block">Llamar hoy</span>@endif
+                            </a>
+                        @else
+                            <form method="POST" action="{{ route('admin.leads.quote', $l) }}">@csrf
+                                <button class="btn btn-sm btn-outline-warning"><i class="bi bi-send"></i> Enviar cotización</button>
+                            </form>
+                        @endif
+                        <span class="badge bg-secondary mt-1">{{ $l->source ?: 'web' }}</span>
+                    </td>
                     <td class="text-secondary small">{{ $l->created_at->format('d/m/Y H:i') }}</td>
                     <td class="text-end" style="white-space:nowrap">
                         @php $mc = $l->phone ? ($counts[$l->phone] ?? 0) : 0; @endphp
@@ -50,7 +63,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="text-center text-secondary py-4">Aún no hay contactos. Aparecerán cuando alguien entre al diseñador dejando su correo.</td></tr>
+                <tr><td colspan="7" class="text-center text-secondary py-4">Aún no hay contactos. Aparecerán cuando alguien entre al diseñador dejando su correo.</td></tr>
             @endforelse
             </tbody>
         </table>

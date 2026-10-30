@@ -10,7 +10,7 @@ class LeadController extends Controller
 {
     public function index()
     {
-        $leads = Lead::orderByDesc('ai_paused')->latest()->paginate(30);
+        $leads = Lead::with('quote')->orderByDesc('ai_paused')->latest()->paginate(30);
         $counts = WaMessage::selectRaw('phone, COUNT(*) as c')->groupBy('phone')->pluck('c', 'phone');
         $needHuman = Lead::needsHuman()->count();
 
@@ -20,6 +20,7 @@ class LeadController extends Controller
     public function show(Lead $lead)
     {
         $messages = WaMessage::where('phone', $lead->phone)->orderBy('id')->get();
+        $lead->load('quote');
 
         return view('admin.leads.show', compact('lead', 'messages'));
     }

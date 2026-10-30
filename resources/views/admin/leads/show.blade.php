@@ -14,6 +14,27 @@
     <span class="badge bg-secondary" style="font-size:14px;padding:8px 12px">{{ $messages->count() }} mensajes</span>
 </div>
 
+<div class="card p-3 mb-3" style="max-width:760px;border-color:rgba(255,199,44,.45)">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            @if($lead->quote)
+                <b>Seguimiento {{ $lead->quote->code() }}</b> <span class="badge bg-{{ $lead->quote->statusColor() }}">{{ $lead->quote->statusLabel() }}</span>
+                <div class="small text-secondary">
+                    {{ $lead->quote->sent_at ? 'Cotización enviada el '.$lead->quote->sent_at->format('d/m/Y') : 'Aún no se le ha enviado la cotización' }}
+                    @if($lead->quote->viewed_at) · la abrió {{ $lead->quote->view_count }} {{ $lead->quote->view_count == 1 ? 'vez' : 'veces' }}@endif
+                    @if($lead->quote->school_id) · <b class="text-success">ya es colegio</b>@endif
+                </div>
+            @else
+                <b><i class="bi bi-file-earmark-text"></i> Cotización y seguimiento</b>
+                <div class="small text-secondary">Envíale la cotización por correo o WhatsApp y lleva su estado hasta que contrate.</div>
+            @endif
+        </div>
+        <form method="POST" action="{{ route('admin.leads.quote', $lead) }}">@csrf
+            <button class="btn btn-sm btn-warning" style="font-weight:700"><i class="bi bi-send"></i> {{ $lead->quote ? 'Abrir seguimiento' : 'Enviar cotización' }}</button>
+        </form>
+    </div>
+</div>
+
 @if($lead->source === 'whatsapp')
 <div class="card p-3 mb-3" style="max-width:760px;{{ $lead->ai_paused ? 'border-left:3px solid #ffc107' : '' }}">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">

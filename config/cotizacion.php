@@ -14,7 +14,7 @@ return [
     'combo_discount' => 0.03,
 
     'products' => [
-        'estructurada' => ['name' => 'Chaqueta estructurada o tipo Fórmula 1', 'short' => 'Chaqueta estructurada', 'price' => 189900, 'embroidery' => 5, 'fabric' => 'Lafayette'],
+        'estructurada' => ['name' => 'Chaqueta estructurada o tipo Fórmula 1', 'short' => 'Chaqueta estructurada', 'price' => 202900, 'embroidery' => 5, 'fabric' => 'Lafayette'],
         'beisbolera'   => ['name' => 'Chaqueta beisbolera o chaqueta un faz', 'short' => 'Beisbolera o un faz', 'price' => 169900, 'embroidery' => 5, 'fabric' => 'Lafayette'],
         'doble_faz'    => ['name' => 'Chaqueta doble faz', 'short' => 'Chaqueta doble faz', 'price' => 279900, 'embroidery' => 8, 'fabric' => 'Lafayette'],
         'buso'         => ['name' => 'Buso canguro, con cuello o con cremallera', 'short' => 'Buso', 'price' => 149900, 'embroidery' => 5, 'fabric' => 'Lafayette o lacoste'],
@@ -46,7 +46,7 @@ return [
         'bolsillo_inv'=> ['name' => 'Bolsillo con cremallera invisible', 'price' => 5000],
     ],
 
-    'included' => ['Bandera', 'Globos', 'Fotografía y video en la entrega', 'Tula o termo'],
+    'included' => ['Bandera por salón de 11', 'Globos en la entrega para fotos', 'Fotografía en la entrega de las chaquetas', 'Tula o termo'],
 
     'benefits' => [
         ['big' => '10%', 'title' => 'Hermanos o primos', 'text' => 'Descuento del 10% cuando hermanos o primos hacen su pedido con nosotros.'],

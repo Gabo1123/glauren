@@ -218,6 +218,8 @@ Route::prefix('gtorres')->name('admin.')->group(function () {
         Route::post('cotizaciones/{quote}/whatsapp', [QuoteController::class, 'whatsapp'])->name('quotes.whatsapp');
         Route::get('cotizaciones/{quote}/pdf', [QuoteController::class, 'pdf'])->name('quotes.pdf');
         Route::post('cotizaciones/{quote}/nota', [QuoteController::class, 'note'])->name('quotes.note');
+        Route::post('cotizaciones/{quote}/colegio', [QuoteController::class, 'convertToSchool'])->name('quotes.convert');
+        Route::post('leads/{lead}/seguimiento', [QuoteController::class, 'fromLead'])->name('leads.quote');
         Route::get('cotizaciones/{quote}', [QuoteController::class, 'show'])->name('quotes.show');
         Route::put('cotizaciones/{quote}', [QuoteController::class, 'update'])->name('quotes.update');
 

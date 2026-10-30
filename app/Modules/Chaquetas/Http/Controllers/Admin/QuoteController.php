@@ -3,7 +3,10 @@
 namespace App\Modules\Chaquetas\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Chaquetas\Models\Lead;
 use App\Modules\Chaquetas\Models\Quote;
+use App\Modules\Chaquetas\Models\School;
+use Illuminate\Support\Str;
 use App\Modules\Chaquetas\Models\Setting;
 use App\Modules\Chaquetas\Support\QuoteCatalog;
 use Illuminate\Http\Request;
@@ -145,6 +148,43 @@ class QuoteController extends Controller
         $quote->log('pdf', 'Se descargó el PDF de la cotización');
 
         return redirect()->to($quote->publicUrl().'?imprimir=1');
+    }
+
+    /** Abre (o crea) el seguimiento comercial de un lead. */
+    public function fromLead(Lead $lead)
+    {
+        $quote = Quote::forLead($lead);
+
+        return redirect()->route('admin.quotes.show', $quote);
+    }
+
+    /**
+     * El cliente contrató: crea el colegio con sus datos, marca la cotización como ganada
+     * y lleva a crear el contrato para iniciar todo el proceso.
+     */
+    public function convertToSchool(Request $request, Quote $quote)
+    {
+        $data = $request->validate([
+            'school_name' => 'required|string|max:160',
+            'city'        => 'nullable|string|max:120',
+        ]);
+
+        $school = $quote->schoolRecord ?? School::create([
+            'name'          => $data['school_name'],
+            'slug'          => Str::slug($data['school_name']).'-'.Str::random(4),
+            'city'          => $data['city'] ?? null,
+            'contact_name'  => $quote->customer_name,
+            'contact_phone' => $quote->customer_phone,
+            'contact_email' => $quote->customer_email,
+            'active'        => true,
+            'payment_mode'  => 'estudiante',
+        ]);
+
+        $quote->update(['school_id' => $school->id, 'school' => $school->name, 'status' => 'cerrado', 'follow_up_at' => null]);
+        $quote->log('estado', '¡Cliente convertido en colegio! '.$school->name);
+
+        return redirect()->route('admin.contracts.create', ['school_id' => $school->id])
+            ->with('ok', 'Colegio "'.$school->name.'" creado desde la cotización '.$quote->code().'. Ahora crea el contrato para iniciar el proceso.');
     }
 
     public function note(Request $request, Quote $quote)
