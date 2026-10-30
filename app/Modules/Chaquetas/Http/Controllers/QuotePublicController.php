@@ -31,7 +31,7 @@ class QuotePublicController extends Controller
             $quote->save();
         }
 
-        $whatsapp = preg_replace('/\D/', '', (string) (config('chaquetas.whatsapp') ?: Setting::get('contact_whatsapp', '')));
+        $whatsapp = preg_replace('/\D/', '', (string) (Setting::get('contact_whatsapp') ?: config('chaquetas.whatsapp')));
         $replyUrl = $whatsapp
             ? 'https://wa.me/'.$whatsapp.'?text='.rawurlencode("¡Hola! Vi la cotización {$quote->code()} y quiero separar la fecha para mi promoción.")
             : null;

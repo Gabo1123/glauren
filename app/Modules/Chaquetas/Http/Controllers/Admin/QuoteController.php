@@ -84,7 +84,12 @@ class QuoteController extends Controller
             'notes'           => $data['notes'] ?? null,
         ]);
 
-        return redirect()->route('admin.quotes.show', $quote)->with('ok', 'Cotización '.$quote->code().' creada. Ya puedes enviarla por WhatsApp.');
+        $msg = 'Cotización '.$quote->code().' creada.';
+        if ($quote->customer_email) {
+            $msg .= $quote->emailToCustomer() ? ' Se envió a '.$quote->customer_email.'.' : ' No se pudo enviar el correo.';
+        }
+
+        return redirect()->route('admin.quotes.show', $quote)->with('ok', $msg.' También puedes enviarla por WhatsApp.');
     }
 
     public function show(Quote $quote)
@@ -113,6 +118,18 @@ class QuoteController extends Controller
         $quote->save();
 
         return redirect()->away($quote->whatsappToCustomerUrl());
+    }
+
+    /** Envía (o reenvía) la cotización al correo del cliente. */
+    public function email(Quote $quote)
+    {
+        if (! $quote->customer_email) {
+            return back()->with('ok', 'Esta cotización no tiene correo del cliente.');
+        }
+
+        return back()->with('ok', $quote->emailToCustomer()
+            ? 'Cotización enviada a '.$quote->customer_email.'.'
+            : 'No se pudo enviar el correo. Revisa la configuración de correo del servidor.');
     }
 
     public function update(Request $request, Quote $quote)

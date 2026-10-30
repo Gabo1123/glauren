@@ -288,20 +288,32 @@
   <div class="modal-dialog">
     <div class="modal-content" style="background:var(--panel); color:#e8eaed; border:1px solid var(--bd);">
       <div class="modal-header border-secondary">
-        <h5 class="modal-title"><i class="bi bi-whatsapp text-success"></i> Tus datos para la cotización</h5>
+        <h5 class="modal-title"><i class="bi bi-file-earmark-text text-warning"></i> Tus datos para la cotización</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <div id="quoteError" class="alert alert-danger py-2 small d-none"></div>
+        <div id="quoteDone" class="d-none text-center py-2">
+            <div style="font-size:44px;line-height:1;color:#25d366"><i class="bi bi-check-circle-fill"></i></div>
+            <h5 class="mt-2 mb-1" id="qdTitle">¡Tu cotización está lista!</h5>
+            <p class="mb-1"><span class="badge" style="background:#FFC72C;color:#0E0E0E;font-size:15px" id="qdNumber"></span></p>
+            <p class="small text-secondary mb-3" id="qdEmail"></p>
+            <div class="d-grid gap-2">
+                <a id="qdWhatsapp" href="#" target="_blank" rel="noopener" class="btn btn-success btn-lg"><i class="bi bi-whatsapp"></i> Enviar cotización por WhatsApp</a>
+                <a id="qdView" href="#" target="_blank" rel="noopener" class="btn btn-outline-light"><i class="bi bi-file-earmark-text"></i> Ver mi cotización</a>
+            </div>
+        </div>
+        <div id="quoteForm">
         <div class="mb-2"><label class="small text-secondary">Nombre *</label><input type="text" class="form-control" id="cName"></div>
         <div class="mb-2"><label class="small text-secondary">WhatsApp / teléfono *</label><input type="text" class="form-control" id="cPhone" placeholder="3001234567"></div>
         <div class="mb-2"><label class="small text-secondary">Colegio / promoción</label><input type="text" class="form-control" id="cSchool"></div>
         <div class="mb-2"><label class="small text-secondary">Correo (opcional)</label><input type="email" class="form-control" id="cEmail"></div>
-        <p class="small text-secondary mb-0">Al enviar, se abrirá WhatsApp con tu diseño y guardaremos tu solicitud.</p>
+        <p class="small text-secondary mb-0">Guardaremos tu solicitud con un número de cotización. Si dejas tu correo, te la enviamos automáticamente; también podrás enviarla por WhatsApp.</p>
+        </div>
       </div>
       <div class="modal-footer border-secondary">
-        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-success" id="sendQuote"><i class="bi bi-send"></i> Enviar cotización</button>
+        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal" id="cancelQuote">Cancelar</button>
+        <button type="button" class="btn btn-success" id="sendQuote"><i class="bi bi-send"></i> Generar mi cotización</button>
       </div>
     </div>
   </div>
@@ -730,10 +742,26 @@
         try{
             const r=await fetch(CFG.quoteUrl,{ method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CFG.csrf,'Accept':'application/json'}, body:JSON.stringify(payload) });
             const data=await r.json();
-            if(data.ok){ window.open(data.whatsapp_url,'_blank'); bootstrap.Modal.getInstance($('quoteModal')).hide(); }
+            if(data.ok){
+                $('qdTitle').textContent='¡Listo, '+name.split(' ')[0]+'! Tu cotización está lista';
+                $('qdNumber').textContent='Cotización '+(data.quote_number||'');
+                $('qdEmail').innerHTML=data.email_sent
+                    ? '<i class="bi bi-envelope-check"></i> Te la enviamos a <b>'+data.email.replace(/[<>&"]/g,'')+'</b>. Revisa también tu carpeta de spam.'
+                    : 'Envíala por WhatsApp y te responderemos lo antes posible.';
+                $('qdWhatsapp').href=data.whatsapp_url;
+                $('qdView').href=data.quote_url||'#';
+                $('quoteForm').classList.add('d-none'); $('quoteDone').classList.remove('d-none');
+                $('sendQuote').classList.add('d-none'); $('cancelQuote').textContent='Cerrar';
+            }
             else { err.textContent='No se pudo enviar. Revisa los datos.'; err.classList.remove('d-none'); }
         }catch(e){ err.textContent='Error de conexión: '+e.message; err.classList.remove('d-none'); }
-        finally{ btn.disabled=false; btn.innerHTML='<i class="bi bi-send"></i> Enviar cotización'; }
+        finally{ btn.disabled=false; btn.innerHTML='<i class="bi bi-send"></i> Generar mi cotización'; }
+    });
+    // Al volver a abrir el formulario, mostrarlo limpio para una nueva cotización
+    $('quoteModal').addEventListener('show.bs.modal', ()=>{
+        $('quoteForm').classList.remove('d-none'); $('quoteDone').classList.add('d-none');
+        $('sendQuote').classList.remove('d-none'); $('cancelQuote').textContent='Cancelar';
+        $('quoteError').classList.add('d-none');
     });
 
     /* ===== Chaqueta paramétrica por zonas (cuerpo, mangas, pretina, puños, cuello) ===== */

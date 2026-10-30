@@ -4,7 +4,10 @@ namespace App\Modules\Chaquetas\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Modules\Chaquetas\Mail\QuoteMail;
 use App\Modules\Chaquetas\Support\QuoteCatalog;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -90,6 +93,31 @@ class Quote extends Model
             ."\n\nCualquier duda me escribes por aquí. 🧥";
 
         return 'https://wa.me/'.$phone.'?text='.rawurlencode($msg);
+    }
+
+    /**
+     * Envía la cotización al correo del cliente. Devuelve true si salió.
+     * Marca la cotización como enviada; si falla el correo solo queda en el log.
+     */
+    public function emailToCustomer(): bool
+    {
+        if (! $this->customer_email || ! filter_var($this->customer_email, FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
+        try {
+            Mail::to($this->customer_email)->send(new QuoteMail($this));
+        } catch (\Throwable $e) {
+            Log::warning('QuoteMail error', ['quote' => $this->id, 'msg' => $e->getMessage()]);
+
+            return false;
+        }
+        $this->sent_at = $this->sent_at ?? now();
+        if (in_array($this->status, ['nuevo', 'contactado'], true)) {
+            $this->status = 'enviada';
+        }
+        $this->save();
+
+        return true;
     }
 
     public function needsFollowUp(): bool

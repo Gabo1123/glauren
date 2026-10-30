@@ -81,9 +81,16 @@ class ConfiguradorController extends Controller
 
         $type = JacketType::find($data['jacket_type_id']);
 
+        // Si dejó correo, la cotización le llega automáticamente.
+        $emailSent = $quote->emailToCustomer();
+
         return response()->json([
             'ok'           => true,
             'quote_id'     => $quote->id,
+            'quote_number' => $quote->code(),
+            'quote_url'    => $quote->publicUrl(),
+            'email_sent'   => $emailSent,
+            'email'        => $emailSent ? $quote->customer_email : null,
             'whatsapp_url' => $this->whatsappUrl($quote, $type),
         ]);
     }
@@ -127,7 +134,7 @@ class ConfiguradorController extends Controller
                 }
             }
         }
-        $lines[] = '(Cotización #'.$quote->id.')';
+        $lines[] = '📄 Mi cotización '.$quote->code().': '.$quote->publicUrl();
 
         $text = rawurlencode(implode("\n", $lines));
 

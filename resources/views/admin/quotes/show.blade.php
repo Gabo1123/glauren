@@ -12,6 +12,11 @@
             <input id="pubUrl" class="form-control form-control-sm" style="min-width:320px" value="{{ $quote->publicUrl() }}" readonly onclick="this.select()">
         </div>
         <a href="{{ route('admin.quotes.send', $quote) }}" target="_blank" rel="noopener" class="btn btn-sm" style="background:#25d366;color:#04240f"><i class="bi bi-whatsapp"></i> Enviar por WhatsApp</a>
+        @if($quote->customer_email)
+            <form method="POST" action="{{ route('admin.quotes.email', $quote) }}" class="d-inline">@csrf
+                <button class="btn btn-sm btn-outline-warning"><i class="bi bi-envelope"></i> {{ $quote->sent_at ? 'Reenviar' : 'Enviar' }} por correo</button>
+            </form>
+        @endif
         <button type="button" class="btn btn-sm btn-outline-light" onclick="navigator.clipboard.writeText(document.getElementById('pubUrl').value);this.innerText='¡Copiado!'"><i class="bi bi-clipboard"></i> Copiar enlace</button>
         <a href="{{ $quote->publicUrl() }}" target="_blank" class="btn btn-sm btn-outline-light"><i class="bi bi-eye"></i> Ver como cliente</a>
     </div>

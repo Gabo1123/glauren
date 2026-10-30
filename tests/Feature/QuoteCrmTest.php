@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Modules\Chaquetas\Mail\QuoteMail;
+use App\Modules\Chaquetas\Models\JacketType;
 use App\Modules\Chaquetas\Models\Quote;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -94,5 +97,54 @@ class QuoteCrmTest extends TestCase
         $this->actingAs($admin)->get(route('admin.quotes.create'))->assertOk();
         $this->actingAs($admin)->get(route('admin.quotes.show', $quote))->assertOk()->assertSee($quote->publicUrl());
         $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk()->assertSee('Tasa de cierre');
+    }
+
+    public function test_web_quote_with_email_is_sent_automatically(): void
+    {
+        Mail::fake();
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+        $type = JacketType::create(['name' => 'Beisbolera', 'slug' => 'beisbolera', 'base_price' => 169900, 'patch_price' => 0, 'active' => true]);
+
+        $res = $this->postJson(route('quote.store'), [
+            'jacket_type_id' => $type->id, 'customer_name' => 'Sara Díaz', 'customer_phone' => '3001112233',
+            'customer_email' => 'sara@example.com', 'quantity' => 35, 'estimated_price' => 5946500,
+        ])->assertOk()->assertJson(['ok' => true, 'email_sent' => true]);
+
+        $quote = Quote::firstOrFail();
+        $this->assertSame($quote->publicUrl(), $res->json('quote_url'));
+        $this->assertStringContainsString(rawurlencode($quote->publicUrl()), $res->json('whatsapp_url'));
+        Mail::assertSent(QuoteMail::class, fn ($m) => $m->hasTo('sara@example.com') && $m->quote->is($quote));
+        $this->assertSame('enviada', $quote->status);
+        $this->assertNotNull($quote->sent_at);
+    }
+
+    public function test_web_quote_without_email_still_gives_whatsapp_button(): void
+    {
+        Mail::fake();
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+        $type = JacketType::create(['name' => 'Buso', 'slug' => 'buso', 'base_price' => 149900, 'patch_price' => 0, 'active' => true]);
+
+        $this->postJson(route('quote.store'), [
+            'jacket_type_id' => $type->id, 'customer_name' => 'Juan', 'customer_phone' => '3001112233',
+            'quantity' => 1, 'estimated_price' => 149900,
+        ])->assertOk()->assertJson(['ok' => true, 'email_sent' => false])->assertJsonStructure(['whatsapp_url', 'quote_url', 'quote_number']);
+
+        Mail::assertNothingSent();
+        $this->assertSame('nuevo', Quote::first()->status);
+    }
+
+    public function test_quote_email_renders_and_admin_can_resend(): void
+    {
+        Mail::fake();
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+        $quote = Quote::create(['customer_name' => 'Ana Ruiz', 'customer_phone' => '3000000000', 'customer_email' => 'ana@example.com',
+            'quantity' => 30, 'items' => ['combo' => 2], 'estimated_price' => 0]);
+
+        $html = (new QuoteMail($quote))->render();
+        $this->assertStringContainsString((string) $quote->number, $html);
+        $this->assertStringContainsString($quote->publicUrl(), $html);
+
+        $this->actingAs($this->admin())->post(route('admin.quotes.email', $quote))->assertRedirect();
+        Mail::assertSent(QuoteMail::class, fn ($m) => $m->hasTo('ana@example.com'));
     }
 }
