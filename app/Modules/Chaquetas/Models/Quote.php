@@ -30,7 +30,7 @@ class Quote extends Model
     public const OPEN_STATUSES = ['nuevo', 'contactado', 'enviada', 'vista', 'negociando'];
 
     protected $fillable = [
-        'jacket_type_id', 'customer_name', 'customer_phone', 'customer_email',
+        'jacket_type_id', 'lead_id', 'school_id', 'customer_name', 'customer_phone', 'customer_email',
         'school', 'quantity', 'config', 'items', 'estimated_price', 'image_path', 'images', 'status', 'notes',
         'source', 'sent_at', 'viewed_at', 'view_count', 'follow_up_at',
     ];
@@ -62,7 +62,11 @@ class Quote extends Model
         });
 
         static::created(function (Quote $quote) {
-            $quote->log('creada', $quote->source === 'manual' ? 'Cotización creada en el panel' : 'Cotización recibida desde la web (diseñador 3D)');
+            $quote->log('creada', match ($quote->source) {
+                'manual' => 'Cotización creada en el panel',
+                'lead'   => 'Seguimiento iniciado desde Leads / Contactos',
+                default  => 'Cotización recibida desde la web (diseñador 3D)',
+            });
         });
 
         // Cada cambio de estado queda en el historial.
@@ -71,6 +75,74 @@ class Quote extends Model
                 $quote->log('estado', 'Estado: '.(self::STATUSES[$quote->getOriginal('status')] ?? $quote->getOriginal('status')).' → '.$quote->statusLabel());
             }
         });
+    }
+
+    public function lead(): BelongsTo
+    {
+        return $this->belongsTo(Lead::class);
+    }
+
+    /** Colegio creado cuando el cliente contrató (la columna `school` es solo el nombre escrito). */
+    public function schoolRecord(): BelongsTo
+    {
+        return $this->belongsTo(School::class, 'school_id');
+    }
+
+    /** Cotización general (sin prendas ni valores): la que se envía a los leads. */
+    public function isGeneral(): bool
+    {
+        return empty($this->summary()['lines']) && (float) $this->estimated_price <= 0;
+    }
+
+    /** Cotización del lead; la crea si aún no tiene. */
+    public static function forLead(Lead $lead): self
+    {
+        return static::firstOrCreate(['lead_id' => $lead->id], [
+            'customer_name'   => $lead->name ?: 'Cliente',
+            'customer_phone'  => $lead->phone ?: '',
+            'customer_email'  => $lead->email,
+            'school'          => $lead->school,
+            'quantity'        => 1,
+            'estimated_price' => 0,
+            'status'          => 'nuevo',
+            'source'          => 'lead',
+            'follow_up_at'    => today(),
+        ]);
+    }
+
+    /** Contrato más reciente del colegio (si el cliente ya contrató). */
+    public function contract(): ?Contract
+    {
+        return $this->school_id ? Contract::where('school_id', $this->school_id)->latest()->first() : null;
+    }
+
+    /**
+     * Etapas que ve el cliente en su enlace: de la cotización a la entrega.
+     *
+     * @return array<int, array{label:string, done:bool, current:bool}>
+     */
+    public function customerSteps(): array
+    {
+        $steps = ['Cotización enviada', 'Revisando la propuesta', 'Contrato firmado', 'Toma de medidas', 'En producción', 'Entrega'];
+        $contract = $this->contract();
+
+        if ($contract) {
+            $map = ['cotizado' => 2, 'aprobado' => 2, 'toma_medidas' => 3, 'en_produccion' => 4, 'control_calidad' => 4, 'listo' => 5, 'entregado' => 6];
+            $at = $map[$contract->production_status] ?? 2;
+        } else {
+            $at = match ($this->status) {
+                'cerrado'            => 2,
+                'vista', 'negociando'=> 1,
+                default              => 0,
+            };
+        }
+
+        $out = [];
+        foreach ($steps as $i => $label) {
+            $out[] = ['label' => $label, 'done' => $i < $at || ($i === 5 && $at === 6), 'current' => $i === min($at, 5) && $at < 6];
+        }
+
+        return $out;
     }
 
     public function activities(): HasMany

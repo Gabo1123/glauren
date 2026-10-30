@@ -21,6 +21,10 @@ class ContractController extends Controller
     public function create()
     {
         $contract = new Contract(['year' => (int) date('Y'), 'production_status' => 'cotizado']);
+        // Viene de "Convertir en colegio" en una cotización
+        if (request()->filled('school_id')) {
+            $contract->school_id = (int) request('school_id');
+        }
 
         return view('admin.contracts.form', $this->formData($contract));
     }

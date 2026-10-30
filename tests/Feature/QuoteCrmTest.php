@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Modules\Chaquetas\Mail\QuoteMail;
 use App\Modules\Chaquetas\Models\JacketType;
+use App\Modules\Chaquetas\Models\Lead;
+use App\Modules\Chaquetas\Models\School;
 use App\Modules\Chaquetas\Models\Quote;
 use App\Modules\Chaquetas\Models\Setting;
 use Illuminate\Support\Facades\Mail;
@@ -45,9 +47,9 @@ class QuoteCrmTest extends TestCase
         ])->assertRedirect();
 
         $quote = Quote::firstOrFail();
-        // Combo 2 = (189.900 + 149.900) − 3% = 329.600 ; + forro 20.000
-        $this->assertSame(349600, $quote->summary()['unit_total']);
-        $this->assertEquals(349600 * 40, (float) $quote->estimated_price);
+        // Combo 2 = (202.900 + 149.900) − 3% = 342.200 ; + forro 20.000
+        $this->assertSame(362200, $quote->summary()['unit_total']);
+        $this->assertEquals(362200 * 40, (float) $quote->estimated_price);
         $this->assertSame('manual', $quote->source);
         $this->assertNotNull($quote->follow_up_at);
     }
@@ -213,5 +215,69 @@ class QuoteCrmTest extends TestCase
 
         $this->assertSame(1, $quote->activities()->where('type', 'vista')->count());
         $this->assertSame(2, $quote->fresh()->view_count);
+    }
+
+    public function test_lead_gets_follow_up_and_general_email_without_prices(): void
+    {
+        Mail::fake();
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+        $admin = $this->admin();
+        $lead = Lead::create(['name' => 'Carlos Pérez', 'email' => 'carlos@example.com', 'phone' => '3105556677', 'school' => 'Liceo Freire', 'source' => 'web']);
+
+        $this->actingAs($admin)->get(route('admin.leads.index'))->assertOk()->assertSee('Enviar cotización');
+
+        $res = $this->actingAs($admin)->post(route('admin.leads.quote', $lead));
+        $quote = Quote::where('lead_id', $lead->id)->firstOrFail();
+        $res->assertRedirect(route('admin.quotes.show', $quote));
+        $this->assertTrue($quote->isGeneral());
+        $this->assertSame('lead', $quote->source);
+
+        // Volver a abrir no duplica
+        $this->actingAs($admin)->post(route('admin.leads.quote', $lead));
+        $this->assertSame(1, Quote::where('lead_id', $lead->id)->count());
+
+        $html = (new QuoteMail($quote))->render();
+        $this->assertStringContainsString('Tu cotización ya está lista en línea', $html);
+        $this->assertStringNotContainsString('Valor por estudiante', $html);
+        $this->assertStringNotContainsString('119.000', $html);
+
+        $this->actingAs($admin)->post(route('admin.quotes.email', $quote))->assertRedirect();
+        Mail::assertSent(QuoteMail::class, fn ($m) => $m->hasTo('carlos@example.com'));
+        $this->actingAs($admin)->get(route('admin.leads.index'))->assertOk()->assertSee($quote->code());
+    }
+
+    public function test_convert_quote_into_school_and_start_contract(): void
+    {
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+        $admin = $this->admin();
+        $quote = Quote::create(['customer_name' => 'Laura Gómez', 'customer_phone' => '3001234567', 'customer_email' => 'laura@example.com',
+            'school' => 'Colegio Montreal', 'quantity' => 40, 'estimated_price' => 0]);
+
+        $this->actingAs($admin)->post(route('admin.quotes.convert', $quote), ['school_name' => 'Colegio Montreal', 'city' => 'Bogotá'])
+            ->assertRedirect();
+
+        $school = School::firstOrFail();
+        $this->assertSame('Colegio Montreal', $school->name);
+        $this->assertSame('Laura Gómez', $school->contact_name);
+        $quote->refresh();
+        $this->assertSame($school->id, $quote->school_id);
+        $this->assertSame('cerrado', $quote->status);
+
+        $this->actingAs($admin)->get(route('admin.contracts.create', ['school_id' => $school->id]))->assertOk();
+        $this->actingAs($admin)->get(route('admin.quotes.show', $quote))->assertOk()->assertSee('¡Cliente ganado!');
+
+        // El cliente ve que su contrato ya está en marcha
+        $this->get(route('cotizacion.show', $quote->public_token))->assertOk()->assertSee('Estado de tu proceso')->assertSee('Contrato firmado');
+    }
+
+    public function test_client_page_shows_full_quote_with_photos(): void
+    {
+        $quote = Quote::create(['customer_name' => 'Ana', 'customer_phone' => '3000000000', 'quantity' => 1, 'estimated_price' => 0]);
+
+        $this->get(route('cotizacion.show', $quote->public_token))->assertOk()
+            ->assertSee('Quiénes somos')->assertSee('Nuestros')->assertSee('Telas y cremalleras')
+            ->assertSee('Chaqueta con cortes')->assertSee('Beisboleras')->assertSee('Proceso de')
+            ->assertSee('/img/cotizacion/disenos/beisbolera-9.jpg', false)
+            ->assertSee('$202.900');
     }
 }

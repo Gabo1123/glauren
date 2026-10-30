@@ -3,6 +3,7 @@
 namespace App\Modules\Chaquetas\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Lead extends Model
 {
@@ -21,5 +22,11 @@ class Lead extends Model
     public function scopeNeedsHuman($query)
     {
         return $query->where('ai_paused', true);
+    }
+
+    /** Cotización/seguimiento comercial de este contacto. */
+    public function quote(): HasOne
+    {
+        return $this->hasOne(Quote::class)->latestOfMany();
     }
 }

@@ -5,6 +5,10 @@
 <a href="{{ route('admin.quotes.index') }}" class="text-secondary small text-decoration-none"><i class="bi bi-arrow-left"></i> Volver</a>
 <h3 class="my-3">Cotización {{ $quote->code() }} <span class="badge bg-{{ $quote->statusColor() }}">{{ $quote->statusLabel() }}</span></h3>
 
+@if($quote->lead_id)
+    <p class="small text-secondary mt-n2"><i class="bi bi-person-lines-fill"></i> Viene de <a href="{{ route('admin.leads.show', $quote->lead_id) }}">Leads / Contactos</a>@if($quote->isGeneral()) · se envía como cotización general (sin valores en el correo)@endif</p>
+@endif
+
 {{-- ===== Enviar al cliente ===== --}}
 <div class="row g-3 mb-4">
     <div class="col-lg-7">
@@ -157,6 +161,28 @@
                 </details>
                 <button class="btn btn-primary w-100"><i class="bi bi-save"></i> Guardar</button>
             </form>
+        </div>
+
+        {{-- ===== Convertir en colegio ===== --}}
+        <div class="card p-4 mt-4" style="border-color:rgba(37,211,102,.45)">
+            @if($quote->school_id)
+                <h6 class="mb-2"><i class="bi bi-trophy" style="color:#25d366"></i> ¡Cliente ganado!</h6>
+                <p class="small text-secondary mb-3">Ya es el colegio <b class="text-light">{{ $quote->schoolRecord?->name }}</b>.</p>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ route('admin.schools.edit', $quote->school_id) }}" class="btn btn-sm btn-outline-light"><i class="bi bi-building"></i> Ver colegio</a>
+                    <a href="{{ route('admin.contracts.create', ['school_id' => $quote->school_id]) }}" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-plus"></i> Crear contrato</a>
+                </div>
+            @else
+                <h6 class="mb-2"><i class="bi bi-building-add" style="color:#25d366"></i> ¿Te contrató? Conviértelo en colegio</h6>
+                <p class="small text-secondary mb-3">Se crea el colegio con los datos de este cliente, la cotización queda como <b>Ganada</b> y pasas a crear el contrato.</p>
+                <form method="POST" action="{{ route('admin.quotes.convert', $quote) }}" onsubmit="return confirm('¿Crear el colegio y marcar la cotización como ganada?')">@csrf
+                    <label class="form-label small">Nombre del colegio</label>
+                    <input name="school_name" value="{{ $quote->school }}" class="form-control form-control-sm mb-2" required maxlength="160">
+                    <label class="form-label small">Ciudad</label>
+                    <input name="city" class="form-control form-control-sm mb-3" maxlength="120" placeholder="Bogotá">
+                    <button class="btn btn-success w-100" style="font-weight:700"><i class="bi bi-check2-circle"></i> Convertir en colegio e iniciar proceso</button>
+                </form>
+            @endif
         </div>
 
         {{-- ===== Historial de seguimiento ===== --}}

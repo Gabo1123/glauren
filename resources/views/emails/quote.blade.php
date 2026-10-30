@@ -1,5 +1,6 @@
 @php
     $first = \Illuminate\Support\Str::of($quote->customer_name)->explode(' ')->first();
+    $general = $quote->isGeneral(); // lead: correo informativo, sin valores
     $cfg = config('cotizacion');
     $money = fn ($v) => '$'.number_format((float) $v, 0, ',', '.');
     $img = $baseUrl.'/img/cotizacion';
@@ -55,8 +56,14 @@
         <div style="font-size:12px;font-weight:800;letter-spacing:4px;color:#0E0E0E;">TU COTIZACIÓN ESTÁ LISTA</div>
         <div class="h1" style="{{ $display }}font-size:48px;line-height:1;color:#0E0E0E;margin:8px 0 12px;">¡Hola, {{ $first }}!</div>
         <div style="font-size:15px;line-height:1.6;color:#1A1A1A;">
-            Gracias por confiar en G'Lauren para la promoción{{ $quote->school ? ' de '.$quote->school : '' }}.
-            Preparamos tu cotización con precios, combos con descuento y todo lo que incluye tu prom.
+            @if($general)
+                Gracias por tu interés en G'Lauren{{ $quote->school ? ' para la promoción de '.$quote->school : '' }}.
+                Tu cotización ya está lista en línea: ahí encuentras nuestros diseños, fotos de promociones reales,
+                combos, beneficios y todo el proceso para tu prom.
+            @else
+                Gracias por confiar en G'Lauren para la promoción{{ $quote->school ? ' de '.$quote->school : '' }}.
+                Preparamos tu cotización con precios, combos con descuento y todo lo que incluye tu prom.
+            @endif
         </div>
     </td></tr>
 
@@ -71,8 +78,8 @@
             </td>
             <td class="sp" width="8" style="width:8px;"></td>
             <td width="33%" style="padding:12px 14px;background:#0E0E0E;border-radius:12px;">
-                <div style="font-size:10px;font-weight:800;letter-spacing:2px;color:#FFC72C;">ESTUDIANTES</div>
-                <div style="font-size:14px;font-weight:700;color:#FFFFFF;">{{ $quote->quantity }}</div>
+                <div style="font-size:10px;font-weight:800;letter-spacing:2px;color:#FFC72C;">{{ $general ? 'COLEGIO' : 'ESTUDIANTES' }}</div>
+                <div style="font-size:14px;font-weight:700;color:#FFFFFF;">{{ $general ? ($quote->school ?: '—') : $quote->quantity }}</div>
             </td>
             <td class="sp" width="8" style="width:8px;"></td>
             <td width="33%" style="padding:12px 14px;background:#0E0E0E;border-radius:12px;">
@@ -102,7 +109,7 @@
                 </tr>
                 @endif
             </table>
-        @elseif((float) $quote->estimated_price > 0)
+        @elseif(! $general && (float) $quote->estimated_price > 0)
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0E0E0E;border-radius:14px;"><tr>
                 <td style="padding:16px 18px;font-size:14px;font-weight:700;color:#FFFFFF;">Valor estimado de tu diseño<br><span style="font-weight:400;color:#BDBDBD;font-size:12px;">{{ $quote->quantity }} {{ $quote->quantity == 1 ? 'unidad' : 'unidades' }}</span></td>
                 <td align="right" style="padding:16px 18px;{{ $display }}font-size:28px;color:#FFC72C;white-space:nowrap;">{{ $money($quote->estimated_price) }}</td>
@@ -115,7 +122,7 @@
                 <a href="{{ $url }}" style="display:block;padding:18px 24px;{{ $display }}font-size:22px;color:#FFC72C;text-decoration:none;">Ver mi cotización completa →</a>
             </td>
         </tr></table>
-        <div style="text-align:center;font-size:12px;color:#555555;margin:12px 0 22px;">Precios, combos, adicionales y paquete de fotografía · Puedes descargarla en PDF</div>
+        <div style="text-align:center;font-size:12px;color:#555555;margin:12px 0 22px;">Diseños, fotos, precios, combos, adicionales y paquete de fotografía · Puedes descargarla en PDF</div>
     </td></tr>
 
     {{-- Beneficios --}}
@@ -153,12 +160,14 @@
                 <div style="{{ $display }}font-size:24px;color:#FFFFFF;margin:4px 0;">Paquete de fotografía de grado</div>
                 <div style="font-size:12px;color:#D6D6D6;line-height:1.5;">Sesión, carpeta de cuero, diploma, estola, fotos digitales e impresas y anuario. {{ $cfg['photo_package']['benefit'] }}</div>
             </td>
+            @unless($general)
             <td class="sp" width="14" style="width:14px;"></td>
             <td width="170" align="center" valign="middle" style="background:#FFC72C;border-radius:14px;padding:12px;">
                 <div style="font-size:11px;font-weight:800;color:#0E0E0E;">ANTES <s>{{ $money($cfg['photo_package']['before']) }}</s></div>
                 <div style="{{ $display }}font-size:32px;color:#0E0E0E;line-height:1.1;">{{ $money($cfg['photo_package']['price']) }}</div>
                 <div style="font-size:10px;font-weight:700;color:#0E0E0E;">por estudiante</div>
             </td>
+            @endunless
         </tr></table>
     </td></tr>
 
