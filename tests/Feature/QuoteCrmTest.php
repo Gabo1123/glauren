@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Chaquetas\Mail\QuoteMail;
 use App\Modules\Chaquetas\Models\JacketType;
 use App\Modules\Chaquetas\Models\Quote;
+use App\Modules\Chaquetas\Models\Setting;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -146,5 +147,71 @@ class QuoteCrmTest extends TestCase
 
         $this->actingAs($this->admin())->post(route('admin.quotes.email', $quote))->assertRedirect();
         Mail::assertSent(QuoteMail::class, fn ($m) => $m->hasTo('ana@example.com'));
+    }
+
+    public function test_whatsapp_with_custom_message_marks_sent_and_logs_history(): void
+    {
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+        $admin = $this->admin();
+        $quote = Quote::create(['customer_name' => 'Laura Gómez', 'customer_phone' => '3001234567', 'school' => 'Montreal',
+            'quantity' => 30, 'estimated_price' => 0]);
+
+        $msg = 'Hola Laura, tu cotización '.$quote->code().' está aquí: '.$quote->publicUrl();
+        $this->actingAs($admin)->post(route('admin.quotes.whatsapp', $quote), ['message' => $msg, 'save_default' => 1])
+            ->assertRedirect('https://wa.me/573001234567?text='.rawurlencode($msg));
+
+        $quote->refresh();
+        $this->assertSame('enviada', $quote->status);
+        $this->assertNotNull($quote->sent_at);
+        $this->assertTrue($quote->follow_up_at->isSameDay(today()->addDays(2)));
+        // La plantilla guardada vuelve a usar variables
+        $this->assertSame('Hola Laura, tu cotización {numero} está aquí: {enlace}', Setting::get('quote_whatsapp_message'));
+
+        $types = $quote->activities()->pluck('type')->all();
+        $this->assertContains('creada', $types);
+        $this->assertContains('whatsapp', $types);
+        $this->assertContains('estado', $types);
+    }
+
+    public function test_default_whatsapp_message_has_customer_data(): void
+    {
+        Setting::put('quote_whatsapp_message', null); // sin plantilla guardada → mensaje por defecto
+        $quote = Quote::create(['customer_name' => 'Laura Gómez', 'customer_phone' => '3001234567', 'school' => 'Montreal',
+            'quantity' => 30, 'estimated_price' => 0]);
+
+        $text = $quote->whatsappMessage();
+        $this->assertStringContainsString('Laura', $text);
+        $this->assertStringContainsString($quote->code(), $text);
+        $this->assertStringContainsString($quote->publicUrl(), $text);
+        $this->assertStringContainsString('de Montreal', $text);
+    }
+
+    public function test_pdf_note_and_history_on_detail_page(): void
+    {
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+        $admin = $this->admin();
+        $quote = Quote::create(['customer_name' => 'Ana', 'customer_phone' => '3000000000', 'quantity' => 1, 'estimated_price' => 0]);
+        Quote::create(['customer_name' => 'Ana', 'customer_phone' => '+57 300 000 0000', 'quantity' => 5, 'estimated_price' => 0]);
+
+        $this->actingAs($admin)->get(route('admin.quotes.pdf', $quote))->assertRedirect($quote->publicUrl().'?imprimir=1');
+        $this->actingAs($admin)->post(route('admin.quotes.note', $quote), ['note' => 'Llamé, piden 45 estudiantes'])->assertRedirect();
+
+        $this->actingAs($admin)->get(route('admin.quotes.show', $quote))->assertOk()
+            ->assertSee('Historial de seguimiento')
+            ->assertSee('Llamé, piden 45 estudiantes')
+            ->assertSee('Otras cotizaciones de este cliente')
+            ->assertSee('Abrir WhatsApp y marcar como enviada');
+
+        $this->get(route('cotizacion.show', $quote->public_token).'?imprimir=1')->assertOk()->assertSee('window.print()', false);
+    }
+
+    public function test_customer_view_is_logged_once_per_hour(): void
+    {
+        $quote = Quote::create(['customer_name' => 'Ana', 'customer_phone' => '3000000000', 'quantity' => 1, 'estimated_price' => 0]);
+        $this->get(route('cotizacion.show', $quote->public_token));
+        $this->get(route('cotizacion.show', $quote->public_token));
+
+        $this->assertSame(1, $quote->activities()->where('type', 'vista')->count());
+        $this->assertSame(2, $quote->fresh()->view_count);
     }
 }

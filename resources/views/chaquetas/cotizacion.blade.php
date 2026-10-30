@@ -122,8 +122,12 @@ h2{font-size:clamp(34px,6vw,52px);margin:.25em 0 .4em}
   .tb th:nth-child(3),.tb td:nth-child(3){display:none}
   .num{position:static;display:inline-block;margin:16px 20px 0}
 }
+@page{size:A4;margin:10mm 0}
 @media print{
   .noprint{display:none!important}
+  .hero .wrap{min-height:430px}
+  .combos{grid-template-columns:repeat(2,1fr)}
+  .photos img{height:200px}
   section{padding:28px 0;break-inside:avoid}
   body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
@@ -258,5 +262,8 @@ h2{font-size:clamp(34px,6vw,52px);margin:.25em 0 .4em}
     </div>
 </section>
 <div class="foot">Cotización {{ $quote->code() }} · No válida como factura de compra · G'Lauren · NIT 1033779133-6 · chaquetasdeprom.com</div>
+@if(request()->boolean('imprimir'))
+<script>window.addEventListener('load', () => setTimeout(() => window.print(), 700));</script>
+@endif
 </body>
 </html>

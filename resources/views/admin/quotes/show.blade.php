@@ -5,26 +5,61 @@
 <a href="{{ route('admin.quotes.index') }}" class="text-secondary small text-decoration-none"><i class="bi bi-arrow-left"></i> Volver</a>
 <h3 class="my-3">Cotización {{ $quote->code() }} <span class="badge bg-{{ $quote->statusColor() }}">{{ $quote->statusLabel() }}</span></h3>
 
-<div class="card p-3 mb-4" style="border-color:rgba(255,199,44,.45)">
-    <div class="d-flex flex-wrap gap-2 align-items-center">
-        <div class="me-auto">
-            <div class="small text-secondary">Enlace para el cliente</div>
-            <input id="pubUrl" class="form-control form-control-sm" style="min-width:320px" value="{{ $quote->publicUrl() }}" readonly onclick="this.select()">
-        </div>
-        <a href="{{ route('admin.quotes.send', $quote) }}" target="_blank" rel="noopener" class="btn btn-sm" style="background:#25d366;color:#04240f"><i class="bi bi-whatsapp"></i> Enviar por WhatsApp</a>
-        @if($quote->customer_email)
-            <form method="POST" action="{{ route('admin.quotes.email', $quote) }}" class="d-inline">@csrf
-                <button class="btn btn-sm btn-outline-warning"><i class="bi bi-envelope"></i> {{ $quote->sent_at ? 'Reenviar' : 'Enviar' }} por correo</button>
+{{-- ===== Enviar al cliente ===== --}}
+<div class="row g-3 mb-4">
+    <div class="col-lg-7">
+        <div class="card p-4 h-100" style="border-color:rgba(37,211,102,.45)">
+            <h6 class="mb-3"><i class="bi bi-whatsapp" style="color:#25d366"></i> Enviar por WhatsApp</h6>
+            <div class="d-flex gap-2 align-items-center mb-3">
+                <span class="badge rounded-pill" style="background:#FFC72C;color:#0E0E0E">1</span>
+                <a href="{{ route('admin.quotes.pdf', $quote) }}" target="_blank" class="btn btn-sm btn-outline-light"><i class="bi bi-file-earmark-pdf"></i> Descargar PDF de la cotización</a>
+                <span class="small text-secondary">En la ventana que se abre elige “Guardar como PDF”.</span>
+            </div>
+            <form method="POST" action="{{ route('admin.quotes.whatsapp', $quote) }}" target="_blank" onsubmit="setTimeout(()=>location.reload(),2500)">
+                @csrf
+                <div class="d-flex gap-2 align-items-center mb-2">
+                    <span class="badge rounded-pill" style="background:#FFC72C;color:#0E0E0E">2</span>
+                    <label class="small text-secondary mb-0">Mensaje (puedes editarlo antes de enviar)</label>
+                </div>
+                <textarea name="message" rows="6" class="form-control form-control-sm mb-2" maxlength="2000">{{ $waMessage }}</textarea>
+                <label class="d-flex gap-2 small text-secondary mb-3 align-items-center">
+                    <input type="checkbox" class="form-check-input mt-0" name="save_default" value="1">
+                    Guardar como mensaje predeterminado para todas las cotizaciones
+                    <span title="Variables: {nombre} {numero} {enlace} {colegio} {cantidad}"><i class="bi bi-info-circle"></i></span>
+                </label>
+                <div class="d-flex gap-2 align-items-center">
+                    <span class="badge rounded-pill" style="background:#FFC72C;color:#0E0E0E">3</span>
+                    <button class="btn" style="background:#25d366;color:#04240f;font-weight:700"><i class="bi bi-send"></i> Abrir WhatsApp y marcar como enviada</button>
+                </div>
+                <p class="small text-secondary mt-2 mb-0">En WhatsApp adjunta el PDF que descargaste (clip <i class="bi bi-paperclip"></i> → Documento) y envía.</p>
             </form>
-        @endif
-        <button type="button" class="btn btn-sm btn-outline-light" onclick="navigator.clipboard.writeText(document.getElementById('pubUrl').value);this.innerText='¡Copiado!'"><i class="bi bi-clipboard"></i> Copiar enlace</button>
-        <a href="{{ $quote->publicUrl() }}" target="_blank" class="btn btn-sm btn-outline-light"><i class="bi bi-eye"></i> Ver como cliente</a>
+        </div>
     </div>
-    <div class="small text-secondary mt-2 d-flex flex-wrap gap-3">
-        <span><i class="bi bi-send"></i> Enviada: {{ $quote->sent_at ? $quote->sent_at->format('d/m/Y H:i') : 'aún no' }}</span>
-        <span><i class="bi bi-eye"></i> Vista por el cliente: {{ $quote->viewed_at ? $quote->viewed_at->format('d/m/Y H:i').' ('.$quote->view_count.' '.($quote->view_count == 1 ? 'vez' : 'veces').')' : 'todavía no la abre' }}</span>
-        <span><i class="bi bi-calendar-event"></i> Seguimiento: {{ $quote->follow_up_at ? $quote->follow_up_at->format('d/m/Y') : 'sin fecha' }}@if($quote->needsFollowUp()) <b class="text-warning">· ¡hoy toca!</b>@endif</span>
-        <span><i class="bi bi-globe"></i> Origen: {{ $quote->source === 'manual' ? 'creada en el panel' : 'web / diseñador 3D' }}</span>
+    <div class="col-lg-5">
+        <div class="card p-4 h-100" style="border-color:rgba(255,199,44,.45)">
+            <h6 class="mb-3"><i class="bi bi-envelope-paper" style="color:#FFC72C"></i> Enviar por correo</h6>
+            @if($quote->customer_email)
+                <p class="small text-secondary mb-3">Se envía el correo con el diseño G'Lauren a <b class="text-light">{{ $quote->customer_email }}</b>.</p>
+                <form method="POST" action="{{ route('admin.quotes.email', $quote) }}">@csrf
+                    <button class="btn btn-warning w-100 mb-2" style="font-weight:700"><i class="bi bi-envelope"></i> {{ $quote->activities->where('type', 'correo')->count() ? 'Reenviar' : 'Enviar' }} por correo</button>
+                </form>
+            @else
+                <p class="small text-secondary mb-3">Este cliente no dejó correo. Agrégalo para poder enviarle la cotización por email.</p>
+            @endif
+            <hr class="border-secondary">
+            <div class="small text-secondary mb-1">Enlace de la cotización</div>
+            <div class="input-group input-group-sm mb-2">
+                <input id="pubUrl" class="form-control" value="{{ $quote->publicUrl() }}" readonly onclick="this.select()">
+                <button type="button" class="btn btn-outline-light" onclick="navigator.clipboard.writeText(document.getElementById('pubUrl').value);this.innerHTML='<i class=\'bi bi-check\'></i>'"><i class="bi bi-clipboard"></i></button>
+                <a href="{{ $quote->publicUrl() }}" target="_blank" class="btn btn-outline-light" title="Ver como cliente"><i class="bi bi-eye"></i></a>
+            </div>
+            <div class="small text-secondary d-flex flex-column gap-1 mt-2">
+                <span><i class="bi bi-send"></i> Enviada: {{ $quote->sent_at ? $quote->sent_at->format('d/m/Y H:i') : 'aún no' }}</span>
+                <span><i class="bi bi-eye"></i> Vista: {{ $quote->viewed_at ? $quote->viewed_at->format('d/m/Y H:i').' · '.$quote->view_count.' '.($quote->view_count == 1 ? 'vez' : 'veces') : 'todavía no la abre' }}</span>
+                <span><i class="bi bi-calendar-event"></i> Seguimiento: {{ $quote->follow_up_at ? $quote->follow_up_at->format('d/m/Y') : 'sin fecha' }}@if($quote->needsFollowUp()) <b class="text-warning">· ¡hoy toca!</b>@endif</span>
+                <span><i class="bi bi-globe"></i> Origen: {{ $quote->source === 'manual' ? 'creada en el panel' : 'web / diseñador 3D' }}</span>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -123,6 +158,38 @@
                 <button class="btn btn-primary w-100"><i class="bi bi-save"></i> Guardar</button>
             </form>
         </div>
+
+        {{-- ===== Historial de seguimiento ===== --}}
+        <div class="card p-4 mt-4">
+            <h6 class="mb-3"><i class="bi bi-clock-history"></i> Historial de seguimiento</h6>
+            <form method="POST" action="{{ route('admin.quotes.note', $quote) }}" class="d-flex gap-2 mb-3">@csrf
+                <input name="note" class="form-control form-control-sm" maxlength="255" placeholder="Ej.: Llamé, piden cotizar 45 estudiantes" required>
+                <button class="btn btn-sm btn-outline-light text-nowrap"><i class="bi bi-plus"></i> Nota</button>
+            </form>
+            @forelse($quote->activities as $a)
+                <div class="d-flex gap-3 pb-3 mb-3" style="border-bottom:1px solid var(--g-line)">
+                    <span style="flex:0 0 32px;height:32px;border-radius:50%;display:grid;place-items:center;background:{{ $a->color() }}22;color:{{ $a->color() }}"><i class="bi {{ $a->icon() }}"></i></span>
+                    <div class="small">
+                        <div>{{ $a->description }}</div>
+                        <div class="text-secondary">{{ $a->created_at->format('d/m/Y H:i') }}@if($a->user) · {{ $a->user->name }}@endif</div>
+                    </div>
+                </div>
+            @empty
+                <p class="small text-secondary mb-0">Aún no hay movimientos.</p>
+            @endforelse
+        </div>
+
+        @if($others->count())
+        <div class="card p-4 mt-4">
+            <h6 class="mb-3"><i class="bi bi-person-lines-fill"></i> Otras cotizaciones de este cliente</h6>
+            @foreach($others as $o)
+                <a href="{{ route('admin.quotes.show', $o) }}" class="d-flex justify-content-between text-decoration-none small py-2" style="border-bottom:1px solid var(--g-line)">
+                    <span>{{ $o->code() }} · {{ $o->created_at->format('d/m/Y') }}</span>
+                    <span class="badge bg-{{ $o->statusColor() }}">{{ $o->statusLabel() }}</span>
+                </a>
+            @endforeach
+        </div>
+        @endif
     </div>
 </div>
 @endsection

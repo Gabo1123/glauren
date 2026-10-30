@@ -4,6 +4,7 @@ namespace App\Modules\Chaquetas\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Chaquetas\Models\Quote;
+use App\Modules\Chaquetas\Models\Setting;
 use App\Modules\Chaquetas\Support\QuoteCatalog;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -94,9 +95,11 @@ class QuoteController extends Controller
 
     public function show(Quote $quote)
     {
-        $quote->load('jacketType');
+        $quote->load(['jacketType', 'activities.user']);
 
         return view('admin.quotes.show', [
+            'waMessage' => $quote->whatsappMessage(),
+            'others'    => $quote->sameCustomer(),
             'quote'   => $quote,
             'summary' => $quote->summary(),
             'combos'  => QuoteCatalog::combos(),
@@ -105,19 +108,51 @@ class QuoteController extends Controller
         ]);
     }
 
-    /** Marca la cotización como enviada y abre WhatsApp con el enlace para el cliente. */
+    /** Envío rápido (desde la lista): mensaje predeterminado, marca enviada y abre WhatsApp. */
     public function send(Quote $quote)
     {
-        $quote->sent_at = $quote->sent_at ?? now();
-        if (in_array($quote->status, ['nuevo', 'contactado'], true)) {
-            $quote->status = 'enviada';
-        }
-        if (! $quote->follow_up_at || $quote->follow_up_at->lt(today()->addDays(2))) {
-            $quote->follow_up_at = today()->addDays(2);
-        }
-        $quote->save();
+        $quote->markSent();
+        $quote->log('whatsapp', 'Cotización enviada por WhatsApp a '.$quote->customer_phone);
 
         return redirect()->away($quote->whatsappToCustomerUrl());
+    }
+
+    /** Envío con mensaje editado en el panel (opcionalmente se guarda como predeterminado). */
+    public function whatsapp(Request $request, Quote $quote)
+    {
+        $data = $request->validate([
+            'message'      => 'required|string|max:2000',
+            'save_default' => 'nullable|boolean',
+        ]);
+
+        if ($request->boolean('save_default')) {
+            // Se guarda como plantilla: los datos del cliente vuelven a ser variables.
+            Setting::put('quote_whatsapp_message', strtr($data['message'], [
+                $quote->publicUrl() => '{enlace}',
+                $quote->code()      => '{numero}',
+            ]));
+        }
+
+        $quote->markSent();
+        $quote->log('whatsapp', 'Cotización enviada por WhatsApp a '.$quote->customer_phone);
+
+        return redirect()->away($quote->whatsappToCustomerUrl($data['message']));
+    }
+
+    /** Abre la versión para imprimir / guardar en PDF. */
+    public function pdf(Quote $quote)
+    {
+        $quote->log('pdf', 'Se descargó el PDF de la cotización');
+
+        return redirect()->to($quote->publicUrl().'?imprimir=1');
+    }
+
+    public function note(Request $request, Quote $quote)
+    {
+        $data = $request->validate(['note' => 'required|string|max:255']);
+        $quote->log('nota', $data['note']);
+
+        return back()->with('ok', 'Nota agregada al historial.');
     }
 
     /** Envía (o reenvía) la cotización al correo del cliente. */

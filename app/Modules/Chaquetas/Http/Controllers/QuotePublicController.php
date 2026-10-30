@@ -29,6 +29,14 @@ class QuotePublicController extends Controller
                 $quote->status = 'vista';
             }
             $quote->save();
+
+            // Al historial: una entrada por visita (máximo una por hora para no llenarlo).
+            $last = $quote->activities()->where('type', 'vista')->first();
+            if (! $last || $last->created_at->lt(now()->subHour())) {
+                $quote->log('vista', $quote->view_count === 1
+                    ? 'El cliente abrió la cotización por primera vez'
+                    : 'El cliente volvió a abrir la cotización ('.$quote->view_count.' veces)');
+            }
         }
 
         $whatsapp = preg_replace('/\D/', '', (string) (Setting::get('contact_whatsapp') ?: config('chaquetas.whatsapp')));

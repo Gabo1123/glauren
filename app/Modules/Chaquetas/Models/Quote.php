@@ -4,6 +4,8 @@ namespace App\Modules\Chaquetas\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Auth;
 use App\Modules\Chaquetas\Mail\QuoteMail;
 use App\Modules\Chaquetas\Support\QuoteCatalog;
 use Illuminate\Support\Facades\Log;
@@ -58,6 +60,46 @@ class Quote extends Model
                 $quote->public_token = Str::random(32);
             }
         });
+
+        static::created(function (Quote $quote) {
+            $quote->log('creada', $quote->source === 'manual' ? 'Cotización creada en el panel' : 'Cotización recibida desde la web (diseñador 3D)');
+        });
+
+        // Cada cambio de estado queda en el historial.
+        static::updated(function (Quote $quote) {
+            if ($quote->wasChanged('status')) {
+                $quote->log('estado', 'Estado: '.(self::STATUSES[$quote->getOriginal('status')] ?? $quote->getOriginal('status')).' → '.$quote->statusLabel());
+            }
+        });
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(QuoteActivity::class)->latest()->latest('id');
+    }
+
+    public function log(string $type, string $description): QuoteActivity
+    {
+        return $this->activities()->create([
+            'type'        => $type,
+            'description' => mb_substr($description, 0, 255),
+            'user_id'     => Auth::id(),
+        ]);
+    }
+
+    /** Otras cotizaciones del mismo cliente (mismo celular). */
+    public function sameCustomer()
+    {
+        $digits = substr(preg_replace('/\D/', '', (string) $this->customer_phone), -10);
+        if (strlen($digits) < 7) {
+            return collect();
+        }
+
+        return static::where('id', '!=', $this->id)
+            ->where('customer_phone', 'like', '%'.substr($digits, -4))
+            ->latest()->take(50)->get()
+            ->filter(fn ($q) => str_ends_with(preg_replace('/\D/', '', (string) $q->customer_phone), $digits))
+            ->take(10)->values();
     }
 
     public function code(): string
@@ -80,24 +122,15 @@ class Quote extends Model
         return QuoteCatalog::summarize($this->items);
     }
 
-    /** Enlace de WhatsApp al cliente con el link de su cotización. */
-    public function whatsappToCustomerUrl(): string
+    /** Enlace de WhatsApp al cliente con el mensaje predeterminado. */
+    public function whatsappToCustomerUrl(?string $message = null): string
     {
-        $phone = preg_replace('/\D/', '', (string) $this->customer_phone);
-        if (strlen($phone) === 10) {
-            $phone = '57'.$phone; // celular colombiano sin indicativo
-        }
-        $first = Str::of($this->customer_name)->explode(' ')->first();
-        $msg = "¡Hola {$first}! 👋 Te comparto la cotización {$this->code()} de G'Lauren para tu promoción"
-            .($this->school ? " de {$this->school}" : '').":\n".$this->publicUrl()
-            ."\n\nCualquier duda me escribes por aquí. 🧥";
-
-        return 'https://wa.me/'.$phone.'?text='.rawurlencode($msg);
+        return 'https://wa.me/'.$this->whatsappPhone().'?text='.rawurlencode($message ?? $this->whatsappMessage());
     }
 
     /**
      * Envía la cotización al correo del cliente. Devuelve true si salió.
-     * Marca la cotización como enviada; si falla el correo solo queda en el log.
+     * Si falla el correo solo queda en el log.
      */
     public function emailToCustomer(): bool
     {
@@ -111,13 +144,49 @@ class Quote extends Model
 
             return false;
         }
+        $this->markSent();
+        $this->log('correo', 'Cotización enviada al correo '.$this->customer_email);
+
+        return true;
+    }
+
+    /** Marca como enviada y programa el seguimiento a 2 días. */
+    public function markSent(): void
+    {
         $this->sent_at = $this->sent_at ?? now();
         if (in_array($this->status, ['nuevo', 'contactado'], true)) {
             $this->status = 'enviada';
         }
+        if (! $this->follow_up_at || $this->follow_up_at->lt(today()->addDays(2))) {
+            $this->follow_up_at = today()->addDays(2);
+        }
         $this->save();
+    }
 
-        return true;
+    /** Mensaje predeterminado de WhatsApp (editable en el panel). */
+    public const DEFAULT_WA_MESSAGE = "¡Hola {nombre}! 👋 Te comparto la cotización {numero} de G'Lauren para la promoción{colegio}.\n\n"
+        ."Ahí encuentras precios, combos con descuento y todo lo que incluye su prom:\n{enlace}\n\n"
+        ."Te adjunto también el PDF. ¿Te parece si agendamos la toma de medidas? 🧥✨";
+
+    public function whatsappMessage(?string $template = null): string
+    {
+        $template = $template ?: (Setting::get('quote_whatsapp_message') ?: self::DEFAULT_WA_MESSAGE);
+        $first = (string) Str::of($this->customer_name)->explode(' ')->first();
+
+        return strtr($template, [
+            '{nombre}'   => $first,
+            '{numero}'   => $this->code(),
+            '{enlace}'   => $this->publicUrl(),
+            '{colegio}'  => $this->school ? ' de '.$this->school : '',
+            '{cantidad}' => (string) $this->quantity,
+        ]);
+    }
+
+    public function whatsappPhone(): string
+    {
+        $phone = preg_replace('/\D/', '', (string) $this->customer_phone);
+
+        return strlen($phone) === 10 ? '57'.$phone : $phone; // celular colombiano sin indicativo
     }
 
     public function needsFollowUp(): bool
