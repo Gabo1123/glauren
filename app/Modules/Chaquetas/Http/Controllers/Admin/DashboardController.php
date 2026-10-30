@@ -34,12 +34,27 @@ class DashboardController extends Controller
         $stats['margen']     = $stats['ingresos_esperados'] > 0
             ? round($stats['utilidad'] / $stats['ingresos_esperados'] * 100) : 0;
 
+        // Embudo de ventas (cotizaciones)
+        $mes = Quote::whereYear('created_at', now()->year)->whereMonth('created_at', now()->month);
+        $ganadas = Quote::where('status', 'cerrado')->count();
+        $decididas = $ganadas + Quote::where('status', 'cancelado')->count();
+        $ventas = [
+            'mes'          => (clone $mes)->count(),
+            'enviadas_mes' => (clone $mes)->whereNotNull('sent_at')->count(),
+            'vistas_mes'   => (clone $mes)->whereNotNull('viewed_at')->count(),
+            'ganadas'      => $ganadas,
+            'tasa_cierre'  => $decididas > 0 ? round($ganadas / $decididas * 100) : 0,
+            'abiertas'     => Quote::whereIn('status', Quote::OPEN_STATUSES)->count(),
+            'por_llamar'   => Quote::whereIn('status', Quote::OPEN_STATUSES)->whereNotNull('follow_up_at')->whereDate('follow_up_at', '<=', today())->count(),
+            'valor_abierto'=> (float) Quote::whereIn('status', Quote::OPEN_STATUSES)->sum('estimated_price'),
+        ];
+
         $recientes = Quote::with('jacketType')->latest()->take(5)->get();
         $entregas = Contract::with('school')->withCount('students')
             ->whereIn('production_status', ['toma_medidas', 'en_produccion', 'control_calidad', 'listo'])
             ->orderByDesc('year')->take(6)->get();
         $gastosRecientes = Expense::with('school')->latest()->take(5)->get();
 
-        return view('admin.dashboard', compact('stats', 'pipeline', 'stages', 'recientes', 'entregas', 'gastosRecientes'));
+        return view('admin.dashboard', compact('stats', 'pipeline', 'stages', 'recientes', 'entregas', 'gastosRecientes', 'ventas'));
     }
 }

@@ -75,6 +75,8 @@ class ConfiguradorController extends Controller
             'image_path'      => $imagePath,
             'images'          => $images ?: null,
             'status'          => 'nuevo',
+            'source'          => 'web',
+            'follow_up_at'    => today(),
         ]);
 
         $type = JacketType::find($data['jacket_type_id']);

@@ -85,6 +85,7 @@ Route::get('/coleccion/{slug}', [PublicCollectionController::class, 'show'])->na
 Route::get('/personalizar', [ConfiguradorController::class, 'index'])->name('personalizar');
 Route::get('/personalizar/{slug}', [ConfiguradorController::class, 'design'])->name('design');
 Route::post('/cotizar', [ConfiguradorController::class, 'storeQuote'])->name('quote.store');
+Route::get('/cotizacion/{token}', [\App\Modules\Chaquetas\Http\Controllers\QuotePublicController::class, 'show'])->where('token', '[A-Za-z0-9]{20,40}')->name('cotizacion.show');
 Route::post('/lead', [LeadController::class, 'store'])->name('lead.store');
 
 // CMS público
@@ -210,6 +211,9 @@ Route::prefix('gtorres')->name('admin.')->group(function () {
         Route::put('tipos/{type}/materiales', [JacketTypeController::class, 'saveComponents'])->name('types.components');
 
         Route::get('cotizaciones', [QuoteController::class, 'index'])->name('quotes.index');
+        Route::get('cotizaciones/crear', [QuoteController::class, 'create'])->name('quotes.create');
+        Route::post('cotizaciones', [QuoteController::class, 'store'])->name('quotes.store');
+        Route::get('cotizaciones/{quote}/enviar', [QuoteController::class, 'send'])->name('quotes.send');
         Route::get('cotizaciones/{quote}', [QuoteController::class, 'show'])->name('quotes.show');
         Route::put('cotizaciones/{quote}', [QuoteController::class, 'update'])->name('quotes.update');
 
