@@ -36,6 +36,26 @@
     </div></div>
 </div>
 
+{{-- Ventas: embudo de cotizaciones --}}
+<div class="card p-3 mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="mb-0"><i class="bi bi-funnel"></i> Ventas · cotizaciones</h6>
+        <div class="d-flex gap-2">
+            @if($ventas['por_llamar'])<a href="{{ route('admin.quotes.index', ['seguimiento' => 1]) }}" class="btn btn-warning btn-sm"><i class="bi bi-bell"></i> {{ $ventas['por_llamar'] }} por llamar hoy</a>@endif
+            <a href="{{ route('admin.quotes.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Nueva cotización</a>
+        </div>
+    </div>
+    <div class="row g-3 text-center">
+        <div class="col-6 col-md-2"><div class="text-secondary small">Este mes</div><div class="fs-4 fw-bold">{{ $ventas['mes'] }}</div></div>
+        <div class="col-6 col-md-2"><div class="text-secondary small">Enviadas</div><div class="fs-4 fw-bold">{{ $ventas['enviadas_mes'] }}</div></div>
+        <div class="col-6 col-md-2"><div class="text-secondary small">Vistas por cliente</div><div class="fs-4 fw-bold">{{ $ventas['vistas_mes'] }}</div></div>
+        <div class="col-6 col-md-2"><div class="text-secondary small">Abiertas</div><div class="fs-4 fw-bold">{{ $ventas['abiertas'] }}</div></div>
+        <div class="col-6 col-md-2"><div class="text-secondary small">Ganadas (total)</div><div class="fs-4 fw-bold" style="color:var(--g-ok)">{{ $ventas['ganadas'] }}</div></div>
+        <div class="col-6 col-md-2"><div class="text-secondary small">Tasa de cierre</div><div class="fs-4 fw-bold" style="color:var(--g-gold)">{{ $ventas['tasa_cierre'] }}%</div></div>
+    </div>
+    <div class="small text-secondary mt-2">Valor en cotizaciones abiertas: <b>${{ number_format($ventas['valor_abierto'], 0, ',', '.') }}</b></div>
+</div>
+
 {{-- Operación --}}
 <div class="row g-3 mb-4">
     <div class="col-6 col-lg-3"><a href="{{ route('admin.contracts.index') }}" class="card p-3 h-100 text-decoration-none d-block"><div class="text-secondary small">Contratos activos</div><div class="fs-3 fw-bold">{{ $stats['contracts_active'] }}<span class="text-secondary fs-6"> / {{ $stats['contracts_total'] }}</span></div></a></div>
