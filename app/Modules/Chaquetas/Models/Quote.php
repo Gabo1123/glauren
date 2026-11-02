@@ -110,6 +110,77 @@ class Quote extends Model
         ]);
     }
 
+    /** Todas las etapas del cliente, de la primera charla a la entrega. */
+    public const JOURNEY = [
+        'nuevo'           => ['Nuevo', 'bi-person-plus', 'venta'],
+        'contactado'      => ['Contactado', 'bi-telephone', 'venta'],
+        'enviada'         => ['Cotización enviada', 'bi-send', 'venta'],
+        'vista'           => ['La vio', 'bi-eye', 'venta'],
+        'negociando'      => ['Negociando', 'bi-chat-dots', 'venta'],
+        'ganada'          => ['Ganada · colegio', 'bi-trophy', 'cierre'],
+        'contrato'        => ['Contrato firmado', 'bi-pen', 'cierre'],
+        'toma_medidas'    => ['Toma de medidas', 'bi-rulers', 'produccion'],
+        'en_produccion'   => ['En producción', 'bi-scissors', 'produccion'],
+        'control_calidad' => ['Control de calidad', 'bi-patch-check', 'produccion'],
+        'listo'           => ['Listo', 'bi-box-seam', 'produccion'],
+        'entregado'       => ['Entregado', 'bi-stars', 'produccion'],
+    ];
+
+    /** Etapas de producción: se guardan en el contrato (y avisan al colegio por WhatsApp). */
+    public const PRODUCTION_STAGES = ['toma_medidas', 'en_produccion', 'control_calidad', 'listo', 'entregado'];
+
+    /** Etapa actual del recorrido completo (clave de JOURNEY). */
+    public function journeyStage(): string
+    {
+        $contract = $this->school_id ? $this->contract() : null;
+        if ($contract) {
+            if (in_array($contract->production_status, self::PRODUCTION_STAGES, true)) {
+                return $contract->production_status;
+            }
+
+            return 'contrato';
+        }
+        if ($this->school_id || $this->status === 'cerrado') {
+            return 'ganada';
+        }
+
+        return array_key_exists($this->status, self::JOURNEY) ? $this->status : 'nuevo';
+    }
+
+    /**
+     * Pasos para pintar el recorrido: done (ya pasó), current (aquí va), y la siguiente etapa.
+     *
+     * @return array<int, array{key:string,label:string,icon:string,phase:string,done:bool,current:bool,n:int}>
+     */
+    public function journey(): array
+    {
+        $keys = array_keys(self::JOURNEY);
+        $at = array_search($this->journeyStage(), $keys, true);
+        $contract = $this->school_id ? $this->contract() : null;
+        $out = [];
+        foreach (self::JOURNEY as $key => [$label, $icon, $phase]) {
+            $i = array_search($key, $keys, true);
+            $done = $i < $at || ($key === 'entregado' && $at === $i);
+            // "Contrato firmado" solo cuenta como hecho si de verdad está firmado o ya arrancó producción.
+            if ($key === 'contrato' && $i === $at && $contract && $contract->isSigned()) {
+                $done = true;
+            }
+            $out[] = ['key' => $key, 'label' => $label, 'icon' => $icon, 'phase' => $phase,
+                'done' => $done, 'current' => $i === $at && ! $done, 'n' => $i + 1];
+        }
+        // Contrato ya firmado: lo que sigue es la toma de medidas.
+        if (! in_array(true, array_column($out, 'current'), true)) {
+            foreach ($out as $k => $step) {
+                if (! $step['done']) {
+                    $out[$k]['current'] = true;
+                    break;
+                }
+            }
+        }
+
+        return $out;
+    }
+
     /** Contrato más reciente del colegio (si el cliente ya contrató). */
     public function contract(): ?Contract
     {

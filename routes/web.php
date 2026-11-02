@@ -219,6 +219,7 @@ Route::prefix('gtorres')->name('admin.')->group(function () {
         Route::get('cotizaciones/{quote}/pdf', [QuoteController::class, 'pdf'])->name('quotes.pdf');
         Route::post('cotizaciones/{quote}/nota', [QuoteController::class, 'note'])->name('quotes.note');
         Route::post('cotizaciones/{quote}/colegio', [QuoteController::class, 'convertToSchool'])->name('quotes.convert');
+        Route::post('cotizaciones/{quote}/etapa', [QuoteController::class, 'stage'])->name('quotes.stage');
         Route::post('leads/{lead}/seguimiento', [QuoteController::class, 'fromLead'])->name('leads.quote');
         Route::get('cotizaciones/{quote}', [QuoteController::class, 'show'])->name('quotes.show');
         Route::put('cotizaciones/{quote}', [QuoteController::class, 'update'])->name('quotes.update');
@@ -272,6 +273,8 @@ Route::prefix('gtorres')->name('admin.')->group(function () {
 
         // Leads / Contactos (correos capturados antes de diseñar)
         Route::get('leads', [\App\Modules\Chaquetas\Http\Controllers\Admin\LeadController::class, 'index'])->name('leads.index');
+        Route::get('leads/nuevo', [\App\Modules\Chaquetas\Http\Controllers\Admin\LeadController::class, 'create'])->name('leads.create');
+        Route::post('leads', [\App\Modules\Chaquetas\Http\Controllers\Admin\LeadController::class, 'store'])->name('leads.store');
         Route::get('leads/{lead}', [\App\Modules\Chaquetas\Http\Controllers\Admin\LeadController::class, 'show'])->name('leads.show');
         Route::put('leads/{lead}/ia', [\App\Modules\Chaquetas\Http\Controllers\Admin\LeadController::class, 'toggleAi'])->name('leads.ai');
         Route::delete('leads/{lead}', [\App\Modules\Chaquetas\Http\Controllers\Admin\LeadController::class, 'destroy'])->name('leads.destroy');
