@@ -331,4 +331,54 @@ class QuoteCrmTest extends TestCase
 
         $this->actingAs($admin)->get(route('admin.leads.index'))->assertOk()->assertSee($quote->code());
     }
+
+    public function test_step_by_step_moves_the_client_from_sale_to_delivery(): void
+    {
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+        $admin = $this->admin();
+        $quote = Quote::create(['customer_name' => 'Laura Gómez', 'customer_phone' => '3001234567', 'school' => 'Colegio Montreal',
+            'quantity' => 40, 'estimated_price' => 0]);
+        $stage = fn ($s) => $this->actingAs($admin)->post(route('admin.quotes.stage', $quote), ['stage' => $s]);
+
+        $this->actingAs($admin)->get(route('admin.quotes.show', $quote))->assertOk()
+            ->assertSee('Paso a paso del cliente')->assertSee('Haz el primer contacto');
+
+        $stage('contactado')->assertRedirect(route('admin.quotes.show', $quote));
+        $this->assertSame('contactado', $quote->fresh()->status);
+        $stage('enviada');
+        $this->assertNotNull($quote->fresh()->sent_at);
+        $this->actingAs($admin)->get(route('admin.quotes.show', $quote))->assertSee('Esperando que la abra');
+
+        // Sin colegio no se puede pasar a producción
+        $stage('en_produccion')->assertSessionHas('warn');
+
+        $stage('perdida');
+        $this->assertSame('cancelado', $quote->fresh()->status);
+        $stage('reabrir');
+        $this->assertSame('negociando', $quote->fresh()->status);
+        $this->actingAs($admin)->get(route('admin.quotes.show', $quote))->assertSee('Cierra el trato');
+
+        // Gana → colegio → contrato → producción
+        $this->actingAs($admin)->post(route('admin.quotes.convert', $quote), ['school_name' => 'Colegio Montreal']);
+        $quote->refresh();
+        $this->assertSame('ganada', $quote->journeyStage());
+        $stage('contrato')->assertRedirect(route('admin.contracts.create', ['school_id' => $quote->school_id]));
+
+        $contract = \App\Modules\Chaquetas\Models\Contract::create(['school_id' => $quote->school_id, 'code' => 'CTR-TEST-1',
+            'production_status' => 'cotizado', 'contract_status' => 'firmado', 'signed_at' => now()]);
+        $this->assertSame('contrato', $quote->journeyStage());
+        $this->actingAs($admin)->get(route('admin.quotes.show', $quote))->assertOk()->assertSee('Empieza: toma de medidas');
+
+        $stage('toma_medidas');
+        $this->assertSame('toma_medidas', $contract->fresh()->production_status);
+        $this->actingAs($admin)->get(route('admin.quotes.show', $quote))->assertSee('Avanzar a en producción');
+        $stage('en_produccion');
+        $this->assertSame('en_produccion', $quote->fresh()->journeyStage());
+        $this->assertTrue($quote->activities()->where('description', 'like', 'Producción: En producción%')->exists());
+
+        // El cliente lo ve en su enlace
+        $this->get(route('cotizacion.show', $quote->public_token))->assertOk();
+        $steps = $quote->fresh()->customerSteps();
+        $this->assertTrue($steps[4]['current']);
+    }
 }

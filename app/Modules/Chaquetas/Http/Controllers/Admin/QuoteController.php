@@ -102,6 +102,8 @@ class QuoteController extends Controller
 
         return view('admin.quotes.show', [
             'waMessage' => $quote->whatsappMessage(),
+            'journey'   => $quote->journey(),
+            'contract'  => $quote->school_id ? $quote->contract() : null,
             'others'    => $quote->sameCustomer(),
             'quote'   => $quote,
             'summary' => $quote->summary(),
@@ -151,6 +153,68 @@ class QuoteController extends Controller
     }
 
     /** Abre (o crea) el seguimiento comercial de un lead. */
+    /**
+     * Mueve al cliente a otra etapa del recorrido (paso a paso).
+     * Venta → estado de la cotización · Producción → etapa del contrato (avisa al colegio).
+     */
+    public function stage(Request $request, Quote $quote)
+    {
+        $stage = $request->validate([
+            'stage' => ['required', Rule::in([...array_keys(Quote::JOURNEY), 'perdida', 'reabrir'])],
+        ])['stage'];
+        $back = fn (string $msg, string $key = 'ok') => redirect()->route('admin.quotes.show', $quote)->with($key, $msg);
+
+        if ($stage === 'perdida') {
+            $quote->update(['status' => 'cancelado', 'follow_up_at' => null]);
+
+            return $back('Cotización marcada como perdida. Puedes reabrirla cuando quieras.');
+        }
+        if ($stage === 'reabrir') {
+            $quote->update(['status' => 'negociando', 'follow_up_at' => today()]);
+
+            return $back('Cotización reabierta: quedó en negociación.');
+        }
+
+        if (in_array($stage, Quote::OPEN_STATUSES, true)) {
+            if ($quote->school_id) {
+                return $back('Este cliente ya es colegio; su avance ahora va por el contrato.', 'warn');
+            }
+            $update = ['status' => $stage];
+            if ($stage === 'enviada') {
+                $update['sent_at'] = $quote->sent_at ?? now();
+                $update['follow_up_at'] = today()->addDays(2);
+            }
+            $quote->update($update);
+
+            return $back('Listo: '.Quote::JOURNEY[$stage][0].'.');
+        }
+
+        if ($stage === 'ganada') {
+            if (! $quote->school_id) {
+                return redirect()->to(route('admin.quotes.show', $quote).'#convertir')
+                    ->with('warn', 'Escribe el nombre del colegio y dale "Convertir en colegio".');
+            }
+
+            return $back('Este cliente ya es colegio.');
+        }
+
+        $contract = $quote->school_id ? $quote->contract() : null;
+        if ($stage === 'contrato') {
+            return $contract
+                ? redirect()->route('admin.contracts.show', $contract)
+                : redirect()->route('admin.contracts.create', ['school_id' => $quote->school_id]);
+        }
+
+        // Producción
+        if (! $contract) {
+            return $back('Primero crea el contrato del colegio para poder avanzar la producción.', 'warn');
+        }
+        $contract->update(['production_status' => $stage]);
+        $quote->log('estado', 'Producción: '.Quote::JOURNEY[$stage][0].' (el colegio lo ve en su enlace)');
+
+        return $back('Avanzó a "'.Quote::JOURNEY[$stage][0].'". El cliente ya lo ve en su enlace.');
+    }
+
     public function fromLead(Lead $lead)
     {
         $quote = Quote::forLead($lead);
