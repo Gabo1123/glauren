@@ -7,9 +7,10 @@
         <h3 class="mb-1">Leads / Contactos</h3>
         <p class="small text-secondary mb-0">Personas que dejaron sus datos. Envíales la cotización y sigue cada cliente hasta convertirlo en colegio.</p>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 align-items-center flex-wrap">
         @if($needHuman)<span class="badge bg-warning text-dark" style="font-size:14px;padding:8px 12px"><i class="bi bi-hand-index-thumb"></i> {{ $needHuman }} piden asesor</span>@endif
         <span class="badge bg-secondary" style="font-size:14px;padding:8px 12px">{{ $leads->total() }} contactos</span>
+        <a href="{{ route('admin.leads.create') }}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Nuevo contacto</a>
     </div>
 </div>
 

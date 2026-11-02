@@ -272,6 +272,8 @@ Route::prefix('gtorres')->name('admin.')->group(function () {
 
         // Leads / Contactos (correos capturados antes de diseñar)
         Route::get('leads', [\App\Modules\Chaquetas\Http\Controllers\Admin\LeadController::class, 'index'])->name('leads.index');
+        Route::get('leads/nuevo', [\App\Modules\Chaquetas\Http\Controllers\Admin\LeadController::class, 'create'])->name('leads.create');
+        Route::post('leads', [\App\Modules\Chaquetas\Http\Controllers\Admin\LeadController::class, 'store'])->name('leads.store');
         Route::get('leads/{lead}', [\App\Modules\Chaquetas\Http\Controllers\Admin\LeadController::class, 'show'])->name('leads.show');
         Route::put('leads/{lead}/ia', [\App\Modules\Chaquetas\Http\Controllers\Admin\LeadController::class, 'toggleAi'])->name('leads.ai');
         Route::delete('leads/{lead}', [\App\Modules\Chaquetas\Http\Controllers\Admin\LeadController::class, 'destroy'])->name('leads.destroy');

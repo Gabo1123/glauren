@@ -270,14 +270,65 @@ class QuoteCrmTest extends TestCase
         $this->get(route('cotizacion.show', $quote->public_token))->assertOk()->assertSee('Estado de tu proceso')->assertSee('Contrato firmado');
     }
 
-    public function test_client_page_shows_full_quote_with_photos(): void
+    public function test_client_page_is_the_same_15_sheets_as_the_pdf(): void
     {
-        $quote = Quote::create(['customer_name' => 'Ana', 'customer_phone' => '3000000000', 'quantity' => 1, 'estimated_price' => 0]);
+        $quote = Quote::create(['customer_name' => 'Ana Ruiz', 'customer_phone' => '3000000000', 'school' => 'Colegio Montreal',
+            'quantity' => 30, 'estimated_price' => 0]);
 
-        $this->get(route('cotizacion.show', $quote->public_token))->assertOk()
-            ->assertSee('Quiénes somos')->assertSee('Nuestros')->assertSee('Telas y cremalleras')
-            ->assertSee('Chaqueta con cortes')->assertSee('Beisboleras')->assertSee('Proceso de')
+        $res = $this->get(route('cotizacion.show', $quote->public_token))->assertOk();
+        $html = $res->getContent();
+
+        $this->assertSame(15, substr_count($html, '<div class="sheet">'));
+        $res->assertSee('Ana Ruiz')->assertSee('Colegio Montreal')
+            ->assertSee('>'.$quote->number.'<', false)
             ->assertSee('/img/cotizacion/disenos/beisbolera-9.jpg', false)
-            ->assertSee('$202.900');
+            ->assertSee('/img/cotizacion/productos/estructurada.jpg', false)
+            ->assertSee('$202.900')->assertSee('$342.200')->assertSee('$119.000')
+            ->assertSee('Descargar en PDF');
+        $this->assertStringNotContainsString('65043', $html);
+        $this->assertStringNotContainsString('/_blob/', $html);
+        $this->assertStringNotContainsString('%%', $html);
+        $this->assertStringNotContainsString('{{', $html);
+
+        foreach (glob(public_path('img/cotizacion').'/**/*') ?: [] as $f) {
+            $this->assertFileExists($f);
+        }
+        preg_match_all('#/img/cotizacion/[^"\')\s]+#', $html, $m);
+        foreach (array_unique($m[0]) as $src) {
+            $this->assertFileExists(public_path(ltrim($src, '/')), $src);
+        }
+    }
+
+    public function test_admin_creates_contact_manually_and_goes_to_its_quote(): void
+    {
+        Mail::fake();
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get(route('admin.leads.index'))->assertOk()->assertSee('Nuevo contacto');
+        $this->actingAs($admin)->get(route('admin.leads.create'))->assertOk();
+
+        $res = $this->actingAs($admin)->post(route('admin.leads.store'), [
+            'name' => 'Pedro Pérez', 'phone' => '310 555 1234', 'email' => 'pedro@test.co',
+            'school' => 'Colegio San José', 'quantity' => 35, 'combo' => 2, 'send_email' => 1,
+        ]);
+
+        $lead = Lead::firstOrFail();
+        $quote = Quote::firstOrFail();
+        $res->assertRedirect(route('admin.quotes.show', $quote));
+        $this->assertSame('manual', $lead->source);
+        $this->assertSame($lead->id, $quote->lead_id);
+        $this->assertSame(35, (int) $quote->quantity);
+        $this->assertSame(342200, $quote->summary()['unit_total']);
+        Mail::assertSent(QuoteMail::class);
+
+        // Mismo celular: no duplica, abre la cotización que ya existe.
+        $this->actingAs($admin)->post(route('admin.leads.store'), [
+            'name' => 'Pedro otra vez', 'phone' => '+57 3105551234', 'quantity' => 1,
+        ])->assertRedirect(route('admin.quotes.show', $quote));
+        $this->assertSame(1, Lead::count());
+        $this->assertSame(1, Quote::count());
+
+        $this->actingAs($admin)->get(route('admin.leads.index'))->assertOk()->assertSee($quote->code());
     }
 }
