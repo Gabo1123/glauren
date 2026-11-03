@@ -14,7 +14,10 @@
     $label = fn ($k) => Quote::JOURNEY[$k][0] ?? $k;
     $phases = ['venta' => 'Venta', 'cierre' => 'Cierre', 'produccion' => 'Producción y entrega'];
     $unit = $summary['unit_total'] ?: ($quote->quantity ? $quote->estimated_price / max(1, $quote->quantity) : 0);
-    $initial = mb_strtoupper(mb_substr(trim($quote->customer_name) ?: '?', 0, 1));
+    $biz = $quote->isBusiness();
+    $bizTotals = $biz ? $quote->businessTotals() : null;
+    $title = $biz ? ($quote->school ?: $quote->customer_name) : $quote->customer_name;
+    $initial = mb_strtoupper(mb_substr(trim($title) ?: '?', 0, 1));
 @endphp
 
 @section('content')
@@ -88,13 +91,14 @@
     <div class="qx-hero">
         <div class="qx-av">{{ $initial }}</div>
         <div>
-            <h2 class="qx-name">{{ $quote->customer_name }}</h2>
+            <h2 class="qx-name">{{ $title }}</h2>
+            @if($biz)<div class="small text-secondary mt-1"><i class="bi bi-briefcase"></i> Empresa · contacto {{ $quote->customer_name }}@if($quote->company()['role']) ({{ $quote->company()['role'] }})@endif @if($quote->company()['nit'])· NIT {{ $quote->company()['nit'] }}@endif</div>@endif
             <div class="qx-sub">
                 <span class="badge bg-{{ $quote->statusColor() }}">{{ $quote->statusLabel() }}</span>
                 <span><i class="bi bi-hash"></i>{{ $quote->code() }}</span>
-                @if($quote->school)<span><i class="bi bi-building"></i> {{ $quote->school }}</span>@endif
+                @if($quote->school && ! $biz)<span><i class="bi bi-building"></i> {{ $quote->school }}</span>@endif
                 <span><i class="bi bi-calendar3"></i> {{ $quote->created_at->format('d/m/Y') }}</span>
-                <span><i class="bi bi-globe2"></i> {{ match($quote->source) { 'manual' => 'Creada en el panel', 'lead' => 'Leads / Contactos', default => 'Web · diseñador 3D' } }}</span>
+                <span><i class="bi bi-globe2"></i> {{ match($quote->source) { 'manual' => 'Creada en el panel', 'lead' => 'Leads / Contactos', 'empresa' => 'Cotización empresa', default => 'Web · diseñador 3D' } }}</span>
                 @if($quote->lead_id)<a href="{{ route('admin.leads.show', $quote->lead_id) }}" class="text-secondary"><i class="bi bi-person-lines-fill"></i> Ver contacto</a>@endif
             </div>
         </div>
@@ -104,11 +108,17 @@
             @if($quote->customer_email)<a class="qx-btn" href="mailto:{{ $quote->customer_email }}"><i class="bi bi-envelope"></i> Correo</a>@endif
             <a class="qx-btn" href="{{ $quote->publicUrl() }}" target="_blank"><i class="bi bi-eye"></i> Ver como cliente</a>
             <a class="qx-btn" href="{{ route('admin.quotes.pdf', $quote) }}" target="_blank"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+            @if($biz)<a class="qx-btn" href="{{ route('admin.business.edit', $quote) }}"><i class="bi bi-pencil"></i> Editar</a>@endif
         </div>
     </div>
     <div class="qx-kpis">
+        @if($biz)
+            <div class="qx-kpi"><small>Unidades</small><b>{{ $bizTotals['units'] }}</b></div>
+            <div class="qx-kpi"><small>Obsequio</small><b>{{ $bizTotals['gift_jackets'] ? $bizTotals['gift_jackets'].' chaqueta'.($bizTotals['gift_jackets'] > 1 ? 's' : '') : 'Tula' }}</b></div>
+        @else
         <div class="qx-kpi"><small>Estudiantes</small><b>{{ $quote->quantity }}</b></div>
         <div class="qx-kpi"><small>Por estudiante</small><b>{{ $unit ? $money($unit) : '—' }}</b></div>
+        @endif
         <div class="qx-kpi"><small>Total estimado</small><b class="hot">{{ (float) $quote->estimated_price ? $money($quote->estimated_price) : '—' }}</b></div>
         <div class="qx-kpi"><small>La ha visto</small><b>{{ $quote->view_count ? $quote->view_count.' '.($quote->view_count == 1 ? 'vez' : 'veces') : 'Aún no' }}</b></div>
         <div class="qx-kpi"><small>Próxima llamada</small><b class="{{ $quote->needsFollowUp() ? 'hot' : '' }}">{{ $quote->follow_up_at ? ($quote->needsFollowUp() ? '¡Hoy!' : $quote->follow_up_at->format('d/m')) : '—' }}</b></div>
@@ -131,6 +141,7 @@
 
     <div class="qx-steps {{ $lost ? 'qx-lost' : '' }}">
         @foreach($phases as $phase => $phaseLabel)
+            @continue(collect($journey)->where('phase', $phase)->isEmpty())
             <div class="qx-phase" style="--n:{{ collect($journey)->where('phase', $phase)->count() }}">
                 <small>{{ $phaseLabel }}</small>
                 <div class="qx-row">
@@ -170,10 +181,15 @@
                         'buttons' => [$stageBtn('negociando', 'Ya estamos negociando')]];
                     break;
                 case 'vista':
-                    $now = ['icon' => 'bi-fire', 'title' => '¡La abrió '.$quote->view_count.' '.($quote->view_count == 1 ? 'vez' : 'veces').'! Llámalo ya', 'text' => 'Es el mejor momento: está interesado. Resuelve dudas y propón la fecha de toma de medidas.',
+                    $now = ['icon' => 'bi-fire', 'title' => '¡La abrió '.$quote->view_count.' '.($quote->view_count == 1 ? 'vez' : 'veces').'! Llámalo ya', 'text' => $biz ? 'Es el mejor momento: está interesado. Resuelve dudas y confirma cantidades, tallas y logo.' : 'Es el mejor momento: está interesado. Resuelve dudas y propón la fecha de toma de medidas.',
                         'buttons' => array_values(array_filter([$tel ? ['href' => 'tel:'.$tel, 'text' => 'Llamar'] : null, $stageBtn('negociando', 'Pasar a negociación')]))];
                     break;
                 case 'negociando':
+                    if ($biz) {
+                        $now = ['icon' => 'bi-hand-thumbs-up', 'title' => 'Cierra el trato', 'text' => 'Ajusta prendas o valores si te lo piden (botón Editar) y, cuando la empresa apruebe, márcala como ganada.',
+                            'buttons' => [['href' => route('admin.business.edit', $quote), 'text' => 'Editar cotización'], $stageBtn('ganada', 'Marcar como ganada')]];
+                        break;
+                    }
                     $now = ['icon' => 'bi-hand-thumbs-up', 'title' => 'Cierra el trato', 'text' => 'Cuando te confirme, conviértelo en colegio: se marca como ganada y pasas al contrato.',
                         'buttons' => [['href' => '#convertir', 'text' => 'Convertir en colegio']]];
                     break;
@@ -186,6 +202,10 @@
                         'buttons' => array_values(array_filter([$contract ? ['href' => route('admin.contracts.show', $contract), 'text' => 'Abrir contrato'] : null]))];
                     break;
                 case 'entregado':
+                    if ($biz) {
+                        $now = ['icon' => 'bi-trophy', 'title' => '¡Cotización ganada!', 'text' => 'Coordina con la empresa el anticipo del 50%, el diseño con su logo y la tabla de tallas.', 'buttons' => []];
+                        break;
+                    }
                     $now = ['icon' => 'bi-stars', 'title' => '¡Promoción entregada!', 'text' => 'Proceso completo. Pide fotos y una reseña al colegio para tu portafolio.', 'buttons' => []];
                     break;
                 default: // producción
@@ -274,7 +294,21 @@
 
         <div class="card p-4 mt-4 qx-card">
             <h6 class="t"><i class="bi bi-bag-check" style="color:#FFC72C"></i> Lo que se cotizó</h6>
-            @if(count($summary['lines']))
+            @if($biz)
+                @foreach($quote->businessLines() as $l)
+                    <div class="d-flex gap-3 align-items-center py-2" style="border-bottom:1px solid var(--g-line)">
+                        @if($l['photo_url'])<img src="{{ $l['photo_url'] }}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:12px;background:#fff">@else<span style="width:64px;height:64px;border-radius:12px;background:var(--g-surface-2);display:grid;place-items:center"><i class="bi bi-image text-secondary"></i></span>@endif
+                        <div class="flex-grow-1 small">
+                            <div class="fw-bold" style="font-size:14px">{{ $l['name'] }}</div>
+                            <div class="text-secondary">{{ $l['garment'] }}@if($l['features']) · {{ implode(' · ', array_slice($l['features'], 0, 3)) }}@endif</div>
+                        </div>
+                        <div class="text-end small text-nowrap">{{ $l['qty'] }} × {{ $money($l['unit_price']) }}<br><b style="font-size:15px">{{ $money($l['subtotal']) }}</b></div>
+                    </div>
+                @endforeach
+                <div class="d-flex justify-content-between pt-3" style="color:#FFC72C;font-weight:800;font-size:16px"><span>Total · {{ $bizTotals['units'] }} unidades</span><span>{{ $money($bizTotals['total']) }}</span></div>
+                <div class="small text-secondary mt-2"><i class="bi bi-gift"></i> Obsequios: tula + {{ $bizTotals['gift_jackets'] ?: 'ninguna' }} chaqueta(s) adicional(es) (1 por cada 25 unidades)</div>
+                <a href="{{ route('admin.business.edit', $quote) }}" class="btn btn-sm btn-outline-light mt-3"><i class="bi bi-pencil"></i> Editar prendas, fotos y valores</a>
+            @elseif(count($summary['lines']))
                 <table class="table table-sm mb-0 qx-sel">
                     @foreach($summary['lines'] as $l)
                         <tr><td>{{ $l['label'] }}</td><td class="text-end">{{ $money($l['price']) }}</td></tr>
@@ -294,6 +328,7 @@
                 </div>
             @endif
 
+            @unless($biz)
             <details class="mt-3">
                 <summary class="small" style="cursor:pointer;color:#FFC72C"><i class="bi bi-pencil"></i> Cambiar prendas o cantidad</summary>
                 <form method="POST" action="{{ route('admin.quotes.update', $quote) }}" class="mt-3">
@@ -308,6 +343,7 @@
                     <button class="btn btn-primary w-100"><i class="bi bi-save"></i> Guardar cambios</button>
                 </form>
             </details>
+            @endunless
         </div>
 
         @php
@@ -356,6 +392,7 @@
             </form>
         </div>
 
+        @unless($biz)
         <div class="card p-4 mt-4 qx-card" id="convertir" style="border-color:rgba(37,211,102,.45)">
             @if($quote->school_id)
                 <h6 class="t"><i class="bi bi-trophy" style="color:#25d366"></i> ¡Cliente ganado!</h6>
@@ -380,6 +417,7 @@
                 </form>
             @endif
         </div>
+        @endunless
 
         <div class="card p-4 mt-4 qx-card">
             <h6 class="t"><i class="bi bi-clock-history" style="color:#FFC72C"></i> Historial de seguimiento</h6>

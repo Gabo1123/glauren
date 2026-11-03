@@ -63,6 +63,7 @@
             <button type="button" class="nav-sec" data-group="ventas">Ventas y clientes <i class="bi bi-chevron-down chev"></i></button>
             <div class="nav-group" data-group="ventas">
                 <a href="{{ route('admin.quotes.index') }}" class="{{ request()->routeIs('admin.quotes.*') ? 'active' : '' }}"><i class="bi bi-receipt"></i> Cotizaciones</a>
+                <a href="{{ route('admin.business.index') }}" class="{{ request()->routeIs('admin.business.*') ? 'active' : '' }}"><i class="bi bi-briefcase"></i> Cotizaciones empresas</a>
                 <a href="{{ route('admin.leads.index') }}" class="{{ request()->routeIs('admin.leads.*') ? 'active' : '' }}"><i class="bi bi-person-lines-fill"></i> Leads / Contactos @if($needHumanNav)<span class="badge bg-warning ms-1">{{ $needHumanNav }}</span>@endif</a>
                 <a href="{{ route('admin.appointments.index') }}" class="{{ request()->routeIs('admin.appointments.*') ? 'active' : '' }}"><i class="bi bi-calendar-check"></i> Citas / Contacto @if($apptCount)<span class="badge bg-info text-dark ms-1">{{ $apptCount }}</span>@endif</a>
                 <a href="{{ route('admin.ia.edit') }}" class="{{ request()->routeIs('admin.ia.*') ? 'active' : '' }}"><i class="bi bi-robot"></i> Entrenar IA (WhatsApp)</a>

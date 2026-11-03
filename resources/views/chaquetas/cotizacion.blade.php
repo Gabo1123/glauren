@@ -3,7 +3,15 @@
     use App\Modules\Chaquetas\Support\QuotePages;
     $m = fn ($v) => QC::money($v);
     $first = \Illuminate\Support\Str::of($quote->customer_name)->explode(' ')->first();
-    $pages = QuotePages::pages($quote);
+    $business = $quote->isBusiness();
+    if ($business) {
+        $pages = \App\Modules\Chaquetas\Support\QuoteBusinessPages::pages($quote);
+    } else {
+        $pages = [];
+        foreach (QuotePages::pages($quote) as $i => $h) {
+            $pages[] = ['class' => 'pg-'.str_pad($i + 1, 2, '0', STR_PAD_LEFT), 'html' => $h];
+        }
+    }
 @endphp
 <!doctype html>
 <html lang="es">
@@ -69,6 +77,9 @@ body{background:#2B2B2B;color:#0E0E0E;font-family:'Montserrat',sans-serif;-webki
   .sheet>.pg{transform:none}
 }
 {!! QuotePages::css() !!}
+@if($business)
+@include('chaquetas.empresa.styles')
+@endif
 </style>
 </head>
 <body>
@@ -77,7 +88,7 @@ body{background:#2B2B2B;color:#0E0E0E;font-family:'Montserrat',sans-serif;-webki
     <div class="in">
         <div>
             <h1>Hola {{ $first }}, esta es tu <span class="y">cotización {{ $quote->code() }}</span></h1>
-            <p>Revísala con calma. Puedes descargarla en PDF o escribirnos por WhatsApp para separar tu fecha.</p>
+            <p>{{ $business ? 'Revisa cada prenda con su valor al por mayor. Puedes descargarla en PDF o escribirnos por WhatsApp para aprobarla o ajustarla.' : 'Revísala con calma. Puedes descargarla en PDF o escribirnos por WhatsApp para separar tu fecha.' }}</p>
         </div>
         <div class="lbl">Estado de tu proceso</div>
         <div class="track" style="margin-top:-6px">
@@ -92,8 +103,12 @@ body{background:#2B2B2B;color:#0E0E0E;font-family:'Montserrat',sans-serif;-webki
                     @foreach($summary['lines'] as $l)
                         <tr><td>{{ $l['label'] }}</td><td>{{ $m($l['price']) }}</td></tr>
                     @endforeach
+                    @if($business)
+                        <tr class="tot"><td>Total · {{ $quote->businessTotals()['units'] }} unidades</td><td>{{ $m($summary['unit_total']) }}</td></tr>
+                    @else
                     <tr class="tot"><td>Valor por estudiante</td><td>{{ $m($summary['unit_total']) }}</td></tr>
-                    @if($quote->quantity > 1)
+                    @endif
+                    @if(! $business && $quote->quantity > 1)
                         <tr class="tot"><td>Total aproximado · {{ $quote->quantity }} estudiantes</td><td>{{ $m($summary['unit_total'] * $quote->quantity) }}</td></tr>
                     @endif
                 </table>
@@ -103,13 +118,13 @@ body{background:#2B2B2B;color:#0E0E0E;font-family:'Montserrat',sans-serif;-webki
 </header>
 
 <main class="sheets" id="sheets">
-    @foreach($pages as $i => $html)
-        <div class="sheet"><div class="pg pg-{{ str_pad($i + 1, 2, '0', STR_PAD_LEFT) }}">{!! $html !!}</div></div>
+    @foreach($pages as $page)
+        <div class="sheet"><div class="pg {{ $page['class'] }}">{!! $page['html'] !!}</div></div>
     @endforeach
 </main>
 
 <nav class="bar noprint">
-    @if($replyUrl)<a class="btn w" href="{{ $replyUrl }}" target="_blank" rel="noopener">Quiero separar mi fecha por WhatsApp</a>@endif
+    @if($replyUrl)<a class="btn w" href="{{ $replyUrl }}" target="_blank" rel="noopener">{{ $business ? 'Aprobar o ajustar por WhatsApp' : 'Quiero separar mi fecha por WhatsApp' }}</a>@endif
     <button class="btn" type="button" onclick="window.print()">Descargar en PDF</button>
 </nav>
 

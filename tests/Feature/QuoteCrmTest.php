@@ -381,4 +381,78 @@ class QuoteCrmTest extends TestCase
         $steps = $quote->fresh()->customerSteps();
         $this->assertTrue($steps[4]['current']);
     }
+
+    public function test_business_quote_with_photos_features_and_gifts(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+        Mail::fake();
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get(route('admin.business.index'))->assertOk()->assertSee('Cotizaciones para empresas');
+        $this->actingAs($admin)->get(route('admin.business.create'))->assertOk()->assertSee('Prendas que cotizas');
+
+        $res = $this->actingAs($admin)->post(route('admin.business.store'), [
+            'company_name' => 'Constructora Andes S.A.S.', 'company_nit' => '900123456-7', 'company_city' => 'Bogotá',
+            'contact_name' => 'Marta Ruiz', 'contact_role' => 'Compras', 'contact_phone' => '3109998877', 'contact_email' => 'marta@andes.co',
+            'send_email' => 1,
+            'lines' => [
+                ['garment' => 'Chaqueta', 'name' => 'Chaqueta corporativa antifluido', 'features' => "Tela Lafayette antifluido\n- Logo bordado en el pecho\n\nTallas S a XXL",
+                 'qty' => 40, 'unit_price' => '189.900', 'photo' => \Illuminate\Http\UploadedFile::fake()->image('chaqueta.jpg', 600, 600)],
+                ['garment' => 'Camiseta polo', 'name' => 'Polo con logo', 'features' => 'Piqué', 'qty' => 15, 'unit_price' => '45000'],
+            ],
+        ]);
+
+        $quote = Quote::firstOrFail();
+        $res->assertRedirect(route('admin.quotes.show', $quote));
+        $this->assertTrue($quote->isBusiness());
+        $this->assertSame('Constructora Andes S.A.S.', $quote->school);
+        $lines = $quote->businessLines();
+        $this->assertCount(2, $lines);
+        $this->assertSame(['Tela Lafayette antifluido', 'Logo bordado en el pecho', 'Tallas S a XXL'], $lines[0]['features']);
+        $this->assertSame(189900, $lines[0]['unit_price']);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($lines[0]['photo']);
+        $t = $quote->businessTotals();
+        $this->assertSame(55, $t['units']);
+        $this->assertSame(40 * 189900 + 15 * 45000, $t['total']);
+        $this->assertSame(2, $t['gift_jackets']);
+        $this->assertEquals($t['total'], (float) $quote->estimated_price);
+        Mail::assertSent(QuoteMail::class, fn ($m) => $m->content()->view === 'emails.quote-empresa');
+        $this->assertStringContainsString('Constructora Andes', (new QuoteMail($quote))->render());
+
+        // Panel con datos de empresa, sin "convertir en colegio"
+        $this->actingAs($admin)->get(route('admin.quotes.show', $quote))->assertOk()
+            ->assertSee('Constructora Andes')->assertSee('Polo con logo')->assertDontSee('Conviértelo en colegio')
+            ->assertSee('para Constructora Andes S.A.S.', false);
+
+        // Página del cliente: hojas de empresa con foto, características, valores y obsequios
+        $html = $this->get(route('cotizacion.show', $quote->public_token))->assertOk()
+            ->assertSee('DOTACIÓN')->assertSee('Chaqueta corporativa antifluido')->assertSee('Logo bordado en el pecho')
+            ->assertSee('$189.900')->assertSee('1 chaqueta adicional de obsequio por cada 25 unidades')
+            ->assertSee('Tu pedido recibe 2 chaquetas de obsequio')->assertSee('Telas y cremalleras', false)
+            ->assertSee($lines[0]['photo_url'], false)->getContent();
+        $this->assertSame(6, substr_count($html, '<div class="sheet">'));
+
+        // Editar: quitar la foto y cambiar valor
+        $this->actingAs($admin)->put(route('admin.business.update', $quote), [
+            'company_name' => 'Constructora Andes S.A.S.', 'contact_name' => 'Marta Ruiz', 'contact_phone' => '3109998877',
+            'lines' => [
+                ['name' => 'Chaqueta corporativa', 'qty' => 10, 'unit_price' => '200.000', 'photo_path' => $lines[0]['photo'], 'remove_photo' => 1],
+                ['name' => 'Ruta inventada', 'qty' => 1, 'unit_price' => '1', 'photo_path' => 'otra/ruta.jpg'],
+            ],
+        ])->assertRedirect(route('admin.quotes.show', $quote));
+        $quote->refresh();
+        $this->assertNull($quote->businessLines()[0]['photo']);
+        $this->assertNull($quote->businessLines()[1]['photo']);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertMissing($lines[0]['photo']);
+        $this->assertSame(0, $quote->businessTotals()['gift_jackets']);
+
+        // Paso a paso: termina en Ganada
+        $this->actingAs($admin)->post(route('admin.quotes.stage', $quote), ['stage' => 'negociando']);
+        $this->actingAs($admin)->get(route('admin.quotes.show', $quote))->assertSee('Marcar como ganada');
+        $this->actingAs($admin)->post(route('admin.quotes.stage', $quote), ['stage' => 'ganada']);
+        $this->assertSame('cerrado', $quote->fresh()->status);
+        $this->assertSame(6, count($quote->fresh()->journey()));
+        $this->actingAs($admin)->get(route('admin.business.index'))->assertOk()->assertSee('Constructora Andes');
+    }
 }

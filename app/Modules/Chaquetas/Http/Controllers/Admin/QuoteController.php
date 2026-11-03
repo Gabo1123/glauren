@@ -132,7 +132,7 @@ class QuoteController extends Controller
 
         if ($request->boolean('save_default')) {
             // Se guarda como plantilla: los datos del cliente vuelven a ser variables.
-            Setting::put('quote_whatsapp_message', strtr($data['message'], [
+            Setting::put($quote->isBusiness() ? 'quote_whatsapp_message_business' : 'quote_whatsapp_message', strtr($data['message'], [
                 $quote->publicUrl() => '{enlace}',
                 $quote->code()      => '{numero}',
             ]));
@@ -187,6 +187,15 @@ class QuoteController extends Controller
             $quote->update($update);
 
             return $back('Listo: '.Quote::JOURNEY[$stage][0].'.');
+        }
+
+        if ($quote->isBusiness()) {
+            if ($stage !== 'ganada') {
+                return $back('Las cotizaciones de empresa terminan en "Ganada".', 'warn');
+            }
+            $quote->update(['status' => 'cerrado', 'follow_up_at' => null]);
+
+            return $back('¡Cotización ganada! Ya puedes iniciar la producción con la empresa.');
         }
 
         if ($stage === 'ganada') {

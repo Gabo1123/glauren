@@ -65,6 +65,7 @@ class Quote extends Model
             $quote->log('creada', match ($quote->source) {
                 'manual' => 'Cotización creada en el panel',
                 'lead'   => 'Seguimiento iniciado desde Leads / Contactos',
+                'empresa' => 'Cotización para empresa creada en el panel',
                 default  => 'Cotización recibida desde la web (diseñador 3D)',
             });
         });
@@ -168,7 +169,27 @@ class Quote extends Model
             $out[] = ['key' => $key, 'label' => $label, 'icon' => $icon, 'phase' => $phase,
                 'done' => $done, 'current' => $i === $at && ! $done, 'n' => $i + 1];
         }
-        // Contrato ya firmado: lo que sigue es la toma de medidas.
+        // Empresas: la venta termina en "Ganada" (no pasan a colegio ni contrato escolar).
+        if ($this->isBusiness()) {
+            $out = array_values(array_filter($out, fn ($st) => $st['phase'] === 'venta' || $st['key'] === 'ganada'));
+            foreach ($out as $k => $st) {
+                if ($st['key'] === 'ganada') {
+                    $out[$k]['label'] = 'Ganada';
+                    $out[$k]['done'] = $this->status === 'cerrado';
+                    $out[$k]['current'] = false;
+                }
+            }
+            if ($this->status !== 'cerrado') {
+                $at = array_search($this->journeyStage(), array_column($out, 'key'), true);
+                foreach ($out as $k => $st) {
+                    $out[$k]['done'] = $k < $at;
+                    $out[$k]['current'] = $k === $at;
+                }
+            }
+
+            return $out;
+        }
+                // Contrato ya firmado: lo que sigue es la toma de medidas.
         if (! in_array(true, array_column($out, 'current'), true)) {
             foreach ($out as $k => $step) {
                 if (! $step['done']) {
@@ -195,7 +216,10 @@ class Quote extends Model
     public function customerSteps(): array
     {
         $steps = ['Cotización enviada', 'Revisando la propuesta', 'Contrato firmado', 'Toma de medidas', 'En producción', 'Entrega'];
-        $contract = $this->contract();
+        if ($this->isBusiness()) {
+            $steps[3] = 'Diseño y tallas';
+        }
+        $contract = $this->isBusiness() ? null : $this->contract();
 
         if ($contract) {
             $map = ['cotizado' => 2, 'aprobado' => 2, 'toma_medidas' => 3, 'en_produccion' => 4, 'control_calidad' => 4, 'listo' => 5, 'entregado' => 6];
@@ -262,7 +286,78 @@ class Quote extends Model
 
     public function summary(): array
     {
+        if ($this->isBusiness()) {
+            $lines = array_map(fn ($l) => ['label' => $l['qty'].' × '.$l['name'], 'price' => $l['subtotal']], $this->businessLines());
+
+            return ['lines' => $lines, 'unit_total' => $this->businessTotals()['total']];
+        }
+
         return QuoteCatalog::summarize($this->items);
+    }
+
+    /* ===================== Cotizaciones para empresas ===================== */
+
+    public const BUSINESS_GIFT_EVERY = 25;
+
+    /** Tipos de prenda sugeridos en el formulario de empresas. */
+    public const BUSINESS_GARMENTS = ['Chaqueta', 'Chaqueta impermeable', 'Buso', 'Chaleco', 'Camiseta polo', 'Camiseta deportiva', 'Camisa', 'Gorra', 'Pantalón', 'Otro'];
+
+    public function isBusiness(): bool
+    {
+        return $this->source === 'empresa';
+    }
+
+    public function scopeBusiness($query)
+    {
+        return $query->where('source', 'empresa');
+    }
+
+    /** Datos de la empresa (NIT, ciudad, cargo del contacto). */
+    public function company(): array
+    {
+        return array_merge(['nit' => null, 'city' => null, 'role' => null, 'validity' => 30], (array) ($this->config['company'] ?? []));
+    }
+
+    /**
+     * Prendas de la cotización empresarial, listas para mostrar.
+     *
+     * @return array<int, array{garment:string,name:string,features:array,qty:int,unit_price:int,subtotal:int,photo:?string,photo_url:?string}>
+     */
+    public function businessLines(): array
+    {
+        $out = [];
+        foreach ((array) ($this->items['lines'] ?? []) as $l) {
+            $qty = max(0, (int) ($l['qty'] ?? 0));
+            $unit = max(0, (int) round((float) ($l['unit_price'] ?? 0)));
+            $photo = $l['photo'] ?? null;
+            $out[] = [
+                'garment'    => (string) ($l['garment'] ?? ''),
+                'name'       => (string) ($l['name'] ?? ''),
+                'features'   => array_values(array_filter(array_map('trim', (array) ($l['features'] ?? [])))),
+                'qty'        => $qty,
+                'unit_price' => $unit,
+                'subtotal'   => $qty * $unit,
+                'photo'      => $photo,
+                'photo_url'  => $photo ? Storage::disk('public')->url($photo) : null,
+            ];
+        }
+
+        return $out;
+    }
+
+    /** @return array{units:int,total:int,gift_jackets:int,missing_for_gift:int} */
+    public function businessTotals(): array
+    {
+        $lines = $this->businessLines();
+        $units = array_sum(array_column($lines, 'qty'));
+        $every = self::BUSINESS_GIFT_EVERY;
+
+        return [
+            'units'            => $units,
+            'total'            => array_sum(array_column($lines, 'subtotal')),
+            'gift_jackets'     => intdiv($units, $every),
+            'missing_for_gift' => $units % $every === 0 && $units > 0 ? 0 : $every - ($units % $every),
+        ];
     }
 
     /** Enlace de WhatsApp al cliente con el mensaje predeterminado. */
@@ -311,8 +406,15 @@ class Quote extends Model
         ."Ahí encuentras precios, combos con descuento y todo lo que incluye su prom:\n{enlace}\n\n"
         ."Te adjunto también el PDF. ¿Te parece si agendamos la toma de medidas? 🧥✨";
 
+    public const DEFAULT_WA_MESSAGE_BUSINESS = "¡Hola {nombre}! 👋 Te comparto la cotización {numero} de G'Lauren para {empresa}.\n\n"
+        ."Ahí encuentras cada prenda con sus características, el valor por unidad al por mayor y los obsequios incluidos:\n{enlace}\n\n"
+        ."Te adjunto también el PDF. Quedo atento a cualquier ajuste. 🧥✨";
+
     public function whatsappMessage(?string $template = null): string
     {
+        if ($this->isBusiness() && ! $template) {
+            $template = Setting::get('quote_whatsapp_message_business') ?: self::DEFAULT_WA_MESSAGE_BUSINESS;
+        }
         $template = $template ?: (Setting::get('quote_whatsapp_message') ?: self::DEFAULT_WA_MESSAGE);
         $first = (string) Str::of($this->customer_name)->explode(' ')->first();
 
@@ -321,6 +423,7 @@ class Quote extends Model
             '{numero}'   => $this->code(),
             '{enlace}'   => $this->publicUrl(),
             '{colegio}'  => $this->school ? ' de '.$this->school : '',
+            '{empresa}'  => $this->school ?: 'tu empresa',
             '{cantidad}' => (string) $this->quantity,
         ]);
     }

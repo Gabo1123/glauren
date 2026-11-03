@@ -210,6 +210,12 @@ Route::prefix('gtorres')->name('admin.')->group(function () {
         Route::put('tipos/{type}', [JacketTypeController::class, 'update'])->name('types.update');
         Route::put('tipos/{type}/materiales', [JacketTypeController::class, 'saveComponents'])->name('types.components');
 
+        // Cotizaciones para empresas
+        Route::get('empresas', [\App\Modules\Chaquetas\Http\Controllers\Admin\BusinessQuoteController::class, 'index'])->name('business.index');
+        Route::get('empresas/crear', [\App\Modules\Chaquetas\Http\Controllers\Admin\BusinessQuoteController::class, 'create'])->name('business.create');
+        Route::post('empresas', [\App\Modules\Chaquetas\Http\Controllers\Admin\BusinessQuoteController::class, 'store'])->name('business.store');
+        Route::get('empresas/{quote}/editar', [\App\Modules\Chaquetas\Http\Controllers\Admin\BusinessQuoteController::class, 'edit'])->name('business.edit');
+        Route::put('empresas/{quote}', [\App\Modules\Chaquetas\Http\Controllers\Admin\BusinessQuoteController::class, 'update'])->name('business.update');
         Route::get('cotizaciones', [QuoteController::class, 'index'])->name('quotes.index');
         Route::get('cotizaciones/crear', [QuoteController::class, 'create'])->name('quotes.create');
         Route::post('cotizaciones', [QuoteController::class, 'store'])->name('quotes.store');
