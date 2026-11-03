@@ -11,18 +11,17 @@
 <div class="pg">
     @include('chaquetas.empresa._bar')
     <div style="position:absolute;left:48px;right:48px;top:122px;bottom:70px;display:flex;flex-direction:column;justify-content:space-between">
-        <div style="display:flex;gap:24px;align-items:stretch">
-            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;justify-content:center">
-                <div class="kick">QUIÉNES SOMOS</div>
-                <h1 class="h1">Vestimos equipos que <span class="hl">llevan tu marca</span></h1>
-                <p style="margin:0;font-size:14.5px;line-height:1.6;color:#2A2A2A">En <b>G'Lauren</b> llevamos más de 10 años confeccionando chaquetas y prendas personalizadas. Hoy llevamos esa experiencia a las empresas: prendas cómodas, resistentes y con la identidad de tu marca, para que tu equipo se vea y se sienta como uno solo.</p>
-            </div>
-            <div style="flex:0 0 270px;position:relative;padding:0 12px 12px 0">
-                <div aria-hidden="true" style="position:absolute;left:12px;top:12px;right:0;bottom:0;background:#FFC72C;border-radius:18px"></div>
-                <img src="/img/cotizacion/trabajos/trabajo-3.jpg" alt="Prendas G'Lauren" style="position:relative;width:258px;height:290px;object-fit:cover;border-radius:18px;border:3px solid #0E0E0E;display:block;box-sizing:border-box">
-                <div style="position:absolute;left:-16px;bottom:-4px;width:92px;height:92px;border-radius:50%;background:#FF6B1A;border:3px solid #0E0E0E;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(-8deg)">
-                    <span style="font-family:'Anton',sans-serif;font-size:30px;line-height:1">+10</span><span style="font-size:10px;font-weight:800;letter-spacing:1px">AÑOS</span>
-                </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="kick">QUIÉNES SOMOS</div>
+            <h1 class="h1" style="font-size:42px">Vestimos equipos que <span class="hl">llevan tu marca</span></h1>
+            <p style="margin:0;font-size:14px;line-height:1.55;color:#2A2A2A">En <b>G'Lauren</b> llevamos más de 10 años confeccionando chaquetas y prendas personalizadas. Hoy llevamos esa experiencia a las empresas: prendas cómodas, resistentes y con la identidad de tu marca, para que tu equipo se vea y se sienta como uno solo.</p>
+        </div>
+
+        <div style="position:relative;padding:0 12px 12px 0">
+            <div aria-hidden="true" style="position:absolute;left:12px;top:12px;right:0;bottom:0;background:#FFC72C;border-radius:18px"></div>
+            <img src="/img/cotizacion/empresas/equipo-1.jpg" alt="Equipo de trabajo con chaquetas corporativas" style="position:relative;width:100%;height:206px;object-fit:cover;object-position:50% 28%;border-radius:18px;border:3px solid #0E0E0E;display:block;box-sizing:border-box">
+            <div style="position:absolute;right:-6px;bottom:-6px;width:92px;height:92px;border-radius:50%;background:#FF6B1A;border:3px solid #0E0E0E;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(-8deg)">
+                <span style="font-family:'Anton',sans-serif;font-size:30px;line-height:1">+10</span><span style="font-size:10px;font-weight:800;letter-spacing:1px">AÑOS</span>
             </div>
         </div>
 
@@ -47,10 +46,11 @@
             </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:12px;height:150px">
-            @foreach(['trabajo-5', 'trabajo-1', 'trabajo-6'] as $t)
-                <img src="/img/cotizacion/trabajos/{{ $t }}.jpg" alt="Trabajo G'Lauren" style="width:100%;height:150px;object-fit:cover;border-radius:16px;border:3px solid #0E0E0E;box-sizing:border-box">
-            @endforeach
+        <div style="display:grid;grid-template-columns:2.3fr 1fr;gap:12px;height:128px">
+            <img src="/img/cotizacion/empresas/equipo-2.jpg" alt="Equipo con chaquetas corporativas bordadas" style="width:100%;height:128px;object-fit:cover;object-position:50% 35%;border-radius:16px;border:3px solid #0E0E0E;box-sizing:border-box">
+            <div style="height:128px;border-radius:16px;border:3px solid #0E0E0E;background:#fff;box-sizing:border-box;display:flex;align-items:center;justify-content:center;overflow:hidden">
+                <img src="/img/cotizacion/empresas/chaqueta-1.jpg" alt="Chaqueta corporativa con reflectivos" style="height:116px;width:auto;object-fit:contain">
+            </div>
         </div>
     </div>
     @include('chaquetas.empresa._foot')

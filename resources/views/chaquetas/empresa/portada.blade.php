@@ -10,7 +10,9 @@
         </div>
         <div style="position:absolute;left:470px;top:676px;transform:rotate(3deg);background:#0E0E0E;color:#FFC72C;font-weight:800;font-size:12px;letter-spacing:2px;padding:7px 14px;border-radius:999px;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ mb_strtoupper($cover['name']) }}</div>
     @else
-        <img src="/img/cotizacion/hero.png" alt="Chaqueta G'Lauren" style="position:absolute;top:258px;left:310px;width:640px;height:640px;object-fit:contain">
+        <div style="position:absolute;left:428px;top:280px;width:330px;height:370px;border:4px solid #0E0E0E;border-radius:24px;box-shadow:12px 12px 0 #FF6B1A;transform:rotate(3deg);overflow:hidden">
+            <img src="/img/cotizacion/empresas/equipo-1.jpg" alt="Equipo con chaquetas corporativas" style="width:100%;height:100%;object-fit:cover;object-position:60% 30%">
+        </div>
     @endif
 
     <img src="/img/cotizacion/logo-light.png" alt="G'Lauren" style="position:absolute;left:48px;top:52px;width:210px">
