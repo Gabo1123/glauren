@@ -46,7 +46,7 @@ return [
         'bolsillo_inv'=> ['name' => 'Bolsillo con cremallera invisible', 'price' => 5000],
     ],
 
-    'included' => ['Bandera por salón de 11', 'Globos en la entrega para fotos', 'Fotografía en la entrega de las chaquetas', 'Tula o termo'],
+    'included' => ['Bandera por salón de 11', 'Globos en la entrega para fotos', 'Fotografía en la entrega de las chaquetas (solo Bogotá y Cundinamarca)', 'Tula o termo'],
 
     'benefits' => [
         ['big' => '10%', 'title' => 'Hermanos o primos', 'text' => 'Descuento del 10% cuando hermanos o primos hacen su pedido con nosotros.'],
