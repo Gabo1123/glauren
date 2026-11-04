@@ -55,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await f();
     } on ApiException catch (e) {
-      setState(() => _error = e.message);
+      if (mounted) setState(() => _error = e.message);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
