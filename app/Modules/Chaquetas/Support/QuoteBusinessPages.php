@@ -25,7 +25,12 @@ class QuoteBusinessPages
             'phone'   => Setting::get('contact_phone', '302 110 6592'),
             'money'   => fn ($v) => '$'.number_format((float) $v, 0, ',', '.'),
             'pages'   => $total,
+            'school'  => $quote->isSchoolCustom(),
         ];
+
+        if ($quote->isSchoolCustom()) {
+            return self::schoolPages($quote, $data, $chunks);
+        }
 
         $out = [];
         $n = 1;
@@ -52,5 +57,45 @@ class QuoteBusinessPages
         $add('cierre');
 
         return $out;
+    }
+
+    /**
+     * Colegio personalizada: la cotización completa de prom (mismas hojas del PDF de colegios),
+     * cambiando catálogo, precios y combos por las prendas cotizadas a la medida.
+     */
+    private static function schoolPages(Quote $quote, array $data, array $chunks): array
+    {
+        $static = QuotePages::pages($quote);           // 15 hojas del lienzo, ya con los datos del cliente
+        $out = [];
+        $n = 1;
+        $canvas = function (int $index) use (&$out, &$n, $static) {
+            if (isset($static[$index])) {
+                $out[] = ['class' => 'pg-'.str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT), 'html' => self::renumber($static[$index], $n)];
+                $n++;
+            }
+        };
+        $view = function (string $name, array $extra = []) use (&$out, &$n, $data) {
+            $out[] = ['class' => 'be', 'html' => view('chaquetas.empresa.'.$name, $data + $extra + ['n' => $n])->render()];
+            $n++;
+        };
+
+        foreach ([0, 1, 2, 3, 4, 5] as $i) {           // portada, quiénes somos, beneficios, plataforma, trabajos, telas
+            $canvas($i);
+        }
+        foreach ($chunks as $k => $chunk) {
+            $view('prendas', ['chunk' => $chunk, 'part' => $k + 1, 'parts' => count($chunks)]);
+        }
+        $view('resumen');
+        foreach ([12, 13, 14] as $i) {                 // proceso, paquete de fotografía, adicionales y contacto
+            $canvas($i);
+        }
+
+        return $out;
+    }
+
+    /** Cambia el número de página del pie de una hoja del lienzo. */
+    private static function renumber(string $html, int $n): string
+    {
+        return (string) preg_replace('#(border-radius: 6px">)\d{2}(</span>)#', '${1}'.str_pad((string) $n, 2, '0', STR_PAD_LEFT).'${2}', $html, 1);
     }
 }

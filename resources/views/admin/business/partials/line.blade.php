@@ -22,20 +22,20 @@
                 </div>
                 <div class="col-sm-7">
                     <label class="form-label small">Nombre en la cotización *</label>
-                    <input name="lines[{{ $i }}][name]" value="{{ $r['name'] }}" class="form-control form-control-sm" required maxlength="120" placeholder="Ej.: Chaqueta corporativa antifluido">
+                    <input name="lines[{{ $i }}][name]" value="{{ $r['name'] }}" class="form-control form-control-sm" required maxlength="120" placeholder="{{ $L['school'] ? 'Ej.: Chaqueta varsity Prom 2027' : 'Ej.: Chaqueta corporativa antifluido' }}">
                 </div>
                 <div class="col-12">
                     <label class="form-label small">Características <span class="text-secondary">(una por línea)</span></label>
                     <textarea name="lines[{{ $i }}][features]" rows="4" class="form-control form-control-sm" placeholder="Tela Lafayette antifluido&#10;Logo bordado en el pecho&#10;Forro interno y bolsillos con cremallera&#10;Tallas S a XXL">{{ $r['features'] }}</textarea>
                 </div>
                 <div class="col-4">
-                    <label class="form-label small">Cantidad *</label>
+                    <label class="form-label small">{{ $L['qty'] }} *</label>
                     <input type="number" name="lines[{{ $i }}][qty]" value="{{ $r['qty'] }}" min="1" class="form-control form-control-sm" required data-qty>
                 </div>
                 <div class="col-4">
-                    <label class="form-label small">Valor x unidad *</label>
+                    <label class="form-label small">{{ $L['price'] }} *</label>
                     <div class="input-group input-group-sm"><span class="input-group-text" style="background:var(--g-surface-3);color:var(--g-bone);border-color:var(--g-line)">$</span>
-                        <input name="lines[{{ $i }}][unit_price]" value="{{ is_numeric($r['unit_price']) && $r['unit_price'] ? number_format($r['unit_price'], 0, ',', '.') : $r['unit_price'] }}" class="form-control" required inputmode="numeric" placeholder="Al por mayor" data-price>
+                        <input name="lines[{{ $i }}][unit_price]" value="{{ is_numeric($r['unit_price']) && $r['unit_price'] ? number_format($r['unit_price'], 0, ',', '.') : $r['unit_price'] }}" class="form-control" required inputmode="numeric" placeholder="{{ $L['price_ph'] }}" data-price>
                     </div>
                 </div>
                 <div class="col-4 d-flex align-items-end">

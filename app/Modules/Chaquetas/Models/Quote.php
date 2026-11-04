@@ -66,6 +66,7 @@ class Quote extends Model
                 'manual' => 'Cotización creada en el panel',
                 'lead'   => 'Seguimiento iniciado desde Leads / Contactos',
                 'empresa' => 'Cotización para empresa creada en el panel',
+                'personalizada' => 'Cotización personalizada para colegio creada en el panel',
                 default  => 'Cotización recibida desde la web (diseñador 3D)',
             });
         });
@@ -286,7 +287,7 @@ class Quote extends Model
 
     public function summary(): array
     {
-        if ($this->isBusiness()) {
+        if ($this->isCustom()) {
             $lines = array_map(fn ($l) => ['label' => $l['qty'].' × '.$l['name'], 'price' => $l['subtotal']], $this->businessLines());
 
             return ['lines' => $lines, 'unit_total' => $this->businessTotals()['total']];
@@ -312,10 +313,37 @@ class Quote extends Model
         return $query->where('source', 'empresa');
     }
 
+    /** Cotización personalizada para colegio (prendas con foto y valor por estudiante). */
+    public function isSchoolCustom(): bool
+    {
+        return $this->source === 'personalizada';
+    }
+
+    /** ¿Se arma con prendas propias (empresa o colegio personalizada)? */
+    public function isCustom(): bool
+    {
+        return $this->isBusiness() || $this->isSchoolCustom();
+    }
+
+    public function scopeKind($query, string $source)
+    {
+        return $query->where('source', $source);
+    }
+
+    /** Ruta para editar las prendas de una cotización personalizada / de empresa. */
+    public function customEditUrl(): ?string
+    {
+        return match ($this->source) {
+            'empresa'       => route('admin.business.edit', $this),
+            'personalizada' => route('admin.custom.edit', $this),
+            default         => null,
+        };
+    }
+
     /** Datos de la empresa (NIT, ciudad, cargo del contacto). */
     public function company(): array
     {
-        return array_merge(['nit' => null, 'city' => null, 'role' => null, 'validity' => 30], (array) ($this->config['company'] ?? []));
+        return array_merge(['nit' => null, 'course' => null, 'city' => null, 'role' => null, 'validity' => 30], (array) ($this->config['company'] ?? []));
     }
 
     /**
@@ -406,6 +434,10 @@ class Quote extends Model
         ."Ahí encuentras precios, combos con descuento y todo lo que incluye su prom:\n{enlace}\n\n"
         ."Te adjunto también el PDF. ¿Te parece si agendamos la toma de medidas? 🧥✨";
 
+    public const DEFAULT_WA_MESSAGE_CUSTOM = "¡Hola {nombre}! 👋 Te comparto la cotización personalizada {numero} de G'Lauren para la promoción{colegio}.\n\n"
+        ."Ahí ves cada prenda con su diseño, características, valor por estudiante y todo lo que incluye su prom:\n{enlace}\n\n"
+        ."Te adjunto también el PDF. ¿Agendamos la toma de medidas? 🧥✨";
+
     public const DEFAULT_WA_MESSAGE_BUSINESS = "¡Hola {nombre}! 👋 Te comparto la cotización {numero} de G'Lauren para {empresa}.\n\n"
         ."Ahí encuentras cada prenda con sus características, el valor por unidad al por mayor y los obsequios incluidos:\n{enlace}\n\n"
         ."Te adjunto también el PDF. Quedo atento a cualquier ajuste. 🧥✨";
@@ -414,6 +446,9 @@ class Quote extends Model
     {
         if ($this->isBusiness() && ! $template) {
             $template = Setting::get('quote_whatsapp_message_business') ?: self::DEFAULT_WA_MESSAGE_BUSINESS;
+        }
+        if ($this->isSchoolCustom() && ! $template) {
+            $template = Setting::get('quote_whatsapp_message_custom') ?: self::DEFAULT_WA_MESSAGE_CUSTOM;
         }
         $template = $template ?: (Setting::get('quote_whatsapp_message') ?: self::DEFAULT_WA_MESSAGE);
         $first = (string) Str::of($this->customer_name)->explode(' ')->first();

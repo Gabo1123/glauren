@@ -455,4 +455,49 @@ class QuoteCrmTest extends TestCase
         $this->assertSame(6, count($quote->fresh()->journey()));
         $this->actingAs($admin)->get(route('admin.business.index'))->assertOk()->assertSee('Constructora Andes');
     }
+
+    public function test_custom_school_quote_has_full_prom_pdf_with_own_garments(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+        Mail::fake();
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get(route('admin.custom.index'))->assertOk()->assertSee('Cotizaciones personalizadas para colegios');
+        $this->actingAs($admin)->get(route('admin.custom.create'))->assertOk()->assertSee('Curso / promoción')->assertSee('Valor x estudiante')
+            ->assertSee('Bandera por salón de 11');
+
+        $this->actingAs($admin)->post(route('admin.custom.store'), [
+            'company_name' => 'Colegio San José', 'company_course' => 'Grado 11 · Prom 2027',
+            'contact_name' => 'Laura Gómez', 'contact_phone' => '3001234567', 'contact_email' => 'laura@test.co', 'send_email' => 1,
+            'lines' => [
+                ['garment' => 'Chaqueta', 'name' => 'Chaqueta varsity personalizada', 'features' => "Paño y cuero sintético\nNombre bordado", 'qty' => 30,
+                 'unit_price' => '219.900', 'photo' => \Illuminate\Http\UploadedFile::fake()->image('varsity.jpg', 500, 500)],
+            ],
+        ])->assertRedirect();
+
+        $quote = Quote::firstOrFail();
+        $this->assertSame('personalizada', $quote->source);
+        $this->assertTrue($quote->isSchoolCustom() && $quote->isCustom() && ! $quote->isBusiness());
+        $this->assertSame('Grado 11 · Prom 2027', $quote->company()['course']);
+        $this->assertSame(30 * 219900, $quote->businessTotals()['total']);
+        Mail::assertSent(QuoteMail::class, fn ($m) => $m->content()->view === 'emails.quote-empresa');
+        $this->assertStringContainsString('COTIZACIÓN PERSONALIZADA', (new QuoteMail($quote))->render());
+        $this->assertStringContainsString('promoción de Colegio San José', $quote->whatsappMessage());
+
+        // PDF: hojas de prom (portada, beneficios, plataforma, trabajos, telas, proceso, fotografía, contacto) + prendas + resumen
+        $html = $this->get(route('cotizacion.show', $quote->public_token))->assertOk()
+            ->assertSee('PROM')->assertSee('TUS')->assertSee('Chaqueta varsity personalizada')->assertSee('$219.900')
+            ->assertSee('VALORES POR ESTUDIANTE')->assertSee('INCLUIDO EN TU PROM')->assertSee('Tu promoción recibe 1 chaqueta de obsequio')
+            ->assertSee('PAQUETE ADICIONAL DE')->assertSee('ADICIONALES')->assertDontSee('COMBOS')->getContent();
+        $this->assertSame(11, substr_count($html, '<div class="sheet">'));
+        $this->assertStringNotContainsString('%%', $html);
+
+        // Panel: editar va al apartado de personalizadas y sigue el flujo de colegio
+        $this->actingAs($admin)->get(route('admin.quotes.show', $quote))->assertOk()
+            ->assertSee(route('admin.custom.edit', $quote), false)->assertSee('Conviértelo en colegio')->assertSee('Chaqueta varsity personalizada');
+        $this->actingAs($admin)->get(route('admin.custom.edit', $quote))->assertOk()->assertSee('Chaqueta varsity personalizada');
+        $this->actingAs($admin)->get(route('admin.business.edit', $quote))->assertNotFound();
+        $this->actingAs($admin)->get(route('admin.business.index'))->assertDontSee('Colegio San José');
+    }
 }

@@ -4,7 +4,8 @@
     $m = fn ($v) => QC::money($v);
     $first = \Illuminate\Support\Str::of($quote->customer_name)->explode(' ')->first();
     $business = $quote->isBusiness();
-    if ($business) {
+    $custom = $quote->isCustom();
+    if ($custom) {
         $pages = \App\Modules\Chaquetas\Support\QuoteBusinessPages::pages($quote);
     } else {
         $pages = [];
@@ -77,7 +78,7 @@ body{background:#2B2B2B;color:#0E0E0E;font-family:'Montserrat',sans-serif;-webki
   .sheet>.pg{transform:none}
 }
 {!! QuotePages::css() !!}
-@if($business)
+@if($custom)
 @include('chaquetas.empresa.styles')
 @endif
 </style>
@@ -103,12 +104,12 @@ body{background:#2B2B2B;color:#0E0E0E;font-family:'Montserrat',sans-serif;-webki
                     @foreach($summary['lines'] as $l)
                         <tr><td>{{ $l['label'] }}</td><td>{{ $m($l['price']) }}</td></tr>
                     @endforeach
-                    @if($business)
-                        <tr class="tot"><td>Total · {{ $quote->businessTotals()['units'] }} unidades</td><td>{{ $m($summary['unit_total']) }}</td></tr>
+                    @if($custom)
+                        <tr class="tot"><td>Total · {{ $quote->businessTotals()['units'] }} {{ $business ? 'unidades' : 'prendas' }}</td><td>{{ $m($summary['unit_total']) }}</td></tr>
                     @else
                     <tr class="tot"><td>Valor por estudiante</td><td>{{ $m($summary['unit_total']) }}</td></tr>
                     @endif
-                    @if(! $business && $quote->quantity > 1)
+                    @if(! $custom && $quote->quantity > 1)
                         <tr class="tot"><td>Total aproximado · {{ $quote->quantity }} estudiantes</td><td>{{ $m($summary['unit_total'] * $quote->quantity) }}</td></tr>
                     @endif
                 </table>

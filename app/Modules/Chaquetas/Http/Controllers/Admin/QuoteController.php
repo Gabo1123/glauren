@@ -132,7 +132,7 @@ class QuoteController extends Controller
 
         if ($request->boolean('save_default')) {
             // Se guarda como plantilla: los datos del cliente vuelven a ser variables.
-            Setting::put($quote->isBusiness() ? 'quote_whatsapp_message_business' : 'quote_whatsapp_message', strtr($data['message'], [
+            Setting::put(match ($quote->source) { 'empresa' => 'quote_whatsapp_message_business', 'personalizada' => 'quote_whatsapp_message_custom', default => 'quote_whatsapp_message' }, strtr($data['message'], [
                 $quote->publicUrl() => '{enlace}',
                 $quote->code()      => '{numero}',
             ]));

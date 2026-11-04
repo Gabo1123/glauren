@@ -1,13 +1,13 @@
 @extends('layouts.admin')
-@section('title', 'Cotizaciones empresas')
+@section('title', $L['title'])
 
 @section('content')
 <div class="g-topbar">
     <div>
-        <h3 class="mb-1">Cotizaciones para empresas</h3>
-        <p class="small text-secondary mb-0">Dotación y prendas corporativas: varias prendas con foto, características y valor por unidad al por mayor.</p>
+        <h3 class="mb-1">{{ $L['title'] }}</h3>
+        <p class="small text-secondary mb-0">{{ $L['subtitle'] }}</p>
     </div>
-    <a href="{{ route('admin.business.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nueva cotización empresa</a>
+    <a href="{{ route($rp.'.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> {{ $L['new'] }}</a>
 </div>
 
 <div class="row g-3 mb-4">
@@ -17,14 +17,14 @@
 </div>
 
 <form class="d-flex gap-2 mb-3" method="GET">
-    <input name="q" value="{{ $q }}" class="form-control" placeholder="Buscar empresa, contacto, celular o número…">
+    <input name="q" value="{{ $q }}" class="form-control" placeholder="Buscar {{ mb_strtolower($L['entity']) }}, contacto, celular o número…">
     <button class="btn btn-outline-light"><i class="bi bi-search"></i></button>
 </form>
 
 <div class="card p-0">
     <div class="table-responsive">
         <table class="table align-middle mb-0">
-            <thead><tr><th>N°</th><th>Empresa</th><th>Contacto</th><th>Prendas</th><th class="text-end">Valor total</th><th>Estado</th><th>Fecha</th></tr></thead>
+            <thead><tr><th>N°</th><th>{{ $L['entity'] }}</th><th>Contacto</th><th>Prendas</th><th class="text-end">Valor total</th><th>Estado</th><th>Fecha</th></tr></thead>
             <tbody>
             @forelse($quotes as $qt)
                 @php $t = $qt->businessTotals(); $lines = $qt->businessLines(); @endphp
@@ -33,6 +33,7 @@
                     <td>
                         <div class="fw-bold">{{ $qt->school }}</div>
                         @if($qt->company()['nit'])<div class="small text-secondary">NIT {{ $qt->company()['nit'] }}</div>@endif
+                        @if($qt->company()['course'])<div class="small text-secondary">{{ $qt->company()['course'] }}</div>@endif
                     </td>
                     <td class="small">{{ $qt->customer_name }}<br><span class="text-secondary">{{ $qt->customer_phone }}</span></td>
                     <td>
@@ -40,7 +41,7 @@
                             @foreach(array_slice($lines, 0, 4) as $l)
                                 @if($l['photo_url'])<img src="{{ $l['photo_url'] }}" alt="" style="width:34px;height:34px;object-fit:cover;border-radius:8px;border:1px solid var(--g-line)">@endif
                             @endforeach
-                            <span class="small text-secondary ms-1">{{ count($lines) }} prenda{{ count($lines) == 1 ? '' : 's' }} · {{ $t['units'] }} und.</span>
+                            <span class="small text-secondary ms-1">{{ count($lines) }} prenda{{ count($lines) == 1 ? '' : 's' }} · {{ $t['units'] }} {{ $L['school'] ? 'est.' : 'und.' }}</span>
                         </div>
                     </td>
                     <td class="text-end fw-bold">${{ number_format($t['total'], 0, ',', '.') }}</td>
@@ -49,8 +50,8 @@
                 </tr>
             @empty
                 <tr><td colspan="7" class="text-center text-secondary py-5">
-                    Aún no hay cotizaciones para empresas.<br>
-                    <a href="{{ route('admin.business.create') }}" class="btn btn-primary btn-sm mt-3"><i class="bi bi-plus-lg"></i> Crear la primera</a>
+                    {{ $L['empty'] }}<br>
+                    <a href="{{ route($rp.'.create') }}" class="btn btn-primary btn-sm mt-3"><i class="bi bi-plus-lg"></i> Crear la primera</a>
                 </td></tr>
             @endforelse
             </tbody>

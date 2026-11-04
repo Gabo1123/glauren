@@ -36,7 +36,7 @@ class QuoteMail extends Mailable
         $wa = preg_replace('/\D/', '', (string) (Setting::get('contact_whatsapp') ?: config('chaquetas.whatsapp')));
 
         return new Content(
-            view: $this->quote->isBusiness() ? 'emails.quote-empresa' : 'emails.quote',
+            view: $this->quote->isCustom() ? 'emails.quote-empresa' : 'emails.quote',
             with: [
                 'brand'   => Setting::get('brand_name', "G'Lauren"),
                 'quote'   => $this->quote,
