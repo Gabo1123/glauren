@@ -142,6 +142,7 @@
             if ($designOptions->count() && $canVote && ! $myVote) { $todo[] = ['🗳️', 'Vota el diseño de tu curso', 'Elige tu favorito antes de que cierre la votación.', 'chaqueta']; }
             if ($c && ! $schoolPays && ! $student->isPaid() && ! $student->isUnderReview()) { $todo[] = ['💳', 'Haz tu pago', 'Así tu chaqueta no se retrasa.', 'pago']; }
             if (! $myPosts) { $todo[] = ['✍️', 'Escribe en el muro', 'Saluda a tu curso o sube una foto.', 'muro']; }
+            if ($c && $c->production_status === 'entregado') { array_unshift($todo, ['⭐', 'Califica tu chaqueta', '1 minuto: cuéntanos cómo te fue y súbenos fotos de la entrega.', 'encuesta']); }
         @endphp
         <div class="card">
             <div class="h2">✅ Tus pendientes @if(count($todo))<span class="cnt">{{ count($todo) }}</span>@endif</div>
@@ -150,6 +151,8 @@
                     <form method="POST" action="{{ route('seguimiento.search') }}">@csrf<input type="hidden" name="document" value="{{ $student->document }}">
                         <button type="submit" class="todo" style="width:100%;text-align:left;cursor:pointer;font:inherit"><span class="ti">{{ $ic }}</span><span class="tt"><b>{{ $t }}</b><small>{{ $d }}</small></span><span class="ta">→</span></button>
                     </form>
+                @elseif($go === 'encuesta')
+                    <a href="{{ \App\Modules\Chaquetas\Support\DeliverySurvey::url($c) }}" class="todo"><span class="ti">{{ $ic }}</span><span class="tt"><b>{{ $t }}</b><small>{{ $d }}</small></span><span class="ta">→</span></a>
                 @else
                     <a href="#{{ $go }}" data-go="{{ $go }}" class="todo"><span class="ti">{{ $ic }}</span><span class="tt"><b>{{ $t }}</b><small>{{ $d }}</small></span><span class="ta">→</span></a>
                 @endif

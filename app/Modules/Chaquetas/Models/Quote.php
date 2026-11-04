@@ -340,6 +340,30 @@ class Quote extends Model
         };
     }
 
+    /** Ficha del cliente que se va completando en la conversación. */
+    public const CLIENT_FIELDS = [
+        'course'      => 'Curso / grado',
+        'city'        => 'Ciudad',
+        'role'        => 'Cargo o rol del contacto',
+        'decides'     => 'Quién decide',
+        'event_date'  => 'Fecha de grado / entrega deseada',
+        'budget'      => 'Presupuesto por estudiante',
+        'competition' => 'Otras cotizaciones / competencia',
+        'found_us'    => 'Cómo nos conoció',
+    ];
+
+    /** @return array<string, mixed> */
+    public function client(): array
+    {
+        $c = (array) ($this->config['client'] ?? []);
+        $company = (array) ($this->config['company'] ?? []);
+        foreach (['course', 'city', 'role'] as $k) {
+            $c[$k] = ($c[$k] ?? null) ?: ($company[$k] ?? null);
+        }
+
+        return $c + ['contacts' => []];
+    }
+
     /** Datos de la empresa (NIT, ciudad, cargo del contacto). */
     public function company(): array
     {
@@ -412,6 +436,37 @@ class Quote extends Model
             'gift_jackets'     => $this->giftJackets(),
             'missing_for_gift' => $units % $every === 0 && $units > 0 ? 0 : $every - ($units % $every),
         ];
+    }
+
+    /** Valor total cotizado (para el tablero de ventas). */
+    public function totalValue(): int
+    {
+        if ($this->isCustom()) {
+            return (int) $this->businessTotals()['total'];
+        }
+        $unit = (int) ($this->summary()['unit_total'] ?? 0);
+
+        return $unit > 0 ? $unit * max(1, (int) $this->quantity) : (int) round((float) $this->estimated_price);
+    }
+
+    /** De dónde llegó el cliente, en palabras (para "qué fuente vende más"). */
+    public function channel(): string
+    {
+        $src = $this->lead?->source ?: $this->source;
+
+        return match ($src) {
+            'web'                  => 'Configurador web',
+            'cotiza-1min'          => 'Cotiza en 1 minuto',
+            'empresa-web'          => 'Web empresas',
+            'whatsapp'             => 'WhatsApp',
+            'contacto'             => 'Formulario de contacto',
+            'popup-gratis'         => 'Popup de la web',
+            'fotografia-grados'    => 'Fotografía de grados',
+            'manual', 'lead', null => 'Directo (creada por ti)',
+            'empresa'              => 'Empresa (creada por ti)',
+            'personalizada'        => 'Personalizada (creada por ti)',
+            default                => ucfirst(str_replace('-', ' ', (string) $src)),
+        };
     }
 
     /** Enlace de WhatsApp al cliente con el mensaje predeterminado. */

@@ -68,6 +68,14 @@ class Contract extends Model
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::warning('OrderNotifier error', ['msg' => $e->getMessage()]);
                 }
+                // Al entregar: encuesta de satisfacción + reseña en Google al contacto del colegio
+                if ($contract->production_status === 'entregado') {
+                    try {
+                        \App\Modules\Chaquetas\Support\DeliverySurvey::sendToSchool($contract);
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('DeliverySurvey error', ['msg' => $e->getMessage()]);
+                    }
+                }
             }
         });
     }

@@ -25,8 +25,14 @@ class ContractController extends Controller
         if (request()->filled('school_id')) {
             $contract->school_id = (int) request('school_id');
         }
+        // Viene de una cotización ganada: el contrato queda prellenado con lo cotizado
+        $fromQuote = request()->filled('quote_id') ? \App\Modules\Chaquetas\Models\Quote::find((int) request('quote_id')) : null;
+        if ($fromQuote) {
+            $contract->fill(\App\Modules\Chaquetas\Support\QuoteToContract::fields($fromQuote));
+            $contract->school_id = $contract->school_id ?: $fromQuote->school_id;
+        }
 
-        return view('admin.contracts.form', $this->formData($contract));
+        return view('admin.contracts.form', $this->formData($contract) + ['fromQuote' => $fromQuote]);
     }
 
     public function store(Request $request)
@@ -34,6 +40,9 @@ class ContractController extends Controller
         $data = $this->validated($request, null);
         $data['code'] = $data['code'] ?: $this->nextCode();
         $contract = Contract::create($data);
+        if ($request->filled('quote_id') && ($q = \App\Modules\Chaquetas\Models\Quote::find((int) $request->input('quote_id')))) {
+            $q->log('estado', 'Contrato '.$contract->code.' creado desde esta cotización.');
+        }
 
         return redirect()->route('admin.contracts.show', $contract)->with('ok', 'Contrato creado. Ahora agrega los alumnos.');
     }

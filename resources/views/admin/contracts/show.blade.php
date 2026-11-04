@@ -390,7 +390,22 @@
             <a href="{{ route('admin.students.template', $contract) }}" class="btn btn-sm btn-outline-light"><i class="bi bi-filetype-csv"></i> Plantilla</a>
             <a href="{{ route('admin.students.export', $contract) }}" class="btn btn-sm btn-outline-light"><i class="bi bi-download"></i> Exportar</a>
             <button class="btn btn-sm btn-outline-light" type="button" onclick="document.getElementById('impForm').classList.toggle('d-none')"><i class="bi bi-upload"></i> Importar CSV</button>
+            <button class="btn btn-sm btn-warning" type="button" onclick="document.getElementById('sizeForm').classList.toggle('d-none')"><i class="bi bi-rulers"></i> Formato de tallas</button>
         </div>
+    </div>
+    <div id="sizeForm" class="d-none mb-3 p-3" style="background:var(--g-surface-2);border:1px solid var(--g-line);border-radius:8px">
+        <div class="fw-semibold mb-2"><i class="bi bi-rulers"></i> Tallas en Excel, en 3 pasos</div>
+        <ol class="small text-secondary mb-3 ps-3">
+            <li><b>Descarga el formato</b>: ya viene con los alumnos del curso (documento y nombre).</li>
+            <li><b>Ábrelo en Excel</b> y llena Talla y medidas en cm (pecho, cintura, cadera, manga, talle). Puedes agregar alumnos nuevos al final con documento y nombre.</li>
+            <li><b>Guárdalo como CSV</b> y súbelo aquí. Se actualiza cada alumno por su documento; las casillas vacías no borran nada.</li>
+        </ol>
+        <form method="POST" action="{{ route('admin.students.sizes.import', $contract) }}" enctype="multipart/form-data" class="row g-2 align-items-end">
+            @csrf
+            <div class="col-md-4"><a href="{{ route('admin.students.sizes.template', $contract) }}" class="btn btn-outline-light btn-sm w-100"><i class="bi bi-download"></i> 1. Descargar formato</a></div>
+            <div class="col-md-5"><input type="file" name="file" class="form-control form-control-sm" accept=".csv,.txt" required></div>
+            <div class="col-md-3"><button class="btn btn-warning btn-sm w-100"><i class="bi bi-upload"></i> 3. Subir tallas</button></div>
+        </form>
     </div>
     <form id="impForm" method="POST" action="{{ route('admin.students.import', $contract) }}" enctype="multipart/form-data" class="d-none mb-3 p-3" style="background:var(--g-surface-2);border:1px solid var(--g-line);border-radius:8px">
         @csrf

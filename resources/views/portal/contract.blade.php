@@ -232,7 +232,10 @@
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
         <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0">Alumnos <span style="color:var(--g-muted);font-family:var(--g-font-body);font-size:14px">({{ $contract->students->count() }})</span></h2>
         @unless($signed)
-            <button onclick="document.getElementById('addForm').style.display='block';this.style.display='none'" style="background:none;border:1px solid var(--g-gold);color:var(--g-gold);padding:8px 14px;border-radius:var(--g-r-sm);cursor:pointer;font-size:13px"><i class="bi bi-plus-lg"></i> Agregar alumno</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button onclick="var f=document.getElementById('xlsForm');f.style.display=f.style.display==='block'?'none':'block'" style="background:var(--g-gold);border:1px solid var(--g-gold);color:#1a1405;padding:8px 14px;border-radius:var(--g-r-sm);cursor:pointer;font-size:13px;font-weight:700"><i class="bi bi-file-earmark-excel"></i> Subir lista desde Excel</button>
+                <button onclick="document.getElementById('addForm').style.display='block';this.style.display='none'" style="background:none;border:1px solid var(--g-gold);color:var(--g-gold);padding:8px 14px;border-radius:var(--g-r-sm);cursor:pointer;font-size:13px"><i class="bi bi-plus-lg"></i> Agregar uno por uno</button>
+            </div>
         @endunless
     </div>
 
@@ -248,6 +251,24 @@
             Registra a cada estudiante de tu promoción antes de firmar. El total de alumnos define el contrato. <b>Una vez firmado, la lista se cierra.</b>
         </div>
     @endif
+
+    {{-- Cargar todo el curso desde Excel --}}
+    @unless($signed)
+    <div id="xlsForm" style="display:{{ $errors->has('file') ? 'block' : 'none' }};background:var(--g-surface-2);border:1px solid var(--g-line);border-radius:var(--g-r-sm);padding:18px;margin-bottom:18px">
+        <div style="font-weight:700;margin-bottom:10px"><i class="bi bi-file-earmark-excel" style="color:var(--g-gold)"></i> Carga a todo el curso en 3 pasos</div>
+        <ol style="font-size:13.5px;color:var(--g-muted);margin:0 0 14px;padding-left:18px;line-height:1.7">
+            <li><a href="{{ route('portal.students.template', $contract) }}" style="color:var(--g-gold);font-weight:700"><i class="bi bi-download"></i> Descarga el formato</a> (se abre en Excel).</li>
+            <li>Llena una fila por alumno: <b>documento</b> y <b>nombre</b> son obligatorios; apodo, celular y sexo son opcionales.</li>
+            <li>Guárdalo como <b>CSV</b> y súbelo aquí. Si un alumno ya está, no se repite.</li>
+        </ol>
+        @error('file')<div style="color:#ff8a80;font-size:13px;margin-bottom:10px"><i class="bi bi-exclamation-triangle"></i> {{ $message }}</div>@enderror
+        <form method="POST" action="{{ route('portal.students.import', $contract) }}" enctype="multipart/form-data" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            @csrf
+            <input type="file" name="file" accept=".csv,.txt" required style="flex:1;min-width:200px;background:var(--g-ink);border:1px solid var(--g-line);color:var(--g-bone);padding:8px;border-radius:6px">
+            <button style="background:var(--g-gold);color:#1a1405;border:none;padding:9px 18px;border-radius:6px;font-weight:700;cursor:pointer"><i class="bi bi-upload"></i> Subir lista</button>
+        </form>
+    </div>
+    @endunless
 
     {{-- Formulario para agregar (colegio solo captura datos básicos) --}}
     @unless($signed)

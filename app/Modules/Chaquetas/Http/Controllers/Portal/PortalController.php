@@ -163,9 +163,80 @@ class PortalController extends Controller
         ], ['phone.regex' => 'Escribe un celular válido, solo números.']);
 
         $data['combo'] = $contract->defaultCombo();
+        // La base de datos guarda "hombre" / "mujer"
+        $data['gender'] = ['M' => 'hombre', 'F' => 'mujer'][$data['gender'] ?? ''] ?? null;
         $contract->students()->create($data);
 
         return back()->with('ok', 'Alumno agregado. El equipo Glauren tomará las medidas.')->withFragment('alumnos');
+    }
+
+    /** Formato de Excel para cargar a todo el curso de una vez. */
+    public function studentsTemplate(Contract $contract)
+    {
+        $school = $this->school();
+        abort_unless($contract->school_id === $school->id, 403);
+
+        $rows = [['Documento', 'Nombre completo', 'Apodo', 'Celular', 'Sexo (M/F)']];
+        foreach ($contract->students()->orderBy('name')->get() as $s) {
+            $rows[] = [$s->document, $s->name, $s->nickname, $s->phone, $s->gender];
+        }
+        if (count($rows) === 1) {
+            $rows[] = ['1010101010', 'Valentina Ríos Gómez', 'Vale', '3001234567', 'F'];
+            $rows[] = ['1020202020', 'Juan Pablo Torres', 'Juancho', '3109876543', 'M'];
+        }
+
+        return \App\Modules\Chaquetas\Support\StudentSheet::download('alumnos-'.($contract->code ?: $contract->id).'.csv', $rows);
+    }
+
+    /** El colegio sube el Excel con la lista del curso. Solo agrega los que no estén (por documento). */
+    public function importStudents(Request $request, Contract $contract)
+    {
+        $school = $this->school();
+        abort_unless($contract->school_id === $school->id, 403);
+        abort_if($contract->isSigned(), 403, 'El contrato ya está firmado; la lista de alumnos quedó cerrada.');
+        $request->validate(['file' => 'required|file|max:4096'], ['file.required' => 'Elige el archivo de Excel (CSV).']);
+
+        $S = \App\Modules\Chaquetas\Support\StudentSheet::class;
+        $rows = $S::read($request->file('file'), 400);
+        if (! $rows || ! array_key_exists('documento', $rows[0]) || ! array_key_exists('nombre', $rows[0])) {
+            return back()->withErrors(['file' => 'El archivo debe tener las columnas Documento y Nombre. Descarga el formato y vuelve a intentarlo.'])->withFragment('alumnos');
+        }
+
+        $created = $repeated = 0;
+        $bad = [];
+        foreach ($rows as $i => $r) {
+            $doc = $S::document($r['documento'] ?? '');
+            $name = trim($r['nombre'] ?? '');
+            if ($doc === '' && $name === '') {
+                continue;
+            }
+            if (strlen($doc) < 5 || $name === '') {
+                $bad[] = $i + 2;
+                continue;
+            }
+            if ($contract->students()->where('document', $doc)->exists()) {
+                $repeated++;
+                continue;
+            }
+            $phone = preg_replace('/[^\d+]/', '', (string) ($r['celular'] ?? ''));
+            $g = $S::gender($r['sexo'] ?? null);
+            $contract->students()->create([
+                'document' => $doc,
+                'name'     => mb_convert_case(mb_strtolower($name), MB_CASE_TITLE),
+                'nickname' => trim($r['apodo'] ?? '') ?: null,
+                'phone'    => strlen($phone) >= 7 ? $phone : null,
+                'gender'   => $g,
+                'combo'    => $contract->defaultCombo(),
+            ]);
+            $created++;
+        }
+
+        $msg = "Listo: $created alumno(s) agregado(s)".($repeated ? ", $repeated ya estaban" : '').'.';
+        if ($bad) {
+            $msg .= ' Revisa las filas '.implode(', ', array_slice($bad, 0, 10)).': les falta documento o nombre.';
+        }
+
+        return back()->with('ok', $msg)->withFragment('alumnos');
     }
 
     /** El colegio agrega o corrige el celular de un alumno (sirve para recuperar el PIN y recibir avisos). */

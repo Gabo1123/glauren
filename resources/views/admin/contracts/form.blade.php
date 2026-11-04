@@ -10,9 +10,13 @@
     <div class="alert alert-warning">Primero crea un <a href="{{ route('admin.schools.create') }}">colegio</a>.</div>
 @endif
 
+@if(!empty($fromQuote))
+    <div class="alert alert-success" style="max-width:700px"><i class="bi bi-magic"></i> <b>Prellenado desde la cotización {{ $fromQuote->code() }}</b>: prendas, precio por estudiante, cantidad, total y valor en letras. Revisa y ajusta lo que haga falta antes de guardar.</div>
+@endif
 <div class="card p-4" style="max-width:700px">
     <form method="POST" action="{{ $isNew ? route('admin.contracts.store') : route('admin.contracts.update', $contract) }}">
         @csrf @unless($isNew) @method('PUT') @endunless
+        @if(!empty($fromQuote))<input type="hidden" name="quote_id" value="{{ $fromQuote->id }}">@endif
         <div class="row g-3">
             <div class="col-md-8">
                 <label class="form-label small">Colegio</label>

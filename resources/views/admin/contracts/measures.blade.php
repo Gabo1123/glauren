@@ -70,6 +70,7 @@
     </div>
     <div class="mz-actions">
         <a href="{{ route('admin.students.export', $contract) }}" class="btn btn-outline-light btn-sm"><i class="bi bi-file-earmark-excel"></i> Exportar</a>
+        <a href="{{ route('admin.students.sizes.template', $contract) }}" class="btn btn-outline-light btn-sm"><i class="bi bi-rulers"></i> Formato de tallas</a>
     </div>
 </div>
 
