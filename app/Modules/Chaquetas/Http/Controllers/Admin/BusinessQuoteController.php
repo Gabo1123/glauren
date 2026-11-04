@@ -186,6 +186,7 @@ class BusinessQuoteController extends Controller
             $file = $request->file("lines.{$key}.photo");
             if ($file) {
                 $photo = $file->store('cotizaciones-empresa', 'public');
+                \App\Modules\Chaquetas\Support\ImageOptimizer::optimizeStored($photo);
             }
 
             $lines[] = [

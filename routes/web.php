@@ -51,6 +51,10 @@ Route::post('/mi-chaqueta', [SeguimientoController::class, 'search'])->middlewar
 Route::post('/mi-chaqueta/pago', [SeguimientoController::class, 'declarePayment'])->middleware('throttle:10,10')->name('seguimiento.pay');
 Route::post('/mi-chaqueta/telefono', [SeguimientoController::class, 'savePhone'])->middleware('throttle:10,10')->name('seguimiento.phone');
 Route::get('/colegios', [HomeController::class, 'colegios'])->name('colegios');
+// Cotiza en 1 minuto (home) y página para empresas
+Route::post('/cotiza-en-1-minuto', [\App\Modules\Chaquetas\Http\Controllers\QuickQuoteController::class, 'school'])->middleware('throttle:6,10')->name('cotiza.store');
+Route::get('/empresas', [\App\Modules\Chaquetas\Http\Controllers\QuickQuoteController::class, 'businessPage'])->name('empresas');
+Route::post('/empresas', [\App\Modules\Chaquetas\Http\Controllers\QuickQuoteController::class, 'business'])->middleware('throttle:6,10')->name('empresas.store');
 Route::get('/contacto', [\App\Modules\Chaquetas\Http\Controllers\ContactController::class, 'show'])->name('contacto');
 Route::post('/contacto', [\App\Modules\Chaquetas\Http\Controllers\ContactController::class, 'submit'])->name('contacto.submit');
 Route::get('/contacto/horarios', [\App\Modules\Chaquetas\Http\Controllers\ContactController::class, 'slots'])->name('contacto.slots');

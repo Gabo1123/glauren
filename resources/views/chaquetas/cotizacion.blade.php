@@ -35,6 +35,7 @@
 html,body{margin:0;overflow-x:hidden}
 body{background:#2B2B2B;color:#0E0E0E;font-family:'Montserrat',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .y{color:#FFC72C}
+.newq{background:#25d366;color:#04240f;border-radius:14px;padding:12px 16px;font-size:14px;line-height:1.5}
 .lbl{font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#FFC72C}
 
 /* Barra superior: solo en la web */
@@ -91,6 +92,9 @@ body{background:#2B2B2B;color:#0E0E0E;font-family:'Montserrat',sans-serif;-webki
 
 <header class="top noprint">
     <div class="in">
+        @if(request()->boolean('nueva'))
+            <div class="newq">🎉 <b>¡Listo, {{ $first }}!</b> Esta es tu cotización completa. Guarda este enlace o descárgala en PDF.@if($quote->customer_email) También te la enviamos a <b>{{ $quote->customer_email }}</b>.@endif Un asesor te escribirá por WhatsApp para ayudarte.</div>
+        @endif
         <div>
             <h1>Hola {{ $first }}, esta es tu <span class="y">cotización {{ $quote->code() }}</span></h1>
             <p>{{ $business ? 'Revisa cada prenda con su valor al por mayor. Puedes descargarla en PDF o escribirnos por WhatsApp para aprobarla o ajustarla.' : 'Revísala con calma. Puedes descargarla en PDF o escribirnos por WhatsApp para separar tu fecha.' }}</p>
