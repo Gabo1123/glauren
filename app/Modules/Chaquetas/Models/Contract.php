@@ -26,6 +26,7 @@ class Contract extends Model
         'voting_enabled', 'voting_show_results',
         'design_approved_at', 'join_token', 'delivery_date', 'default_combo', 'materials',
         'objeto', 'product_details', 'combo_value', 'contract_total', 'total_words', 'delivery_business_days',
+        'deposit_amount', 'deposit_paid', 'deposit_paid_at', 'deposit_method', 'deposit_proof', 'deposit_declared_at',
     ];
 
     protected function casts(): array
@@ -38,6 +39,8 @@ class Contract extends Model
             'voting_enabled'      => 'boolean',
             'voting_show_results' => 'boolean',
             'materials'           => 'array',
+            'deposit_paid_at'     => 'datetime',
+            'deposit_declared_at' => 'datetime',
         ];
     }
 
@@ -67,6 +70,14 @@ class Contract extends Model
                     app(\App\Modules\Chaquetas\Services\OrderNotifier::class)->notifyStage($contract);
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::warning('OrderNotifier error', ['msg' => $e->getMessage()]);
+                }
+                // Al entregar: encuesta de satisfacción + reseña en Google al contacto del colegio
+                if ($contract->production_status === 'entregado') {
+                    try {
+                        \App\Modules\Chaquetas\Support\DeliverySurvey::sendToSchool($contract);
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('DeliverySurvey error', ['msg' => $e->getMessage()]);
+                    }
                 }
             }
         });
@@ -148,6 +159,22 @@ class Contract extends Model
     }
 
     /** Contrato final: plantilla con los datos rellenados. */
+    /**
+     * Contrato listo para mostrar en HTML: si el texto trae formato (párrafos, negritas…)
+     * se respeta; si es texto plano se convierten los saltos de línea. Siempre sin scripts.
+     */
+    public function renderedContractHtml(): string
+    {
+        $text = $this->renderedContract();
+        if ($text === strip_tags($text)) {
+            return nl2br(e($text));
+        }
+        $html = strip_tags($text, '<p><br><b><strong><i><em><u><ul><ol><li><h1><h2><h3><h4><h5><table><thead><tbody><tr><td><th><span><div><hr>');
+        $html = preg_replace('/\s+on\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html);
+
+        return (string) preg_replace('/javascript\s*:/i', '', $html);
+    }
+
     public function renderedContract(): string
     {
         $tpl = Setting::get('contract_template', '');
@@ -179,6 +206,8 @@ class Contract extends Model
             '{valor_combo}'    => $money($this->combo_value ?: $this->price_per_unit),
             '{valor_total}'    => $money($this->contract_total ?: $this->totalValue()),
             '{valor_letras}'   => $this->total_words ?: '[valor en letras]',
+            '{anticipo}'       => $this->hasDeposit() ? $money($this->deposit_amount) : '[anticipo]',
+            '{anticipo_letras}' => $this->hasDeposit() ? \App\Modules\Chaquetas\Support\NumberToWords::pesos((float) $this->deposit_amount) : '[anticipo en letras]',
             '{contratista}'    => Setting::get('contratista_nombre', Setting::get('brand_name', 'Glauren')),
             '{nit}'            => Setting::get('contratista_nit', ''),
             '{cuenta}'         => Setting::get('contratista_cuenta', ''),
@@ -187,6 +216,40 @@ class Contract extends Model
         ];
 
         return strtr($tpl, $repl);
+    }
+
+    /* ===================== Anticipo del colegio ===================== */
+
+    public function hasDeposit(): bool
+    {
+        return (float) $this->deposit_amount > 0;
+    }
+
+    /** pendiente | en_revision | parcial | pagado | (null si no hay anticipo) */
+    public function depositStatus(): ?string
+    {
+        if (! $this->hasDeposit()) {
+            return null;
+        }
+        $paid = (float) $this->deposit_paid;
+        if ($paid >= (float) $this->deposit_amount) {
+            return 'pagado';
+        }
+        if ($this->deposit_declared_at && (! $this->deposit_paid_at || $this->deposit_declared_at->gt($this->deposit_paid_at))) {
+            return 'en_revision';
+        }
+
+        return $paid > 0 ? 'parcial' : 'pendiente';
+    }
+
+    public function depositLabel(): string
+    {
+        return ['pagado' => 'Anticipo pagado', 'en_revision' => 'Comprobante por revisar', 'parcial' => 'Anticipo parcial', 'pendiente' => 'Anticipo pendiente'][$this->depositStatus()] ?? 'Sin anticipo';
+    }
+
+    public function depositDue(): float
+    {
+        return max(0, (float) $this->deposit_amount - (float) $this->deposit_paid);
     }
 
     /** Combo por defecto del contrato (lo heredan los alumnos nuevos). */

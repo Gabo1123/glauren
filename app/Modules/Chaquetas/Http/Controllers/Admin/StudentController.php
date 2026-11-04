@@ -215,6 +215,79 @@ class StudentController extends Controller
         ]);
     }
 
+    /** Formato de tallas: ya trae los alumnos del curso, solo se llenan talla y medidas. */
+    public function sizesTemplate(Contract $contract)
+    {
+        $rows = [['Documento', 'Nombre', 'Apodo', 'Sexo', 'Talla', 'Pecho (cm)', 'Cintura (cm)', 'Cadera (cm)', 'Manga (cm)', 'Talle (cm)']];
+        $students = $contract->students()->orderBy('name')->get();
+        foreach ($students as $s) {
+            $rows[] = [$s->document, $s->name, $s->nickname, $s->gender, $s->size,
+                $s->chest, $s->waist, $s->hip, $s->sleeve_length, $s->talle_length];
+        }
+        if ($students->isEmpty()) {
+            $rows[] = ['1010101010', 'Valentina Ríos', 'Vale', 'mujer', 'M', '88', '70', '94', '58', '42'];
+        }
+
+        return \App\Modules\Chaquetas\Support\StudentSheet::download('tallas-'.($contract->code ?: $contract->id).'.csv', $rows);
+    }
+
+    /** Sube el formato de tallas: actualiza a cada alumno por documento (y crea los que no existan). */
+    public function sizesImport(Request $request, Contract $contract)
+    {
+        $request->validate(['file' => 'required|file|max:4096']);
+        $S = \App\Modules\Chaquetas\Support\StudentSheet::class;
+        $rows = $S::read($request->file('file'));
+        if (! $rows || ! array_key_exists('documento', $rows[0])) {
+            return back()->withErrors(['file' => 'No encontré la columna "Documento". Descarga el formato de tallas y súbelo sin cambiar los encabezados.']);
+        }
+
+        $updated = $created = 0;
+        $skipped = [];
+        foreach ($rows as $i => $r) {
+            $doc = $S::document($r['documento'] ?? '');
+            if (strlen($doc) < 5) {
+                if (trim(implode('', $r)) !== '') {
+                    $skipped[] = 'fila '.($i + 2);
+                }
+                continue;
+            }
+            $data = array_filter([
+                'size'          => isset($r['talla']) && trim($r['talla']) !== '' ? mb_strtoupper(trim($r['talla'])) : null,
+                'chest'         => $S::number($r['pecho'] ?? null),
+                'waist'         => $S::number($r['cintura'] ?? null),
+                'hip'           => $S::number($r['cadera'] ?? null),
+                'sleeve_length' => $S::number($r['manga'] ?? null),
+                'talle_length'  => $S::number($r['talle'] ?? null),
+                'gender'        => $S::gender($r['sexo'] ?? null),
+                'nickname'      => trim($r['apodo'] ?? '') ?: null,
+            ], fn ($v) => $v !== null);
+
+            $student = $contract->students()->where('document', $doc)->first();
+            if ($student) {
+                if ($data) {
+                    $student->update($data);
+                    $updated++;
+                }
+            } elseif (trim($r['nombre'] ?? '') !== '') {
+                $contract->students()->create($data + [
+                    'document' => $doc,
+                    'name'     => trim($r['nombre']),
+                    'combo'    => $contract->defaultCombo(),
+                ]);
+                $created++;
+            } else {
+                $skipped[] = $doc;
+            }
+        }
+
+        $msg = "Tallas cargadas: $updated alumno(s) actualizado(s)".($created ? ", $created nuevo(s)" : '').'.';
+        if ($skipped) {
+            $msg .= ' Sin procesar: '.implode(', ', array_slice($skipped, 0, 8)).(count($skipped) > 8 ? '…' : '').' (revisa documento y nombre).';
+        }
+
+        return back()->with('ok', $msg);
+    }
+
     /** Vista tipo Excel: toma de medidas de todo el curso. */
     public function measures(Contract $contract)
     {

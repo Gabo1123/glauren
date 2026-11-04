@@ -256,8 +256,8 @@ class QuoteController extends Controller
         $quote->update(['school_id' => $school->id, 'school' => $school->name, 'status' => 'cerrado', 'follow_up_at' => null]);
         $quote->log('estado', '¡Cliente convertido en colegio! '.$school->name);
 
-        return redirect()->route('admin.contracts.create', ['school_id' => $school->id])
-            ->with('ok', 'Colegio "'.$school->name.'" creado desde la cotización '.$quote->code().'. Ahora crea el contrato para iniciar el proceso.');
+        return redirect()->route('admin.contracts.create', ['school_id' => $school->id, 'quote_id' => $quote->id])
+            ->with('ok', 'Colegio "'.$school->name.'" creado desde la cotización '.$quote->code().'. Revisa el contrato: ya viene lleno con lo cotizado.');
     }
 
     public function note(Request $request, Quote $quote)
@@ -278,6 +278,68 @@ class QuoteController extends Controller
         return back()->with('ok', $quote->emailToCustomer()
             ? 'Cotización enviada a '.$quote->customer_email.'.'
             : 'No se pudo enviar el correo. Revisa la configuración de correo del servidor.');
+    }
+
+    /** Ficha del cliente: se edita a medida que se habla con él (nombre, colegio, contactos, datos clave). */
+    public function updateClient(Request $request, Quote $quote)
+    {
+        $rules = [
+            'customer_name'  => 'required|string|max:160',
+            'customer_phone' => 'nullable|string|max:40',
+            'customer_email' => 'nullable|email|max:160',
+            'school'         => 'nullable|string|max:160',
+            'quantity'       => 'nullable|integer|min:1|max:100000',
+            'contacts'          => 'nullable|array|max:8',
+            'contacts.*.name'   => 'nullable|string|max:120',
+            'contacts.*.role'   => 'nullable|string|max:80',
+            'contacts.*.phone'  => 'nullable|string|max:40',
+        ];
+        foreach (array_keys(Quote::CLIENT_FIELDS) as $k) {
+            $rules["client.$k"] = 'nullable|string|max:200';
+        }
+        $data = $request->validate($rules);
+
+        $before = $quote->only(['customer_name', 'customer_phone', 'customer_email', 'school', 'quantity']);
+        $config = (array) $quote->config;
+        $client = array_map(fn ($v) => is_string($v) ? (trim($v) ?: null) : $v, (array) ($data['client'] ?? []));
+        $client['contacts'] = array_values(array_filter(array_map(
+            fn ($c) => array_map(fn ($v) => trim((string) $v) ?: null, (array) $c),
+            (array) ($data['contacts'] ?? [])
+        ), fn ($c) => ($c['name'] ?? null) || ($c['phone'] ?? null)));
+        $config['client'] = $client;
+        // Las cotizaciones de empresa/personalizadas leen curso, ciudad y cargo de "company": los mantenemos iguales
+        if ($quote->isCustom()) {
+            $config['company'] = array_merge((array) ($config['company'] ?? []), array_filter([
+                'course' => $client['course'] ?? null, 'city' => $client['city'] ?? null, 'role' => $client['role'] ?? null,
+            ]));
+        }
+
+        $update = [
+            'customer_name'  => $data['customer_name'],
+            'customer_phone' => $data['customer_phone'] ?? $quote->customer_phone,
+            'customer_email' => $data['customer_email'] ?? null,
+            'school'         => $data['school'] ?? null,
+            'config'         => $config,
+        ];
+        if (! empty($data['quantity']) && ! $quote->isCustom() && (int) $data['quantity'] !== (int) $quote->quantity) {
+            $update['quantity'] = (int) $data['quantity'];
+            $update['estimated_price'] = QuoteCatalog::summarize($quote->items)['unit_total'] * (int) $data['quantity'];
+        }
+        $quote->update($update);
+
+        // El contacto (lead) queda con los mismos datos
+        if ($quote->lead) {
+            $quote->lead->update(array_filter([
+                'name' => $quote->customer_name, 'phone' => $quote->customer_phone,
+                'email' => $quote->customer_email, 'school' => $quote->school,
+            ]));
+        }
+
+        $changed = array_keys(array_diff_assoc(array_map('strval', $quote->only(array_keys($before))), array_map('strval', $before)));
+        $labels = ['customer_name' => 'nombre', 'customer_phone' => 'celular', 'customer_email' => 'correo', 'school' => 'colegio', 'quantity' => 'estudiantes'];
+        $quote->log('nota', 'Ficha del cliente actualizada'.($changed ? ' ('.implode(', ', array_map(fn ($k) => $labels[$k], $changed)).')' : '').'.');
+
+        return back()->with('ok', 'Datos del cliente guardados.')->withFragment('ficha');
     }
 
     public function update(Request $request, Quote $quote)

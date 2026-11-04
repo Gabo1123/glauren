@@ -86,6 +86,25 @@
     .cform input{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--paper);border-radius:999px;padding:8px 14px;font-size:13px}
     .cform input:focus{outline:none;border-color:var(--gold)}
     .cform button{background:var(--gold);color:#1c1503;border:0;border-radius:999px;padding:0 14px;font-weight:700;cursor:pointer;font-size:13px}
+    /* ===== Navegación por pestañas (app) ===== */
+    body{padding-bottom:84px}
+    .sp-nav{position:fixed;left:0;right:0;bottom:0;z-index:90;display:flex;justify-content:space-around;background:rgba(13,13,15,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:8px 6px calc(8px + env(safe-area-inset-bottom))}
+    .sp-nav a{flex:1;max-width:120px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);text-decoration:none;font-size:11px;font-weight:600;padding:6px 2px;border-radius:12px;transition:.15s}
+    .sp-nav a span{font-size:20px;line-height:1;filter:grayscale(1);opacity:.7;transition:.15s}
+    .sp-nav a.on{color:var(--gold);background:rgba(233,184,63,.1)}
+    .sp-nav a.on span{filter:none;opacity:1;transform:translateY(-1px) scale(1.08)}
+    .h2 .cnt{margin-left:auto;background:#ff5a4d;color:#fff;font-family:'Space Mono',monospace;font-size:12px;border-radius:999px;padding:1px 9px}
+    .todo{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);text-decoration:none;color:var(--paper);margin-bottom:8px;transition:.15s}
+    .todo:hover{border-color:var(--gold)}
+    button.todo{color:var(--paper)}
+    .todo .ti{flex:0 0 40px;height:40px;border-radius:12px;background:rgba(233,184,63,.14);display:grid;place-items:center;font-size:20px}
+    .todo .tt{flex:1;min-width:0}.todo .tt b{display:block;font-size:14.5px}.todo .tt small{color:var(--muted);font-size:12.5px}
+    .todo .ta{color:var(--gold);font-size:18px}
+    .card.mini .mt{font-family:'Big Shoulders Display',sans-serif;text-transform:uppercase;font-size:18px}
+    .mates.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:14px;overflow:visible}
+    .mates.grid .mate{width:auto}
+    .mates.grid .mate .av{width:62px;height:62px}
+    @media(min-width:760px){ .sp-nav{left:50%;right:auto;transform:translateX(-50%);bottom:16px;border:1px solid var(--line);border-radius:18px;width:560px;padding:8px} body{padding-bottom:100px} }
     /* Toast */
     #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(120px);background:var(--gold);color:#1c1503;font-weight:700;padding:13px 22px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.5);z-index:100;transition:transform .4s cubic-bezier(.2,.8,.2,1);font-size:14px;max-width:90vw}
     #toast.show{transform:translateX(-50%) translateY(0)}
@@ -115,17 +134,52 @@
     </div>
 
     <div class="wrap">
+    <div class="sp-pane" data-pane="inicio">
+        {{-- Tus pendientes --}}
+        @php
+            $todo = [];
+            if (! $student->photoUrl()) { $todo[] = ['📸', 'Sube tu foto de perfil', 'Así te reconocen en el muro y en el anuario.', 'perfil']; }
+            if ($designOptions->count() && $canVote && ! $myVote) { $todo[] = ['🗳️', 'Vota el diseño de tu curso', 'Elige tu favorito antes de que cierre la votación.', 'chaqueta']; }
+            if ($c && ! $schoolPays && ! $student->isPaid() && ! $student->isUnderReview()) { $todo[] = ['💳', 'Haz tu pago', 'Así tu chaqueta no se retrasa.', 'pago']; }
+            if (! $myPosts) { $todo[] = ['✍️', 'Escribe en el muro', 'Saluda a tu curso o sube una foto.', 'muro']; }
+            if ($c && $c->production_status === 'entregado') { array_unshift($todo, ['⭐', 'Califica tu chaqueta', '1 minuto: cuéntanos cómo te fue y súbenos fotos de la entrega.', 'encuesta']); }
+        @endphp
+        <div class="card">
+            <div class="h2">✅ Tus pendientes @if(count($todo))<span class="cnt">{{ count($todo) }}</span>@endif</div>
+            @forelse($todo as [$ic, $t, $d, $go])
+                @if($go === 'pago')
+                    <form method="POST" action="{{ route('seguimiento.search') }}">@csrf<input type="hidden" name="document" value="{{ $student->document }}">
+                        <button type="submit" class="todo" style="width:100%;text-align:left;cursor:pointer;font:inherit"><span class="ti">{{ $ic }}</span><span class="tt"><b>{{ $t }}</b><small>{{ $d }}</small></span><span class="ta">→</span></button>
+                    </form>
+                @elseif($go === 'encuesta')
+                    <a href="{{ \App\Modules\Chaquetas\Support\DeliverySurvey::url($c) }}" class="todo"><span class="ti">{{ $ic }}</span><span class="tt"><b>{{ $t }}</b><small>{{ $d }}</small></span><span class="ta">→</span></a>
+                @else
+                    <a href="#{{ $go }}" data-go="{{ $go }}" class="todo"><span class="ti">{{ $ic }}</span><span class="tt"><b>{{ $t }}</b><small>{{ $d }}</small></span><span class="ta">→</span></a>
+                @endif
+            @empty
+                <div style="color:var(--ok);font-size:14px">🎉 ¡Estás al día! No tienes nada pendiente.</div>
+            @endforelse
+        </div>
+        @if($c)
+        <a href="#chaqueta" data-go="chaqueta" class="card mini" style="display:block;text-decoration:none;color:var(--paper)">
+            <div style="display:flex;justify-content:space-between;align-items:center"><b class="mt">🧵 Mi chaqueta</b><span style="color:var(--gold);font-family:'Space Mono',monospace;font-size:12px">{{ $pct }}% →</span></div>
+            <div class="prog"><i style="width:{{ $pct }}%"></i></div>
+            <div style="color:var(--muted);font-size:13px">Etapa: <b style="color:var(--paper)">{{ $c->stageLabel() }}</b>@if($eta && $c->production_status !== 'entregado') · Entrega: <b style="color:var(--paper)">{{ $eta->locale('es')->isoFormat('D MMM') }}</b>@endif</div>
+        </a>
+        @endif
         @if($c)
             @include('partials.guia', ['guide' => 'portal_estudiante', 'at' => $c->production_status === 'entregado' ? 99 : $idx, 'open' => true, 'compact' => true])
         @endif
         {{-- Anuario --}}
-        <a href="{{ route('student.yearbook') }}" style="display:flex;align-items:center;gap:12px;background:linear-gradient(120deg,#2a2015,#1c1c22);border:1px solid var(--gold);border-radius:14px;padding:16px 18px;margin-top:18px;text-decoration:none;color:var(--paper)">
+        <a href="{{ route('student.yearbook') }}" style="display:flex;align-items:center;gap:12px;background:linear-gradient(120deg,#2a2015,#1c1c22);border:1px solid var(--gold);border-radius:14px;padding:16px 18px;margin-top:0;margin-bottom:18px;text-decoration:none;color:var(--paper)">
             <span style="font-size:28px">📖</span>
             <div style="flex:1"><b style="font-family:'Big Shoulders Display',sans-serif;text-transform:uppercase;font-size:17px">Anuario del curso</b><div style="color:var(--muted);font-size:12px">Todos los compañeros y las fotos de la promoción</div></div>
             <span style="color:var(--gold)">→</span>
         </a>
 
 
+    </div>
+    <div class="sp-pane" data-pane="chaqueta">
         {{-- Estado de mi chaqueta --}}
         @if($c)
         <div class="card">
@@ -144,6 +198,12 @@
                 <div class="st-item"><div class="k">💳 Pago</div><div class="v">{{ $schoolPays ? 'Lo paga el colegio' : ($student->isPaid()?'Pagado ✓':($student->isUnderReview()?'En revisión':'Pendiente')) }}</div></div>
                 <div class="st-item"><div class="k">Tallas</div><div class="v">{{ $student->hasMeasurements()?'Registradas ✓':'Faltan' }}</div></div>
             </div>
+            @if(! $schoolPays && ! $student->isPaid())
+                <form method="POST" action="{{ route('seguimiento.search') }}" style="margin-top:14px">@csrf
+                    <input type="hidden" name="document" value="{{ $student->document }}">
+                    <button class="btn" style="width:100%">{{ $student->isUnderReview() ? '🧾 Ver mi pago en revisión' : '💳 Pagar mi chaqueta o subir comprobante' }}</button>
+                </form>
+            @endif
             <a href="{{ route('seguimiento') }}" class="link" style="display:inline-block;margin-top:12px">Ver seguimiento completo →</a>
         </div>
         @endif
@@ -198,39 +258,8 @@
         </div>
         @endif
 
-        {{-- Editar perfil --}}
-        <div class="card">
-            <details class="edit">
-                <summary>✏️ Editar mi perfil</summary>
-                <form method="POST" action="{{ route('student.profile') }}" enctype="multipart/form-data" style="margin-top:10px">
-                    @csrf
-                    <label>Apodo</label>
-                    <input type="text" name="nickname" value="{{ $student->nickname }}" maxlength="60" placeholder="Ej: Vale">
-                    <label>Sobre mí</label>
-                    <textarea name="bio" rows="2" maxlength="200" placeholder="Una frase tuya…">{{ $student->bio }}</textarea>
-                    <label>Foto de perfil</label>
-                    <input type="file" name="photo" accept="image/*">
-                    <button class="btn" style="margin-top:12px">Guardar perfil</button>
-                </form>
-            </details>
-            @if($student->bio)<div style="color:#cfc9bd;font-size:14px;margin-top:10px">“{{ $student->bio }}”</div>@endif
-        </div>
-
-        {{-- Compañeros del curso --}}
-        @if($classmates->count())
-        <div class="card">
-            <div class="h2">🎓 Tu curso</div>
-            <div class="mates">
-                @foreach($classmates as $cm)
-                    <div class="mate">
-                        <div class="av">@if($cm->photoUrl())<img src="{{ $cm->photoUrl() }}" alt="">@else🙂@endif</div>
-                        <span>{{ $cm->nickname ?: explode(' ',$cm->name)[0] }}</span>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-        @endif
-
+    </div>
+    <div class="sp-pane" data-pane="muro">
         {{-- Publicar --}}
         <div class="card">
             <div class="h2">✍️ Publica en el muro</div>
@@ -283,6 +312,72 @@
             @endforelse
         </div>
     </div>
+    <div class="sp-pane" data-pane="curso">
+        {{-- Compañeros del curso --}}
+        @if($classmates->count())
+        <div class="card">
+            <div class="h2">🎓 Tu curso</div>
+            <div class="mates grid">
+                @foreach($classmates as $cm)
+                    <div class="mate">
+                        <div class="av">@if($cm->photoUrl())<img src="{{ $cm->photoUrl() }}" alt="">@else🙂@endif</div>
+                        <span>{{ $cm->nickname ?: explode(' ',$cm->name)[0] }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
+        {{-- Anuario --}}
+        <a href="{{ route('student.yearbook') }}" style="display:flex;align-items:center;gap:12px;background:linear-gradient(120deg,#2a2015,#1c1c22);border:1px solid var(--gold);border-radius:14px;padding:16px 18px;margin-top:0;text-decoration:none;color:var(--paper)">
+            <span style="font-size:28px">📖</span>
+            <div style="flex:1"><b style="font-family:'Big Shoulders Display',sans-serif;text-transform:uppercase;font-size:17px">Anuario del curso</b><div style="color:var(--muted);font-size:12px">Todos los compañeros y las fotos de la promoción</div></div>
+            <span style="color:var(--gold)">→</span>
+        </a>
+
+
+    </div>
+    <div class="sp-pane" data-pane="perfil">
+        <div class="card">
+            <div class="h2">👤 Mi perfil</div>
+            <div style="display:flex;gap:14px;align-items:center;margin-bottom:6px">
+                <div class="pav" style="width:64px;height:64px;font-size:28px">@if($student->photoUrl())<img src="{{ $student->photoUrl() }}" alt="">@else🙂@endif</div>
+                <div>
+                    <b style="font-size:17px">{{ $student->name }}</b>
+                    <div style="color:var(--muted);font-size:13px">@if($student->nickname)“{{ $student->nickname }}” · @endif{{ $c?->school?->name ?? 'Mi colegio' }}</div>
+                </div>
+            </div>
+            <div style="color:var(--muted);font-size:12px;margin-bottom:6px">Tu nombre sale así en la chaqueta; si está mal escrito, avísale a tu colegio.</div>
+        </div>
+        {{-- Editar perfil --}}
+        <div class="card">
+            <details class="edit" open>
+                <summary>✏️ Editar mi perfil</summary>
+                <form method="POST" action="{{ route('student.profile') }}" enctype="multipart/form-data" style="margin-top:10px">
+                    @csrf
+                    <label>Apodo</label>
+                    <input type="text" name="nickname" value="{{ $student->nickname }}" maxlength="60" placeholder="Ej: Vale">
+                    <label>Sobre mí</label>
+                    <textarea name="bio" rows="2" maxlength="200" placeholder="Una frase tuya…">{{ $student->bio }}</textarea>
+                    <label>Foto de perfil</label>
+                    <input type="file" name="photo" accept="image/*">
+                    <button class="btn" style="margin-top:12px">Guardar perfil</button>
+                </form>
+            </details>
+            @if($student->bio)<div style="color:#cfc9bd;font-size:14px;margin-top:10px">“{{ $student->bio }}”</div>@endif
+        </div>
+
+    </div>
+    </div>
+
+    {{-- Menú inferior --}}
+    <nav class="sp-nav" id="spNav">
+        <a href="#inicio" data-tab="inicio"><span>🏠</span>Inicio</a>
+        <a href="#chaqueta" data-tab="chaqueta"><span>🧵</span>Mi chaqueta</a>
+        <a href="#muro" data-tab="muro"><span>📣</span>Muro</a>
+        <a href="#curso" data-tab="curso"><span>🎓</span>Curso</a>
+        <a href="#perfil" data-tab="perfil"><span>👤</span>Perfil</a>
+    </nav>
 
     {{-- Toast --}}
     @if(session('ok'))<div id="toast" data-msg="{{ session('ok') }}"></div>
@@ -305,6 +400,16 @@
     </div>
 
     <script>
+        // Pestañas del portal
+        (function(){
+            var tabs=document.querySelectorAll('#spNav [data-tab]'), panes=document.querySelectorAll('.sp-pane');
+            function show(n,top){ var ok=false; panes.forEach(function(p){var on=p.dataset.pane===n; p.hidden=!on; ok=ok||on;}); if(!ok) return show('inicio',top);
+                tabs.forEach(function(t){t.classList.toggle('on',t.dataset.tab===n)}); if(history.replaceState) history.replaceState(null,'','#'+n); if(top) window.scrollTo({top:document.querySelector('.wrap').offsetTop-70,behavior:'smooth'}); }
+            tabs.forEach(function(t){t.addEventListener('click',function(e){e.preventDefault(); show(t.dataset.tab,true);})});
+            document.querySelectorAll('[data-go]').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault(); show(a.dataset.go,true);})});
+            show((location.hash||'#inicio').slice(1), !!location.hash);
+            window.addEventListener('hashchange',function(){ show((location.hash||'#inicio').slice(1), true); });
+        })();
         // Toast
         (function(){var t=document.getElementById('toast'); if(!t||!t.dataset.msg) return; t.textContent=t.dataset.msg; setTimeout(function(){t.classList.add('show')},120); setTimeout(function(){t.classList.remove('show')},3600);})();
         // Onboarding una vez

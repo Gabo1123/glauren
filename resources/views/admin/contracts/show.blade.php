@@ -67,6 +67,17 @@
     @media(max-width:640px){ .cflow-lbl{ display:none; } .cflow-bar{ margin-bottom:0; } }
 </style>
 
+{{-- Capacidad del taller en el mes de entrega --}}
+@if($capacity && $capacity['configured'])
+    <div class="alert {{ $capacity['over'] ? 'alert-danger' : ($capacity['pct'] >= 85 ? 'alert-warning' : 'alert-secondary') }} d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 mb-3">
+        <div class="small">
+            <i class="bi bi-calendar3-range"></i> Entrega en <b>{{ $capacity['month'] }}</b>: el taller queda en <b>{{ $capacity['after'] }}/{{ $capacity['capacity'] }}</b> prendas ({{ $capacity['pct'] }}%) con las {{ $capacity['units'] }} de este contrato.
+            @if($capacity['over']) <b>Ese mes está sobrevendido.</b>@if($capacity['suggest']) Hay cupo en <b>{{ $capacity['suggest'] }}</b>.@endif @endif
+        </div>
+        <a href="{{ route('admin.capacity.index') }}" class="small">Ver capacidad →</a>
+    </div>
+@endif
+
 {{-- Resumen financiero --}}
 <div class="card p-4 mb-4">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
@@ -94,7 +105,7 @@
             <div style="border:1px solid var(--g-line);border-radius:10px;padding:14px">
                 <div class="small text-secondary">Ingresos esperados</div>
                 <div style="font-family:var(--g-font-display);font-size:24px">${{ number_format($fin['expected'],0,',','.') }}</div>
-                <div class="small" style="color:var(--g-ok)">Recibido: ${{ number_format($fin['received'],0,',','.') }}</div>
+                <div class="small" style="color:var(--g-ok)">Recibido: ${{ number_format($fin['received'],0,',','.') }}@if($fin['deposit'] > 0) <span class="text-secondary">(incl. anticipo)</span>@endif</div>
             </div>
         </div>
         <div class="col-6 col-lg-3">
@@ -120,6 +131,67 @@
         </div>
     </div>
     <div class="small text-secondary mt-2">Ingresos = valor por alumno. Gastos = facturas asignadas a este contrato en <a href="{{ route('admin.expenses.index') }}">Gastos</a>. Utilidad = ingresos esperados − gastos.</div>
+</div>
+
+{{-- Anticipo del colegio --}}
+@php
+    $dst = $contract->depositStatus();
+    $dColor = ['pagado' => '#25d366', 'en_revision' => '#4ea1ff', 'parcial' => '#e9b83f', 'pendiente' => '#e9b83f'][$dst] ?? 'var(--g-muted)';
+    $suggestDep = (int) (round((float) ($contract->contract_total ?: $fin['expected']) * (int) \App\Modules\Chaquetas\Models\Setting::get('deposit_percent', '30') / 100 / 1000) * 1000);
+@endphp
+<div class="card p-4 mb-4" id="anticipo" style="border-color:{{ $dst === 'en_revision' ? 'rgba(78,161,255,.5)' : 'var(--g-line)' }}">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div class="g-card__title mb-0" style="color:var(--g-gold)"><i class="bi bi-safe"></i> Anticipo del colegio</div>
+        <span class="badge" style="background:{{ $dColor }};color:#111">{{ $contract->depositLabel() }}</span>
+    </div>
+    <div class="row g-3 align-items-start">
+        <div class="col-md-4">
+            <div class="small text-secondary">Anticipo pedido</div>
+            <div style="font-family:var(--g-font-display);font-size:26px">{{ $contract->hasDeposit() ? '$'.number_format((float) $contract->deposit_amount, 0, ',', '.') : '—' }}</div>
+            @if($contract->hasDeposit())
+                <div class="small" style="color:{{ $dColor }}">Pagado: ${{ number_format((float) $contract->deposit_paid, 0, ',', '.') }}@if($contract->depositDue() > 0) · falta ${{ number_format($contract->depositDue(), 0, ',', '.') }}@endif</div>
+                @if($contract->deposit_paid_at)<div class="small text-secondary">{{ $contract->deposit_paid_at->format('d/m/Y') }}@if($contract->deposit_method) · {{ $contract->deposit_method }}@endif</div>@endif
+            @endif
+            <form method="POST" action="{{ route('admin.contracts.deposit', $contract) }}" class="input-group input-group-sm mt-2">
+                @csrf @method('PUT')
+                <span class="input-group-text">$</span>
+                <input type="number" name="deposit_amount" min="0" step="1000" class="form-control" value="{{ $contract->deposit_amount ? (int) $contract->deposit_amount : '' }}" placeholder="{{ $suggestDep ?: 'Valor' }}">
+                <button class="btn btn-outline-light">{{ $contract->hasDeposit() ? 'Cambiar' : 'Pedir' }}</button>
+            </form>
+            @unless($contract->hasDeposit())<div class="small text-secondary mt-1">Sugerido: ${{ number_format($suggestDep, 0, ',', '.') }} ({{ \App\Modules\Chaquetas\Models\Setting::get('deposit_percent', '30') }}% del contrato).</div>@endunless
+        </div>
+        @if($contract->hasDeposit())
+            <div class="col-md-8">
+                @if($dst === 'en_revision' && $contract->deposit_proof)
+                    <div class="p-3 mb-2" style="background:rgba(78,161,255,.08);border:1px solid rgba(78,161,255,.35);border-radius:8px">
+                        <div class="small mb-2"><i class="bi bi-receipt"></i> El colegio subió el comprobante el {{ $contract->deposit_declared_at->format('d/m/Y H:i') }}.
+                            <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($contract->deposit_proof) }}" target="_blank" class="fw-bold">Ver comprobante →</a></div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <form method="POST" action="{{ route('admin.contracts.deposit', $contract) }}">@csrf @method('PUT')
+                                <input type="hidden" name="paid" value="{{ (int) $contract->deposit_amount }}"><input type="hidden" name="method" value="Transferencia (comprobante)">
+                                <button class="btn btn-success btn-sm"><i class="bi bi-check2-circle"></i> Aprobar ${{ number_format((float) $contract->deposit_amount, 0, ',', '.') }}</button>
+                            </form>
+                            <form method="POST" action="{{ route('admin.contracts.deposit.reject', $contract) }}" onsubmit="return confirm('¿Rechazar el comprobante?')">@csrf
+                                <button class="btn btn-outline-danger btn-sm">No corresponde</button>
+                            </form>
+                        </div>
+                    </div>
+                @endif
+                @if($dst !== 'pagado')
+                    <form method="POST" action="{{ route('admin.contracts.deposit', $contract) }}" class="row g-2 align-items-end">
+                        @csrf @method('PUT')
+                        <div class="col-sm-4"><label class="form-label small mb-1">Valor recibido</label><input type="number" name="paid" min="0" step="1000" class="form-control form-control-sm" value="{{ (int) $contract->deposit_amount }}" required></div>
+                        <div class="col-sm-3"><label class="form-label small mb-1">Fecha</label><input type="date" name="paid_at" class="form-control form-control-sm" value="{{ today()->toDateString() }}"></div>
+                        <div class="col-sm-3"><label class="form-label small mb-1">Medio</label><select name="method" class="form-select form-select-sm"><option>Transferencia</option><option>Nequi</option><option>Daviplata</option><option>Efectivo</option><option>Consignación</option></select></div>
+                        <div class="col-sm-2"><button class="btn btn-primary btn-sm w-100">Registrar</button></div>
+                    </form>
+                    <div class="small text-secondary mt-2">El colegio ve el anticipo en su portal, con tu cuenta y un botón para subir el comprobante.</div>
+                @else
+                    <div class="small" style="color:#25d366"><i class="bi bi-check2-circle"></i> Anticipo completo. Se suma a lo recibido del contrato y a la cartera.</div>
+                @endif
+            </div>
+        @endif
+    </div>
 </div>
 
 <div class="row g-4">
@@ -390,7 +462,22 @@
             <a href="{{ route('admin.students.template', $contract) }}" class="btn btn-sm btn-outline-light"><i class="bi bi-filetype-csv"></i> Plantilla</a>
             <a href="{{ route('admin.students.export', $contract) }}" class="btn btn-sm btn-outline-light"><i class="bi bi-download"></i> Exportar</a>
             <button class="btn btn-sm btn-outline-light" type="button" onclick="document.getElementById('impForm').classList.toggle('d-none')"><i class="bi bi-upload"></i> Importar CSV</button>
+            <button class="btn btn-sm btn-warning" type="button" onclick="document.getElementById('sizeForm').classList.toggle('d-none')"><i class="bi bi-rulers"></i> Formato de tallas</button>
         </div>
+    </div>
+    <div id="sizeForm" class="d-none mb-3 p-3" style="background:var(--g-surface-2);border:1px solid var(--g-line);border-radius:8px">
+        <div class="fw-semibold mb-2"><i class="bi bi-rulers"></i> Tallas en Excel, en 3 pasos</div>
+        <ol class="small text-secondary mb-3 ps-3">
+            <li><b>Descarga el formato</b>: ya viene con los alumnos del curso (documento y nombre).</li>
+            <li><b>Ábrelo en Excel</b> y llena Talla y medidas en cm (pecho, cintura, cadera, manga, talle). Puedes agregar alumnos nuevos al final con documento y nombre.</li>
+            <li><b>Guárdalo como CSV</b> y súbelo aquí. Se actualiza cada alumno por su documento; las casillas vacías no borran nada.</li>
+        </ol>
+        <form method="POST" action="{{ route('admin.students.sizes.import', $contract) }}" enctype="multipart/form-data" class="row g-2 align-items-end">
+            @csrf
+            <div class="col-md-4"><a href="{{ route('admin.students.sizes.template', $contract) }}" class="btn btn-outline-light btn-sm w-100"><i class="bi bi-download"></i> 1. Descargar formato</a></div>
+            <div class="col-md-5"><input type="file" name="file" class="form-control form-control-sm" accept=".csv,.txt" required></div>
+            <div class="col-md-3"><button class="btn btn-warning btn-sm w-100"><i class="bi bi-upload"></i> 3. Subir tallas</button></div>
+        </form>
     </div>
     <form id="impForm" method="POST" action="{{ route('admin.students.import', $contract) }}" enctype="multipart/form-data" class="d-none mb-3 p-3" style="background:var(--g-surface-2);border:1px solid var(--g-line);border-radius:8px">
         @csrf

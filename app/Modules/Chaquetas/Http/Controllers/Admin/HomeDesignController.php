@@ -10,6 +10,8 @@ class HomeDesignController extends Controller
 {
     /** Secciones reordenables del home (deben coincidir con las de home.blade.php). */
     public const SECTIONS = [
+        'cotiza'       => ['Cotiza en 1 minuto (formulario)', '⚡', '—'],
+        'precios'      => ['Precios por estudiante', '💲', 'config/cotizacion.php'],
         'garantias'    => ['Garantías', '🛡️', 'Textos / Home'],
         'proceso'      => ['Proceso "De la idea a tus hombros"', '🪜', 'Textos / Home'],
         'numbers'      => ['Números + franja de colegios', '🔢', 'Textos / Home'],
@@ -35,6 +37,12 @@ class HomeDesignController extends Controller
         foreach (array_keys(self::SECTIONS) as $k) {
             if (! in_array($k, $seen, true)) {
                 $order[] = ['key' => $k, 'on' => true];
+            }
+        }
+        foreach (array_reverse(['cotiza', 'precios']) as $k) {
+            if (! in_array($k, $seen, true)) {
+                $order = array_values(array_filter($order, fn ($o) => $o['key'] !== $k));
+                array_unshift($order, ['key' => $k, 'on' => true]);
             }
         }
         $order = array_values(array_filter($order, fn ($o) => isset(self::SECTIONS[$o['key']])));

@@ -44,6 +44,10 @@ class OrderNotifier
                 $msg .= "\n\n💰 Recuerda dejar tu pago listo para la entrega. Puedes pagar o subir tu comprobante buscando tu documento en {$base}/mi-chaqueta";
             }
 
+            if ($contract->production_status === 'entregado') {
+                $msg .= "\n\n⭐ ¿Cómo te fue? Califícanos en 1 minuto y súbenos fotos: ".\App\Modules\Chaquetas\Support\DeliverySurvey::url($contract);
+            }
+
             $res = $this->wa->sendText($s->phone, $msg);
 
             WaMessage::create([

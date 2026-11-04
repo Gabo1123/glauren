@@ -29,6 +29,12 @@ class Setting extends Model
         static::$cache[$key] = $value;
     }
 
+    /** Vacía la caché en memoria (pruebas, procesos largos). */
+    public static function flushCache(): void
+    {
+        static::$cache = [];
+    }
+
     /** Todas como colección clave=>valor */
     public static function map(): \Illuminate\Support\Collection
     {

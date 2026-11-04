@@ -201,7 +201,7 @@
                     break;
                 case 'ganada':
                     $now = ['icon' => 'bi-file-earmark-plus', 'title' => 'Crea el contrato', 'text' => 'El colegio ya está creado. Haz el contrato y envíalo para firma en línea.',
-                        'buttons' => [['href' => route('admin.contracts.create', ['school_id' => $quote->school_id]), 'text' => 'Crear contrato']]];
+                        'buttons' => [['href' => route('admin.contracts.create', ['school_id' => $quote->school_id, 'quote_id' => $quote->id]), 'text' => 'Crear contrato']]];
                     break;
                 case 'contrato':
                     $now = ['icon' => 'bi-pen', 'title' => 'Falta la firma del contrato', 'text' => 'Envía el contrato al colegio para que lo firme en línea. Al firmarlo, sigue la toma de medidas.',
@@ -379,6 +379,75 @@
 
     {{-- ===== Columna derecha ===== --}}
     <div class="col-xl-5">
+        @php
+            $cl = $quote->client();
+            $filled = collect(\App\Modules\Chaquetas\Models\Quote::CLIENT_FIELDS)->keys()->filter(fn ($k) => !empty($cl[$k]))->count()
+                + ($quote->customer_email ? 1 : 0) + ($quote->school ? 1 : 0) + (count($cl['contacts']) ? 1 : 0);
+            $slots = count(\App\Modules\Chaquetas\Models\Quote::CLIENT_FIELDS) + 3;
+            $contacts = array_pad($cl['contacts'], max(2, count($cl['contacts']) + 1), []);
+        @endphp
+        <div class="card p-4 qx-card mb-4" id="ficha">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="t mb-0"><i class="bi bi-person-vcard" style="color:#FFC72C"></i> Ficha del cliente</h6>
+                <span class="small text-secondary">{{ $filled }}/{{ $slots }} datos</span>
+            </div>
+            <div style="height:5px;background:rgba(255,255,255,.08);border-radius:4px;margin:10px 0 12px"><div style="height:100%;width:{{ round($filled / $slots * 100) }}%;background:#FFC72C;border-radius:4px"></div></div>
+
+            {{-- Resumen rápido --}}
+            <div class="small mb-2" style="line-height:1.8">
+                <div><i class="bi bi-person text-secondary"></i> <b>{{ $quote->customer_name }}</b>@if(!empty($cl['role'])) <span class="text-secondary">· {{ $cl['role'] }}</span>@endif</div>
+                @if($quote->school)<div><i class="bi bi-building text-secondary"></i> {{ $quote->school }}@if(!empty($cl['course'])) · {{ $cl['course'] }}@endif @if(!empty($cl['city'])) · {{ $cl['city'] }}@endif</div>@endif
+                @if(!empty($cl['decides']))<div><i class="bi bi-person-check text-secondary"></i> Decide: {{ $cl['decides'] }}</div>@endif
+                @if(!empty($cl['event_date']))<div><i class="bi bi-calendar-event text-secondary"></i> {{ $cl['event_date'] }}</div>@endif
+                @if(!empty($cl['budget']))<div><i class="bi bi-cash text-secondary"></i> Presupuesto: {{ $cl['budget'] }}</div>@endif
+                @foreach($cl['contacts'] as $ct)
+                    <div><i class="bi bi-people text-secondary"></i> {{ $ct['name'] ?? '' }}@if(!empty($ct['role'])) <span class="text-secondary">({{ $ct['role'] }})</span>@endif
+                        @if(!empty($ct['phone']))· <a href="https://wa.me/{{ (strlen(preg_replace('/\D/', '', $ct['phone'])) === 10 ? '57' : '').preg_replace('/\D/', '', $ct['phone']) }}" target="_blank" style="color:#25d366">{{ $ct['phone'] }}</a>@endif</div>
+                @endforeach
+            </div>
+
+            <details {{ $filled < 4 ? 'open' : '' }}>
+                <summary class="small" style="cursor:pointer;color:#FFC72C"><i class="bi bi-pencil"></i> Editar o agregar datos</summary>
+                <form method="POST" action="{{ route('admin.quotes.client', $quote) }}" class="mt-3">
+                    @csrf @method('PUT')
+                    <div class="row g-2">
+                        <div class="col-12"><label class="form-label small mb-1">Nombre del contacto</label><input name="customer_name" value="{{ old('customer_name', $quote->customer_name) }}" class="form-control form-control-sm" required maxlength="160"></div>
+                        <div class="col-6"><label class="form-label small mb-1">Celular / WhatsApp</label><input name="customer_phone" value="{{ old('customer_phone', $quote->customer_phone) }}" class="form-control form-control-sm" inputmode="tel"></div>
+                        <div class="col-6"><label class="form-label small mb-1">Correo</label><input type="email" name="customer_email" value="{{ old('customer_email', $quote->customer_email) }}" class="form-control form-control-sm"></div>
+                        <div class="col-{{ $quote->isCustom() ? '12' : '8' }}"><label class="form-label small mb-1">{{ $biz ? 'Empresa' : 'Colegio' }}</label><input name="school" value="{{ old('school', $quote->school) }}" class="form-control form-control-sm"></div>
+                        @unless($quote->isCustom())
+                            <div class="col-4"><label class="form-label small mb-1">Estudiantes</label><input type="number" min="1" name="quantity" value="{{ old('quantity', $quote->quantity) }}" class="form-control form-control-sm"></div>
+                        @endunless
+                        @foreach(\App\Modules\Chaquetas\Models\Quote::CLIENT_FIELDS as $k => $label)
+                            <div class="col-6"><label class="form-label small mb-1">{{ $label }}</label><input name="client[{{ $k }}]" value="{{ old('client.'.$k, $cl[$k] ?? '') }}" class="form-control form-control-sm" maxlength="200"
+                                placeholder="{{ ['course' => 'Ej: 11A y 11B', 'city' => 'Ej: Bogotá', 'role' => 'Ej: Representante de curso', 'decides' => 'Ej: Rectora + padres', 'event_date' => 'Ej: 28 nov. 2026', 'budget' => 'Ej: $300.000', 'competition' => 'Ej: Ya cotizó con X', 'found_us' => 'Ej: Instagram, referido'][$k] ?? '' }}"></div>
+                        @endforeach
+                    </div>
+                    <label class="form-label small mt-3 mb-1"><i class="bi bi-people"></i> Otros contactos (rector, coordinador, papás del comité…)</label>
+                    @foreach($contacts as $i => $ct)
+                        <div class="row g-1 mb-1">
+                            <div class="col-5"><input name="contacts[{{ $i }}][name]" value="{{ $ct['name'] ?? '' }}" class="form-control form-control-sm" placeholder="Nombre"></div>
+                            <div class="col-3"><input name="contacts[{{ $i }}][role]" value="{{ $ct['role'] ?? '' }}" class="form-control form-control-sm" placeholder="Rol"></div>
+                            <div class="col-4"><input name="contacts[{{ $i }}][phone]" value="{{ $ct['phone'] ?? '' }}" class="form-control form-control-sm" placeholder="Celular" inputmode="tel"></div>
+                        </div>
+                    @endforeach
+                    <div class="small text-secondary mb-3">Guarda y aparece otra fila libre para agregar más.</div>
+                    <button class="btn btn-primary w-100"><i class="bi bi-save"></i> Guardar ficha</button>
+                </form>
+            </details>
+        </div>
+
+        @if(\App\Modules\Chaquetas\Support\ProductionCapacity::configured() && in_array($quote->status, \App\Modules\Chaquetas\Models\Quote::OPEN_STATUSES, true))
+            @php $cap = \App\Modules\Chaquetas\Support\ProductionCapacity::check(\App\Modules\Chaquetas\Support\ProductionCapacity::estimatedDelivery(), \App\Modules\Chaquetas\Support\ProductionCapacity::quoteUnits($quote)); @endphp
+            <div class="card p-3 qx-card mb-4" style="border-color:{{ $cap['over'] ? 'rgba(255,107,107,.55)' : 'var(--g-line)' }}">
+                <div class="small"><i class="bi bi-calendar3-range" style="color:#FFC72C"></i> <b>¿Hay cupo?</b> Si firma hoy, entrega en <b>{{ $cap['month'] }}</b>:
+                    taller en {{ $cap['after'] }}/{{ $cap['capacity'] }} prendas ({{ $cap['pct'] }}%) con sus {{ $cap['units'] }}.
+                    @if($cap['over'])<span class="text-danger fw-bold">Ese mes no alcanza.</span>@if($cap['suggest']) Ofrece entrega en <b>{{ $cap['suggest'] }}</b>.@endif
+                    @elseif($cap['pct'] >= 85)<span class="text-warning">Quedan pocos cupos: buen argumento para cerrar ya.</span>@endif
+                </div>
+            </div>
+        @endif
+
         <div class="card p-4 qx-card">
             <h6 class="t"><i class="bi bi-calendar-check" style="color:#FFC72C"></i> Seguimiento</h6>
             <form method="POST" action="{{ route('admin.quotes.update', $quote) }}">
@@ -415,18 +484,18 @@
                     @if($contract)
                         <a href="{{ route('admin.contracts.show', $contract) }}" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-text"></i> Abrir contrato</a>
                     @else
-                        <a href="{{ route('admin.contracts.create', ['school_id' => $quote->school_id]) }}" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-plus"></i> Crear contrato</a>
+                        <a href="{{ route('admin.contracts.create', ['school_id' => $quote->school_id, 'quote_id' => $quote->id]) }}" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-plus"></i> Crear contrato</a>
                     @endif
                 </div>
             @else
                 <h6 class="t"><i class="bi bi-building-add" style="color:#25d366"></i> ¿Te contrató? Conviértelo en colegio</h6>
-                <p class="small text-secondary mb-3">Se crea el colegio con sus datos, la cotización queda <b>Ganada</b> y pasas a crear el contrato.</p>
+                <p class="small text-secondary mb-3">Un solo paso: se crea el colegio, la cotización queda <b>Ganada</b> y el contrato se abre <b>ya lleno</b> con prendas, precio, cantidad y valor en letras.</p>
                 <form method="POST" action="{{ route('admin.quotes.convert', $quote) }}" onsubmit="return confirm('¿Crear el colegio y marcar la cotización como ganada?')">@csrf
                     <div class="row g-2 mb-3">
                         <div class="col-7"><input name="school_name" value="{{ $quote->school }}" class="form-control form-control-sm" required maxlength="160" placeholder="Nombre del colegio"></div>
                         <div class="col-5"><input name="city" class="form-control form-control-sm" maxlength="120" placeholder="Ciudad"></div>
                     </div>
-                    <button class="btn btn-success w-100" style="font-weight:700"><i class="bi bi-check2-circle"></i> Convertir en colegio</button>
+                    <button class="btn btn-success w-100" style="font-weight:700"><i class="bi bi-check2-circle"></i> Ganada → crear contrato</button>
                 </form>
             @endif
         </div>

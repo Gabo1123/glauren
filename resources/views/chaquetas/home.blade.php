@@ -932,9 +932,149 @@
 </section>
 @php $SEC['cta_final'] = ob_get_clean(); @endphp
 
+@php
+    // ===== Precios visibles y "Cotiza en 1 minuto" =====
+    $qqP = config('cotizacion.products', []);
+    $qqMoney = fn ($v) => '$'.number_format((float) $v, 0, ',', '.');
+    $qqCombos = \App\Modules\Chaquetas\Support\QuoteCatalog::combos();
+    $qqComboMin = $qqCombos ? min(array_column($qqCombos, 'price')) : null;
+    $qqCards = [
+        ['estructurada', 'Chaqueta con cortes', '/img/cotizacion/chaqueta.jpg', 'La más pedida'],
+        ['beisbolera', 'Beisbolera o un faz', '/img/cotizacion/beisbolera.jpg', null],
+        ['doble_faz', 'Chaqueta doble faz', '/img/cotizacion/disenos/cortes-5.jpg', '2 en 1'],
+        ['buso', 'Buso', '/img/cotizacion/buso.jpg', null],
+    ];
+@endphp
+@php ob_start(); @endphp
+<section class="qq-sec" id="cotiza">
+    <div class="wrap">
+        <div class="qq-grid reveal">
+            <div class="qq-pitch">
+                <span class="ey">// Cotiza en 1 minuto</span>
+                <h2>Tu cotización completa, <span class="gold">al instante</span></h2>
+                <p>Déjanos 4 datos y ve de inmediato tu cotización con diseños, precios, combos, beneficios y todo lo que incluye tu prom. Sin esperar respuesta.</p>
+                <ul class="qq-list">
+                    <li>📄 La ves ya mismo y la descargas en PDF</li>
+                    <li>💬 Un asesor te escribe por WhatsApp para ayudarte</li>
+                    <li>🎁 1 chaqueta de obsequio por cada 25 unidades</li>
+                </ul>
+            </div>
+            <form method="POST" action="{{ route('cotiza.store') }}" class="qq-form" id="qqForm">
+                @csrf
+                <div class="qq-hp" aria-hidden="true"><input type="text" name="website" tabindex="-1" autocomplete="off"></div>
+                @if($errors->any() && old('_qq'))<div class="qq-err">⚠ {{ $errors->first() }}</div>@endif
+                <input type="hidden" name="_qq" value="1">
+                <label>Tu nombre<input name="name" value="{{ old('name') }}" required maxlength="120" autocomplete="name" placeholder="Ej.: Laura Gómez"></label>
+                <label>Celular / WhatsApp<input name="phone" value="{{ old('phone') }}" required maxlength="20" inputmode="tel" autocomplete="tel" placeholder="300 123 4567"></label>
+                <label>Colegio<input name="school" value="{{ old('school') }}" required maxlength="160" placeholder="Ej.: Colegio San José"></label>
+                <div class="qq-row">
+                    <label>Estudiantes<input type="number" name="students" value="{{ old('students', 30) }}" min="1" max="2000" required></label>
+                    <label>¿Qué te interesa?
+                        <select name="interest">
+                            @foreach(\App\Modules\Chaquetas\Http\Controllers\QuickQuoteController::INTERESTS as $k => $v)
+                                <option value="{{ $k }}" {{ old('interest', 'chaqueta') === $k ? 'selected' : '' }}>{{ $v }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                </div>
+                <label>Correo <small>(opcional, para enviártela también)</small><input type="email" name="email" value="{{ old('email') }}" maxlength="160" autocomplete="email" placeholder="tucorreo@gmail.com"></label>
+                <label class="qq-ck"><input type="checkbox" name="accept" value="1" {{ old('accept', '1') ? 'checked' : '' }} required> Acepto el tratamiento de mis datos para recibir la cotización.</label>
+                <button class="btn btn-gold qq-btn">Ver mi cotización ahora →</button>
+            </form>
+        </div>
+    </div>
+</section>
+@php $SEC['cotiza'] = ob_get_clean(); @endphp
+
+@php ob_start(); @endphp
+<section class="qq-prices" id="precios">
+    <div class="wrap">
+        <div class="head reveal">
+            <span class="ey">// Precios por estudiante</span>
+            <h2>Precios claros, <span class="gold">sin sorpresas</span></h2>
+            <p>Valores por estudiante con bordados incluidos y telas Lafayette. Combinando prendas ahorras un 3%.</p>
+        </div>
+        <div class="qq-cards reveal">
+            @foreach($qqCards as [$key, $title, $img, $tag])
+                @if(isset($qqP[$key]))
+                <a href="#cotiza" class="qq-card">
+                    <div class="qq-img"><img src="{{ $img }}" alt="{{ $title }} de prom" loading="lazy">@if($tag)<span class="qq-tag">{{ $tag }}</span>@endif</div>
+                    <div class="qq-body">
+                        <h3>{{ $title }}</h3>
+                        <div class="qq-price"><small>desde</small> {{ $qqMoney($qqP[$key]['price']) }}</div>
+                        <div class="qq-meta">{{ $qqP[$key]['embroidery'] }} bordados · {{ $qqP[$key]['fabric'] }}</div>
+                    </div>
+                </a>
+                @endif
+            @endforeach
+        </div>
+        <div class="qq-strip reveal">
+            @if($qqComboMin)<div class="qq-chip gold">🔥 Combos chaqueta + buso desde <b>{{ $qqMoney($qqComboMin) }}</b> <span>(-3% ya aplicado)</span></div>@endif
+            @isset($qqP['polo'])<div class="qq-chip">👕 Polo {{ $qqMoney($qqP['polo']['price']) }}</div>@endisset
+            @isset($qqP['deportiva'])<div class="qq-chip">🎽 Deportiva {{ $qqMoney($qqP['deportiva']['price']) }}</div>@endisset
+            <div class="qq-chip">🎁 1 chaqueta gratis por cada 25</div>
+            <div class="qq-chip">👨‍👩‍👧 10% hermanos o primos</div>
+        </div>
+        <div class="qq-inc reveal">
+            <b>Incluido en tu prom:</b>
+            @foreach(config('cotizacion.included', []) as $inc)<span>✓ {{ $inc }}</span>@endforeach
+        </div>
+        <div class="qq-ctas reveal">
+            <a href="#cotiza" class="btn btn-gold">Cotizar mi promoción →</a>
+            <a href="{{ route('empresas') }}" class="btn btn-line">¿Eres empresa? Dotación con tu logo →</a>
+        </div>
+    </div>
+</section>
+@php $SEC['precios'] = ob_get_clean(); @endphp
+
+<style>
+.qq-sec{padding:64px 0;background:radial-gradient(700px 360px at 10% 0%,rgba(233,184,63,.14),transparent 60%)}
+.qq-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+.qq-pitch h2{font-family:'Big Shoulders Display',sans-serif;font-weight:900;text-transform:uppercase;font-size:clamp(38px,5.4vw,64px);line-height:.9;margin:10px 0 16px}
+.qq-pitch .gold,.qq-prices .gold{color:var(--gold)}
+.qq-pitch p{color:#cfc9bd;font-size:17px;margin-bottom:16px}
+.qq-list{list-style:none;display:flex;flex-direction:column;gap:8px;font-size:15px}
+.qq-form{background:var(--panel);border:2px solid #000;border-radius:16px;padding:24px;box-shadow:8px 8px 0 var(--gold);display:flex;flex-direction:column;gap:12px}
+.qq-form label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.qq-form label small{text-transform:none;letter-spacing:0;font-weight:500}
+.qq-form input,.qq-form select{background:#0f0f13;border:2px solid #000;border-radius:10px;color:var(--paper);padding:12px 13px;font-size:16px;font-family:inherit;text-transform:none;letter-spacing:0;font-weight:500}
+.qq-form input:focus,.qq-form select:focus{outline:none;border-color:var(--gold)}
+.qq-row{display:grid;grid-template-columns:.8fr 1.2fr;gap:10px}
+.qq-ck{flex-direction:row!important;align-items:flex-start;gap:9px!important;text-transform:none!important;letter-spacing:0!important;font-weight:500!important;font-size:13px!important}
+.qq-ck input{width:18px;height:18px;margin-top:2px;accent-color:var(--gold)}
+.qq-btn{justify-content:center;font-size:20px;padding:15px}
+.qq-err{background:rgba(255,74,61,.12);border:1.5px solid #ff4a3d;color:#ffb0a8;border-radius:10px;padding:10px 12px;font-size:14px}
+.qq-hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.qq-prices{padding:56px 0}
+.qq-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:6px}
+.qq-card{background:var(--panel);border:2px solid #000;border-radius:14px;overflow:hidden;box-shadow:6px 6px 0 #000;transition:transform .15s,box-shadow .15s;color:var(--paper)}
+.qq-card:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 var(--gold)}
+.qq-img{position:relative;aspect-ratio:4/3;background:#fff;overflow:hidden}
+.qq-img img{width:100%;height:100%;object-fit:cover;display:block}
+.qq-tag{position:absolute;left:10px;top:10px;background:var(--gold);color:#1c1503;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:4px 9px;border-radius:999px;border:2px solid #000}
+.qq-body{padding:14px 16px 16px}
+.qq-body h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;font-size:20px;line-height:1.05}
+.qq-price{font-family:'Big Shoulders Display',sans-serif;font-weight:900;font-size:32px;color:var(--gold);line-height:1.1;margin-top:6px}
+.qq-price small{font-family:'Hanken Grotesk',sans-serif;font-size:12px;font-weight:600;color:var(--muted)}
+.qq-meta{font-size:12.5px;color:var(--muted)}
+.qq-strip{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.qq-chip{background:var(--panel);border:1.5px solid var(--line,rgba(244,239,227,.14));border-radius:999px;padding:9px 14px;font-size:14px}
+.qq-chip.gold{background:var(--gold);color:#1c1503;border-color:#000;font-weight:600}
+.qq-chip span{font-size:12px}
+.qq-inc{margin-top:14px;font-size:14px;color:#cfc9bd;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.qq-inc b{color:var(--paper)}
+.qq-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
+@media(max-width:900px){.qq-grid{grid-template-columns:1fr;gap:26px}.qq-cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:460px){.qq-row{grid-template-columns:1fr}.qq-price{font-size:26px}}
+</style>
+@if($errors->any() && old('_qq'))
+<script>document.addEventListener('DOMContentLoaded',function(){var f=document.getElementById('cotiza'); if(f) f.scrollIntoView();});</script>
+@endif
+
 {{-- Orden y visibilidad de las secciones (Admin → Diseño del Home) --}}
 @php
     $sectionMeta = [
+        'cotiza'=>'Cotiza en 1 minuto', 'precios'=>'Precios',
         'garantias'=>'Garantías', 'proceso'=>'Proceso', 'numbers'=>'Números + colegios',
         'video'=>'Video', 'gallery'=>'Galería', 'tipos'=>'Modelos', 'collections'=>'Colecciones',
         'testimonios'=>'Testimonios', 'colegios'=>'Para colegios', 'portales'=>'Portales (colegio/estudiante)', 'faq'=>'Preguntas frecuentes',
@@ -945,6 +1085,13 @@
     $layout = (is_array($saved) && $saved) ? $saved : array_map(fn ($k) => ['key' => $k, 'on' => true], $defaultOrder);
     $seenKeys = array_column($layout, 'key');
     foreach ($defaultOrder as $k) { if (! in_array($k, $seenKeys, true)) { $layout[] = ['key' => $k, 'on' => true]; } }
+    // Secciones nuevas de venta: arriba si el orden guardado aún no las tiene.
+    foreach (array_reverse(['cotiza', 'precios']) as $k) {
+        if (! in_array($k, $seenKeys, true)) {
+            $layout = array_values(array_filter($layout, fn ($x) => $x['key'] !== $k));
+            array_unshift($layout, ['key' => $k, 'on' => true]);
+        }
+    }
 @endphp
 
 @include('chaquetas.partials.home-blocks', ['position' => 'before_gallery'])
@@ -992,6 +1139,8 @@
                 <a href="{{ route('home') }}#gal">Promociones</a>
                 @foreach($nav as $it)<a href="{{ $it->url }}">{{ $it->label }}</a>@endforeach
                 <a href="{{ route('seguimiento') }}">Busca tu chaqueta</a>
+                <a href="#cotiza">Cotiza en 1 minuto</a>
+                <a href="{{ route('empresas') }}">Empresas y dotación</a>
             </div>
 
             {{-- Cuentas --}}

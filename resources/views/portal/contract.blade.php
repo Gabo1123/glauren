@@ -105,6 +105,37 @@
     </div>
 @endif
 
+{{-- Anticipo del colegio --}}
+@php $dst = $contract->depositStatus(); @endphp
+@if($dst && $dst !== 'pagado')
+    @php $cuenta = \App\Modules\Chaquetas\Models\Setting::get('contratista_cuenta', ''); @endphp
+    <div id="anticipo" style="background:{{ $dst === 'en_revision' ? 'rgba(78,161,255,.08)' : 'rgba(224,164,34,.1)' }};border:1px solid {{ $dst === 'en_revision' ? 'rgba(78,161,255,.35)' : 'rgba(224,164,34,.35)' }};border-radius:var(--g-r);padding:20px 22px;margin-bottom:26px">
+        @if($dst === 'en_revision')
+            <div style="font-weight:700;color:#8cc4ff"><i class="bi bi-hourglass-split"></i> Recibimos tu comprobante del anticipo</div>
+            <div style="color:var(--g-muted);font-size:14px;margin-top:4px">Lo estamos revisando. Te confirmamos por aquí apenas quede aprobado.</div>
+        @else
+            <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start">
+                <div>
+                    <div style="font-weight:700;color:var(--g-warn)"><i class="bi bi-safe"></i> Anticipo para iniciar la producción</div>
+                    <div style="font-family:var(--g-font-display);font-size:34px;line-height:1.1;margin:6px 0">${{ number_format($contract->depositDue(), 0, ',', '.') }}</div>
+                    @if($dst === 'parcial')<div style="font-size:13px;color:var(--g-muted)">Ya recibimos ${{ number_format((float) $contract->deposit_paid, 0, ',', '.') }} de ${{ number_format((float) $contract->deposit_amount, 0, ',', '.') }}.</div>@endif
+                    @if($cuenta)<div style="font-size:14px;color:var(--g-bone);margin-top:6px"><i class="bi bi-bank"></i> Consigna o transfiere a: <b>{{ $cuenta }}</b></div>@endif
+                    <div style="font-size:13px;color:var(--g-muted);margin-top:4px">Con el anticipo apartamos tu cupo en el taller y arrancamos la producción.</div>
+                </div>
+                <form method="POST" action="{{ route('portal.deposit', $contract) }}" enctype="multipart/form-data" style="min-width:250px;flex:0 1 320px">
+                    @csrf
+                    <label style="font-size:12px;color:var(--g-muted);display:block;margin-bottom:6px">¿Ya pagaste? Sube el comprobante (foto o PDF)</label>
+                    <input type="file" name="proof" accept="image/*,.pdf" required style="width:100%;background:var(--g-ink);border:1px solid var(--g-line);color:var(--g-bone);padding:8px;border-radius:6px;margin-bottom:8px">
+                    @error('proof')<div style="color:#ff8a80;font-size:13px;margin-bottom:8px">{{ $message }}</div>@enderror
+                    <button style="width:100%;background:var(--g-gold);color:#1a1405;border:none;padding:10px;border-radius:6px;font-weight:700;cursor:pointer"><i class="bi bi-upload"></i> Enviar comprobante</button>
+                </form>
+            </div>
+        @endif
+    </div>
+@elseif($dst === 'pagado')
+    <div style="background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.3);border-radius:var(--g-r);padding:12px 18px;margin-bottom:22px;color:var(--g-ok);font-size:14px"><i class="bi bi-check2-circle"></i> Anticipo de ${{ number_format((float) $contract->deposit_paid, 0, ',', '.') }} recibido @if($contract->deposit_paid_at) el {{ $contract->deposit_paid_at->format('d/m/Y') }}@endif. ¡Gracias!</div>
+@endif
+
 <div class="pc-grid2">
 {{-- Ruta de tu promoción (guía paso a paso) --}}
 @php
@@ -232,7 +263,10 @@
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
         <h2 style="font-family:var(--g-font-display);text-transform:uppercase;font-size:16px;letter-spacing:.05em;margin:0">Alumnos <span style="color:var(--g-muted);font-family:var(--g-font-body);font-size:14px">({{ $contract->students->count() }})</span></h2>
         @unless($signed)
-            <button onclick="document.getElementById('addForm').style.display='block';this.style.display='none'" style="background:none;border:1px solid var(--g-gold);color:var(--g-gold);padding:8px 14px;border-radius:var(--g-r-sm);cursor:pointer;font-size:13px"><i class="bi bi-plus-lg"></i> Agregar alumno</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button onclick="var f=document.getElementById('xlsForm');f.style.display=f.style.display==='block'?'none':'block'" style="background:var(--g-gold);border:1px solid var(--g-gold);color:#1a1405;padding:8px 14px;border-radius:var(--g-r-sm);cursor:pointer;font-size:13px;font-weight:700"><i class="bi bi-file-earmark-excel"></i> Subir lista desde Excel</button>
+                <button onclick="document.getElementById('addForm').style.display='block';this.style.display='none'" style="background:none;border:1px solid var(--g-gold);color:var(--g-gold);padding:8px 14px;border-radius:var(--g-r-sm);cursor:pointer;font-size:13px"><i class="bi bi-plus-lg"></i> Agregar uno por uno</button>
+            </div>
         @endunless
     </div>
 
@@ -249,6 +283,24 @@
         </div>
     @endif
 
+    {{-- Cargar todo el curso desde Excel --}}
+    @unless($signed)
+    <div id="xlsForm" style="display:{{ $errors->has('file') ? 'block' : 'none' }};background:var(--g-surface-2);border:1px solid var(--g-line);border-radius:var(--g-r-sm);padding:18px;margin-bottom:18px">
+        <div style="font-weight:700;margin-bottom:10px"><i class="bi bi-file-earmark-excel" style="color:var(--g-gold)"></i> Carga a todo el curso en 3 pasos</div>
+        <ol style="font-size:13.5px;color:var(--g-muted);margin:0 0 14px;padding-left:18px;line-height:1.7">
+            <li><a href="{{ route('portal.students.template', $contract) }}" style="color:var(--g-gold);font-weight:700"><i class="bi bi-download"></i> Descarga el formato</a> (se abre en Excel).</li>
+            <li>Llena una fila por alumno: <b>documento</b> y <b>nombre</b> son obligatorios; apodo, celular y sexo son opcionales.</li>
+            <li>Guárdalo como <b>CSV</b> y súbelo aquí. Si un alumno ya está, no se repite.</li>
+        </ol>
+        @error('file')<div style="color:#ff8a80;font-size:13px;margin-bottom:10px"><i class="bi bi-exclamation-triangle"></i> {{ $message }}</div>@enderror
+        <form method="POST" action="{{ route('portal.students.import', $contract) }}" enctype="multipart/form-data" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            @csrf
+            <input type="file" name="file" accept=".csv,.txt" required style="flex:1;min-width:200px;background:var(--g-ink);border:1px solid var(--g-line);color:var(--g-bone);padding:8px;border-radius:6px">
+            <button style="background:var(--g-gold);color:#1a1405;border:none;padding:9px 18px;border-radius:6px;font-weight:700;cursor:pointer"><i class="bi bi-upload"></i> Subir lista</button>
+        </form>
+    </div>
+    @endunless
+
     {{-- Formulario para agregar (colegio solo captura datos básicos) --}}
     @unless($signed)
     <form id="addForm" method="POST" action="{{ route('portal.students.store', $contract) }}" style="display:none;background:var(--g-surface-2);border:1px solid var(--g-line);border-radius:var(--g-r-sm);padding:18px;margin-bottom:18px">
@@ -261,6 +313,7 @@
                     <option value="">—</option><option value="M">Masculino</option><option value="F">Femenino</option><option value="Otro">Otro</option>
                 </select></div>
             <div><label style="font-size:12px;color:var(--g-muted);display:block;margin-bottom:5px">Apodo (para bordar)</label><input name="nickname" style="width:100%;background:var(--g-ink);border:1px solid var(--g-line);color:var(--g-bone);padding:9px 11px;border-radius:6px;box-sizing:border-box"></div>
+            <div><label style="font-size:12px;color:var(--g-muted);display:block;margin-bottom:5px">Celular / WhatsApp</label><input name="phone" inputmode="tel" placeholder="3001234567" style="width:100%;background:var(--g-ink);border:1px solid var(--g-line);color:var(--g-bone);padding:9px 11px;border-radius:6px;box-sizing:border-box"></div>
         </div>
         <div style="font-size:12px;color:var(--g-muted);margin-bottom:12px"><i class="bi bi-info-circle"></i> El equipo Glauren tomará y registrará las medidas de cada alumno.</div>
         <button style="background:var(--g-gold);color:#1a1405;border:none;padding:9px 18px;border-radius:6px;font-weight:700;cursor:pointer">Guardar alumno</button>
@@ -277,6 +330,7 @@
                         <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)">Nombre</th>
                         <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)">Documento</th>
                         <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)">Apodo</th>
+                        <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)">Celular</th>
                         <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)">Medidas</th>
                         <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)">Pago</th>
                         <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)"></th>
@@ -288,6 +342,16 @@
                             <td style="padding:10px 8px;border-bottom:1px solid var(--g-line)">{{ $s->name }}</td>
                             <td style="padding:10px 8px;border-bottom:1px solid var(--g-line);color:var(--g-muted)">{{ $s->document }}</td>
                             <td style="padding:10px 8px;border-bottom:1px solid var(--g-line)">{{ $s->nickname ?: '—' }}</td>
+                            <td style="padding:10px 8px;border-bottom:1px solid var(--g-line);white-space:nowrap">
+                                <details class="ph-edit">
+                                    <summary style="cursor:pointer;list-style:none;font-size:13px;color:{{ $s->phone ? 'var(--g-bone)' : 'var(--g-gold)' }}">{!! $s->phone ? e($s->phone).' <i class="bi bi-pencil" style="font-size:11px;color:var(--g-muted)"></i>' : '<i class="bi bi-plus-circle"></i> Agregar' !!}</summary>
+                                    <form method="POST" action="{{ route('portal.students.phone', [$contract, $s]) }}" style="display:flex;gap:6px;margin-top:6px">
+                                        @csrf @method('PATCH')
+                                        <input name="phone" value="{{ $s->phone }}" inputmode="tel" placeholder="3001234567" style="width:130px;background:var(--g-ink);border:1px solid var(--g-line);color:var(--g-bone);padding:6px 8px;border-radius:6px">
+                                        <button style="background:var(--g-gold);color:#1a1405;border:0;border-radius:6px;padding:0 10px;font-weight:700;cursor:pointer">OK</button>
+                                    </form>
+                                </details>
+                            </td>
                             <td style="padding:10px 8px;border-bottom:1px solid var(--g-line)">
                                 @if($s->hasMeasurements())
                                     <span style="color:var(--g-ok);font-size:13px"><i class="bi bi-check-circle"></i> Tomadas</span>
@@ -347,10 +411,19 @@
     </div>
     @php $faltan = $contract->students->filter(fn($s)=>!in_array($s->payment_status,['pagado','en_revision'],true)); @endphp
     @if($faltan->count())
-        <div style="font-size:13px;color:var(--g-muted);margin-bottom:6px">Aún no han pagado:</div>
+        <div style="font-size:13px;color:var(--g-muted);margin-bottom:6px">Aún no han pagado. Toca un nombre para recordarle por WhatsApp (si tiene celular registrado, le llega directo):</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px">
             @foreach($faltan as $s)
-                <span style="background:var(--g-surface-2);border:1px solid var(--g-line);border-radius:999px;padding:5px 12px;font-size:12.5px">{{ $s->nickname ?: $s->name }}</span>
+                @php
+                    $digits = preg_replace('/\D/', '', (string) $s->phone);
+                    if (strlen($digits) === 10) { $digits = '57'.$digits; }
+                    $msg = '¡Hola '.\Illuminate\Support\Str::of($s->name)->explode(' ')->first().'! 👋 Te recordamos el pago de tu chaqueta de la promoción '.$school->name.'. '
+                        .'Entra con tu número de documento aquí y paga o sube tu comprobante: '.route('seguimiento').' ¡Gracias! 🧥';
+                    $waUrl = 'https://wa.me/'.($digits ?: '').'?text='.rawurlencode($msg);
+                @endphp
+                <a href="{{ $waUrl }}" target="_blank" rel="noopener" title="Recordarle por WhatsApp{{ $digits ? '' : ' (elige el contacto)' }}" class="remind">
+                    <i class="bi bi-whatsapp"></i> {{ $s->nickname ?: $s->name }} <span>Recordar</span>
+                </a>
             @endforeach
         </div>
     @else

@@ -16,6 +16,7 @@ class SitemapController extends Controller
             ['loc' => route('personalizar'), 'priority' => '0.9', 'freq' => 'weekly'],
             ['loc' => route('news.index'), 'priority' => '0.7', 'freq' => 'weekly'],
             ['loc' => route('seguimiento'), 'priority' => '0.5', 'freq' => 'monthly'],
+            ['loc' => route('empresas'), 'priority' => '0.8', 'freq' => 'monthly'],
             ['loc' => route('colegios'), 'priority' => '0.6', 'freq' => 'monthly'],
         ];
 

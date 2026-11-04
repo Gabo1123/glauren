@@ -51,6 +51,14 @@ Route::post('/mi-chaqueta', [SeguimientoController::class, 'search'])->middlewar
 Route::post('/mi-chaqueta/pago', [SeguimientoController::class, 'declarePayment'])->middleware('throttle:10,10')->name('seguimiento.pay');
 Route::post('/mi-chaqueta/telefono', [SeguimientoController::class, 'savePhone'])->middleware('throttle:10,10')->name('seguimiento.phone');
 Route::get('/colegios', [HomeController::class, 'colegios'])->name('colegios');
+// Encuesta de satisfacción al entregar (enlace firmado que llega por WhatsApp/correo)
+Route::get('/encuesta/{contract}', [\App\Modules\Chaquetas\Http\Controllers\SurveyController::class, 'show'])->middleware('signed')->name('encuesta.show');
+Route::post('/encuesta/{contract}', [\App\Modules\Chaquetas\Http\Controllers\SurveyController::class, 'store'])->middleware(['signed', 'throttle:6,10'])->name('encuesta.store');
+
+// Cotiza en 1 minuto (home) y página para empresas
+Route::post('/cotiza-en-1-minuto', [\App\Modules\Chaquetas\Http\Controllers\QuickQuoteController::class, 'school'])->middleware('throttle:6,10')->name('cotiza.store');
+Route::get('/empresas', [\App\Modules\Chaquetas\Http\Controllers\QuickQuoteController::class, 'businessPage'])->name('empresas');
+Route::post('/empresas', [\App\Modules\Chaquetas\Http\Controllers\QuickQuoteController::class, 'business'])->middleware('throttle:6,10')->name('empresas.store');
 Route::get('/contacto', [\App\Modules\Chaquetas\Http\Controllers\ContactController::class, 'show'])->name('contacto');
 Route::post('/contacto', [\App\Modules\Chaquetas\Http\Controllers\ContactController::class, 'submit'])->name('contacto.submit');
 Route::get('/contacto/horarios', [\App\Modules\Chaquetas\Http\Controllers\ContactController::class, 'slots'])->name('contacto.slots');
@@ -61,8 +69,10 @@ Route::prefix('estudiante')->name('student.')->group(function () {
     Route::post('/documento', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'checkDocument'])->name('doc');
     Route::get('/documento', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'resume']);
     Route::post('/entrar', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'auth'])->middleware('throttle:10,1')->name('auth');
-    Route::get('/entrar', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'resume']);
+    Route::get('/entrar', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'resume'])->name('resume');
     Route::post('/olvide-pin', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'forgotPin'])->middleware('throttle:5,10')->name('forgot');
+    Route::get('/olvide-pin', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'showReset']);
+    Route::get('/restablecer-pin', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'showReset'])->name('reset.show');
     Route::post('/restablecer-pin', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'resetPin'])->middleware('throttle:10,10')->name('reset');
     Route::post('/salir', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'logout'])->name('logout');
     Route::get('/mi-perfil', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'home'])->name('home');
@@ -141,6 +151,10 @@ Route::prefix('colegio')->name('portal.')->group(function () {
         Route::get('contrato/{contract}/documento', [PortalController::class, 'contractDocument'])->name('contract.doc');
         Route::post('contrato/{contract}/alumnos', [PortalController::class, 'addStudent'])->name('students.store');
         Route::delete('contrato/{contract}/alumnos/{student}', [PortalController::class, 'deleteStudent'])->name('students.destroy');
+        Route::post('contrato/{contract}/anticipo', [PortalController::class, 'depositProof'])->name('deposit');
+        Route::get('contrato/{contract}/alumnos/plantilla', [PortalController::class, 'studentsTemplate'])->name('students.template');
+        Route::post('contrato/{contract}/alumnos/importar', [PortalController::class, 'importStudents'])->name('students.import');
+        Route::patch('contrato/{contract}/alumnos/{student}/celular', [PortalController::class, 'updateStudentPhone'])->name('students.phone');
     });
 });
 
@@ -222,6 +236,14 @@ Route::prefix('gtorres')->name('admin.')->group(function () {
         Route::post('personalizadas', [\App\Modules\Chaquetas\Http\Controllers\Admin\CustomQuoteController::class, 'store'])->name('custom.store');
         Route::get('personalizadas/{quote}/editar', [\App\Modules\Chaquetas\Http\Controllers\Admin\CustomQuoteController::class, 'edit'])->name('custom.edit');
         Route::put('personalizadas/{quote}', [\App\Modules\Chaquetas\Http\Controllers\Admin\CustomQuoteController::class, 'update'])->name('custom.update');
+        // Tablero de ventas, automatizaciones y cartera
+        Route::get('ventas', [\App\Modules\Chaquetas\Http\Controllers\Admin\SalesController::class, 'dashboard'])->name('sales.dashboard');
+        Route::put('ventas/automatizaciones', [\App\Modules\Chaquetas\Http\Controllers\Admin\SalesController::class, 'saveAutomation'])->name('sales.automation');
+        Route::post('ventas/resumen-ahora', [\App\Modules\Chaquetas\Http\Controllers\Admin\SalesController::class, 'sendDigestNow'])->name('sales.digest');
+        Route::get('capacidad', [\App\Modules\Chaquetas\Http\Controllers\Admin\CapacityController::class, 'index'])->name('capacity.index');
+        Route::put('capacidad', [\App\Modules\Chaquetas\Http\Controllers\Admin\CapacityController::class, 'save'])->name('capacity.save');
+        Route::get('cartera', [\App\Modules\Chaquetas\Http\Controllers\Admin\SalesController::class, 'cartera'])->name('sales.cartera');
+        Route::get('cartera/exportar', [\App\Modules\Chaquetas\Http\Controllers\Admin\SalesController::class, 'carteraExport'])->name('sales.cartera.export');
         Route::get('cotizaciones', [QuoteController::class, 'index'])->name('quotes.index');
         Route::get('cotizaciones/crear', [QuoteController::class, 'create'])->name('quotes.create');
         Route::post('cotizaciones', [QuoteController::class, 'store'])->name('quotes.store');
@@ -235,6 +257,7 @@ Route::prefix('gtorres')->name('admin.')->group(function () {
         Route::post('leads/{lead}/seguimiento', [QuoteController::class, 'fromLead'])->name('leads.quote');
         Route::get('cotizaciones/{quote}', [QuoteController::class, 'show'])->name('quotes.show');
         Route::put('cotizaciones/{quote}', [QuoteController::class, 'update'])->name('quotes.update');
+        Route::put('cotizaciones/{quote}/cliente', [QuoteController::class, 'updateClient'])->name('quotes.client');
 
         // Colegios
         Route::get('colegios', [SchoolController::class, 'index'])->name('schools.index');
@@ -258,6 +281,8 @@ Route::prefix('gtorres')->name('admin.')->group(function () {
         Route::get('contratos/{contract}/editar', [ContractController::class, 'edit'])->name('contracts.edit');
         Route::put('contratos/{contract}', [ContractController::class, 'update'])->name('contracts.update');
         Route::put('contratos/{contract}/estado', [ContractController::class, 'updateStatus'])->name('contracts.status');
+        Route::put('contratos/{contract}/anticipo', [ContractController::class, 'deposit'])->name('contracts.deposit');
+        Route::post('contratos/{contract}/anticipo/rechazar', [ContractController::class, 'rejectDeposit'])->name('contracts.deposit.reject');
         Route::put('contratos/{contract}/materiales', [ContractController::class, 'saveMaterials'])->name('contracts.materials');
         Route::get('contratos/{contract}/contrato', [ContractController::class, 'contract'])->name('contracts.contract');
         Route::put('contratos/{contract}/contrato', [ContractController::class, 'saveTerms'])->name('contracts.terms');
@@ -271,6 +296,8 @@ Route::prefix('gtorres')->name('admin.')->group(function () {
         Route::post('contratos/{contract}/alumnos/importar', [StudentController::class, 'import'])->name('students.import');
         Route::get('contratos/{contract}/alumnos/plantilla', [StudentController::class, 'template'])->name('students.template');
         Route::get('contratos/{contract}/alumnos/exportar', [StudentController::class, 'export'])->name('students.export');
+        Route::get('contratos/{contract}/alumnos/formato-tallas', [StudentController::class, 'sizesTemplate'])->name('students.sizes.template');
+        Route::post('contratos/{contract}/alumnos/formato-tallas', [StudentController::class, 'sizesImport'])->name('students.sizes.import');
         Route::get('contratos/{contract}/alumnos/medidas', [StudentController::class, 'measures'])->name('students.measures');
         Route::put('contratos/{contract}/alumnos/medidas', [StudentController::class, 'saveMeasures'])->name('students.measures.save');
         Route::get('contratos/{contract}/alumnos/{student}', [StudentController::class, 'edit'])->name('students.edit');
