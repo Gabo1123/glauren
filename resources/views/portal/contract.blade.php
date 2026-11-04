@@ -261,6 +261,7 @@
                     <option value="">—</option><option value="M">Masculino</option><option value="F">Femenino</option><option value="Otro">Otro</option>
                 </select></div>
             <div><label style="font-size:12px;color:var(--g-muted);display:block;margin-bottom:5px">Apodo (para bordar)</label><input name="nickname" style="width:100%;background:var(--g-ink);border:1px solid var(--g-line);color:var(--g-bone);padding:9px 11px;border-radius:6px;box-sizing:border-box"></div>
+            <div><label style="font-size:12px;color:var(--g-muted);display:block;margin-bottom:5px">Celular / WhatsApp</label><input name="phone" inputmode="tel" placeholder="3001234567" style="width:100%;background:var(--g-ink);border:1px solid var(--g-line);color:var(--g-bone);padding:9px 11px;border-radius:6px;box-sizing:border-box"></div>
         </div>
         <div style="font-size:12px;color:var(--g-muted);margin-bottom:12px"><i class="bi bi-info-circle"></i> El equipo Glauren tomará y registrará las medidas de cada alumno.</div>
         <button style="background:var(--g-gold);color:#1a1405;border:none;padding:9px 18px;border-radius:6px;font-weight:700;cursor:pointer">Guardar alumno</button>
@@ -277,6 +278,7 @@
                         <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)">Nombre</th>
                         <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)">Documento</th>
                         <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)">Apodo</th>
+                        <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)">Celular</th>
                         <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)">Medidas</th>
                         <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)">Pago</th>
                         <th style="padding:9px 8px;border-bottom:1px solid var(--g-line)"></th>
@@ -288,6 +290,16 @@
                             <td style="padding:10px 8px;border-bottom:1px solid var(--g-line)">{{ $s->name }}</td>
                             <td style="padding:10px 8px;border-bottom:1px solid var(--g-line);color:var(--g-muted)">{{ $s->document }}</td>
                             <td style="padding:10px 8px;border-bottom:1px solid var(--g-line)">{{ $s->nickname ?: '—' }}</td>
+                            <td style="padding:10px 8px;border-bottom:1px solid var(--g-line);white-space:nowrap">
+                                <details class="ph-edit">
+                                    <summary style="cursor:pointer;list-style:none;font-size:13px;color:{{ $s->phone ? 'var(--g-bone)' : 'var(--g-gold)' }}">{!! $s->phone ? e($s->phone).' <i class="bi bi-pencil" style="font-size:11px;color:var(--g-muted)"></i>' : '<i class="bi bi-plus-circle"></i> Agregar' !!}</summary>
+                                    <form method="POST" action="{{ route('portal.students.phone', [$contract, $s]) }}" style="display:flex;gap:6px;margin-top:6px">
+                                        @csrf @method('PATCH')
+                                        <input name="phone" value="{{ $s->phone }}" inputmode="tel" placeholder="3001234567" style="width:130px;background:var(--g-ink);border:1px solid var(--g-line);color:var(--g-bone);padding:6px 8px;border-radius:6px">
+                                        <button style="background:var(--g-gold);color:#1a1405;border:0;border-radius:6px;padding:0 10px;font-weight:700;cursor:pointer">OK</button>
+                                    </form>
+                                </details>
+                            </td>
                             <td style="padding:10px 8px;border-bottom:1px solid var(--g-line)">
                                 @if($s->hasMeasurements())
                                     <span style="color:var(--g-ok);font-size:13px"><i class="bi bi-check-circle"></i> Tomadas</span>
@@ -347,10 +359,19 @@
     </div>
     @php $faltan = $contract->students->filter(fn($s)=>!in_array($s->payment_status,['pagado','en_revision'],true)); @endphp
     @if($faltan->count())
-        <div style="font-size:13px;color:var(--g-muted);margin-bottom:6px">Aún no han pagado:</div>
+        <div style="font-size:13px;color:var(--g-muted);margin-bottom:6px">Aún no han pagado. Toca un nombre para recordarle por WhatsApp (si tiene celular registrado, le llega directo):</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px">
             @foreach($faltan as $s)
-                <span style="background:var(--g-surface-2);border:1px solid var(--g-line);border-radius:999px;padding:5px 12px;font-size:12.5px">{{ $s->nickname ?: $s->name }}</span>
+                @php
+                    $digits = preg_replace('/\D/', '', (string) $s->phone);
+                    if (strlen($digits) === 10) { $digits = '57'.$digits; }
+                    $msg = '¡Hola '.\Illuminate\Support\Str::of($s->name)->explode(' ')->first().'! 👋 Te recordamos el pago de tu chaqueta de la promoción '.$school->name.'. '
+                        .'Entra con tu número de documento aquí y paga o sube tu comprobante: '.route('seguimiento').' ¡Gracias! 🧥';
+                    $waUrl = 'https://wa.me/'.($digits ?: '').'?text='.rawurlencode($msg);
+                @endphp
+                <a href="{{ $waUrl }}" target="_blank" rel="noopener" title="Recordarle por WhatsApp{{ $digits ? '' : ' (elige el contacto)' }}" class="remind">
+                    <i class="bi bi-whatsapp"></i> {{ $s->nickname ?: $s->name }} <span>Recordar</span>
+                </a>
             @endforeach
         </div>
     @else

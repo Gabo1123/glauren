@@ -96,6 +96,7 @@
     .h2 .cnt{margin-left:auto;background:#ff5a4d;color:#fff;font-family:'Space Mono',monospace;font-size:12px;border-radius:999px;padding:1px 9px}
     .todo{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);text-decoration:none;color:var(--paper);margin-bottom:8px;transition:.15s}
     .todo:hover{border-color:var(--gold)}
+    button.todo{color:var(--paper)}
     .todo .ti{flex:0 0 40px;height:40px;border-radius:12px;background:rgba(233,184,63,.14);display:grid;place-items:center;font-size:20px}
     .todo .tt{flex:1;min-width:0}.todo .tt b{display:block;font-size:14.5px}.todo .tt small{color:var(--muted);font-size:12.5px}
     .todo .ta{color:var(--gold);font-size:18px}
@@ -146,7 +147,9 @@
             <div class="h2">✅ Tus pendientes @if(count($todo))<span class="cnt">{{ count($todo) }}</span>@endif</div>
             @forelse($todo as [$ic, $t, $d, $go])
                 @if($go === 'pago')
-                    <a href="{{ route('seguimiento') }}" class="todo"><span class="ti">{{ $ic }}</span><span class="tt"><b>{{ $t }}</b><small>{{ $d }}</small></span><span class="ta">→</span></a>
+                    <form method="POST" action="{{ route('seguimiento.search') }}">@csrf<input type="hidden" name="document" value="{{ $student->document }}">
+                        <button type="submit" class="todo" style="width:100%;text-align:left;cursor:pointer;font:inherit"><span class="ti">{{ $ic }}</span><span class="tt"><b>{{ $t }}</b><small>{{ $d }}</small></span><span class="ta">→</span></button>
+                    </form>
                 @else
                     <a href="#{{ $go }}" data-go="{{ $go }}" class="todo"><span class="ti">{{ $ic }}</span><span class="tt"><b>{{ $t }}</b><small>{{ $d }}</small></span><span class="ta">→</span></a>
                 @endif
@@ -192,6 +195,12 @@
                 <div class="st-item"><div class="k">💳 Pago</div><div class="v">{{ $schoolPays ? 'Lo paga el colegio' : ($student->isPaid()?'Pagado ✓':($student->isUnderReview()?'En revisión':'Pendiente')) }}</div></div>
                 <div class="st-item"><div class="k">Tallas</div><div class="v">{{ $student->hasMeasurements()?'Registradas ✓':'Faltan' }}</div></div>
             </div>
+            @if(! $schoolPays && ! $student->isPaid())
+                <form method="POST" action="{{ route('seguimiento.search') }}" style="margin-top:14px">@csrf
+                    <input type="hidden" name="document" value="{{ $student->document }}">
+                    <button class="btn" style="width:100%">{{ $student->isUnderReview() ? '🧾 Ver mi pago en revisión' : '💳 Pagar mi chaqueta o subir comprobante' }}</button>
+                </form>
+            @endif
             <a href="{{ route('seguimiento') }}" class="link" style="display:inline-block;margin-top:12px">Ver seguimiento completo →</a>
         </div>
         @endif

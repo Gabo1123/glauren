@@ -148,6 +148,22 @@ class Contract extends Model
     }
 
     /** Contrato final: plantilla con los datos rellenados. */
+    /**
+     * Contrato listo para mostrar en HTML: si el texto trae formato (párrafos, negritas…)
+     * se respeta; si es texto plano se convierten los saltos de línea. Siempre sin scripts.
+     */
+    public function renderedContractHtml(): string
+    {
+        $text = $this->renderedContract();
+        if ($text === strip_tags($text)) {
+            return nl2br(e($text));
+        }
+        $html = strip_tags($text, '<p><br><b><strong><i><em><u><ul><ol><li><h1><h2><h3><h4><h5><table><thead><tbody><tr><td><th><span><div><hr>');
+        $html = preg_replace('/\s+on\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html);
+
+        return (string) preg_replace('/javascript\s*:/i', '', $html);
+    }
+
     public function renderedContract(): string
     {
         $tpl = Setting::get('contract_template', '');

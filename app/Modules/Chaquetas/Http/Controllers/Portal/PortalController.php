@@ -159,12 +159,28 @@ class PortalController extends Controller
             'document' => 'required|string|max:40',
             'gender'   => 'nullable|in:M,F,Otro',
             'nickname' => 'nullable|string|max:60',
-        ]);
+            'phone'    => ['nullable', 'string', 'max:20', 'regex:/^[\d\s+()-]{7,20}$/'],
+        ], ['phone.regex' => 'Escribe un celular válido, solo números.']);
 
         $data['combo'] = $contract->defaultCombo();
         $contract->students()->create($data);
 
         return back()->with('ok', 'Alumno agregado. El equipo Glauren tomará las medidas.')->withFragment('alumnos');
+    }
+
+    /** El colegio agrega o corrige el celular de un alumno (sirve para recuperar el PIN y recibir avisos). */
+    public function updateStudentPhone(Request $request, Contract $contract, $student)
+    {
+        $school = $this->school();
+        abort_unless($contract->school_id === $school->id, 403);
+        $student = $contract->students()->whereKey($student)->firstOrFail();
+
+        $data = $request->validate([
+            'phone' => ['nullable', 'string', 'max:20', 'regex:/^[\d\s+()-]{7,20}$/'],
+        ], ['phone.regex' => 'Escribe un celular válido, solo números.']);
+        $student->update(['phone' => $data['phone'] ?: null]);
+
+        return back()->with('ok', 'Celular de '.$student->name.' guardado.')->withFragment('alumnos');
     }
 
     public function deleteStudent(Contract $contract, $student)

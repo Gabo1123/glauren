@@ -27,7 +27,7 @@
     .err{background:rgba(255,74,61,.12);border:2px solid var(--hot);color:#ffb0a8;border-radius:10px;padding:10px 13px;margin-bottom:14px;font-size:13px}
     #pad{width:100%;height:180px;background:#fff;border:2px solid #000;border-radius:10px;touch-action:none;cursor:crosshair}
     .padrow{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
-    .terms{max-height:200px;overflow-y:auto;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;font-size:13px;color:#cfc9bd;line-height:1.6;margin-bottom:8px}
+    .terms p{margin:0 0 8px}.terms{max-height:200px;overflow-y:auto;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;font-size:13px;color:#cfc9bd;line-height:1.6;margin-bottom:8px}
     .signers{margin-top:14px;border-top:1px solid var(--line);padding-top:14px}
     .signer-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0}
     .badge-ok{color:var(--ok)}.badge-pend{color:var(--muted)}
@@ -84,7 +84,7 @@
             @if($errors->any())<div class="err">⚠ {{ $errors->first() }}</div>@endif
 
             <label>Contrato completo</label>
-            <div class="terms">{!! nl2br(e($contract->renderedContract())) !!}</div>
+            <div class="terms">{!! $contract->renderedContractHtml() !!}</div>
 
             <form method="POST" action="{{ route('firmar.guardar', $signer->token) }}" id="signForm">@csrf
                 <label>Tu nombre</label>

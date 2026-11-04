@@ -143,6 +143,7 @@ Route::prefix('colegio')->name('portal.')->group(function () {
         Route::get('contrato/{contract}/documento', [PortalController::class, 'contractDocument'])->name('contract.doc');
         Route::post('contrato/{contract}/alumnos', [PortalController::class, 'addStudent'])->name('students.store');
         Route::delete('contrato/{contract}/alumnos/{student}', [PortalController::class, 'deleteStudent'])->name('students.destroy');
+        Route::patch('contrato/{contract}/alumnos/{student}/celular', [PortalController::class, 'updateStudentPhone'])->name('students.phone');
     });
 });
 

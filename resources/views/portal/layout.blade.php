@@ -77,6 +77,11 @@
             .pc-pane [style*="grid-template-columns:repeat(4,1fr)"]{ grid-template-columns:repeat(2,1fr)!important; }
             .pc-pane [style*="grid-template-columns:repeat(3,1fr)"]{ grid-template-columns:1fr!important; }
         }
+        .remind{ display:inline-flex; align-items:center; gap:7px; background:var(--g-surface-2); border:1px solid var(--g-line); border-radius:999px; padding:6px 8px 6px 12px; font-size:12.5px; color:var(--g-bone); text-decoration:none; transition:var(--g-t); }
+        .remind i{ color:#25d366; }
+        .remind span{ background:#25d366; color:#04240f; font-weight:700; font-size:11px; border-radius:999px; padding:2px 8px; }
+        .remind:hover{ border-color:#25d366; }
+        .ph-edit summary::-webkit-details-marker{ display:none; }
         /* ===== Inicio del portal ===== */
         .pd-hero{ display:flex; gap:20px; align-items:center; flex-wrap:wrap; padding:24px; margin-bottom:18px; border-radius:18px; border:1px solid var(--g-line);
             background:radial-gradient(500px 220px at 0% 0%,rgba(233,184,63,.18),transparent 70%),linear-gradient(135deg,#1d1d24,#16161b); }
