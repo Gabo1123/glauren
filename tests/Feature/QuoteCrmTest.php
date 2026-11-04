@@ -267,7 +267,7 @@ class QuoteCrmTest extends TestCase
         $this->actingAs($admin)->get(route('admin.quotes.show', $quote))->assertOk()->assertSee('¡Cliente ganado!');
 
         // El cliente ve que su contrato ya está en marcha
-        $this->get(route('cotizacion.show', $quote->public_token))->assertOk()->assertSee('Estado de tu proceso')->assertSee('Contrato firmado');
+        $this->get(route('cotizacion.show', $quote->public_token))->assertOk()->assertSee('Así funciona tu proceso')->assertSee('ESTÁS AQUÍ · PASO 3')->assertSee('Firma del contrato');
     }
 
     public function test_client_page_is_the_same_15_sheets_as_the_pdf(): void
@@ -530,5 +530,36 @@ class QuoteCrmTest extends TestCase
         $this->actingAs($admin)->put(route('admin.quotes.update', $quote), ['status' => 'nuevo', 'gift_mode' => 1, 'gift_jackets' => '']);
         $this->assertFalse($quote->fresh()->giftIsManual());
         $this->assertSame(1, $quote->fresh()->giftJackets());
+    }
+
+    public function test_step_by_step_guides_for_the_client(): void
+    {
+        $user = User::create(['name' => 'Rector', 'email' => 'rector@test.co', 'password' => bcrypt('x'), 'role' => 'colegio']);
+        $school = School::create(['name' => 'Colegio Guía', 'slug' => 'colegio-guia', 'user_id' => $user->id, 'active' => true, 'payment_mode' => 'estudiante']);
+        $contract = \App\Modules\Chaquetas\Models\Contract::create(['school_id' => $school->id, 'code' => 'CTR-G-1', 'year' => 2027,
+            'production_status' => 'cotizado', 'contract_status' => 'enviado', 'sign_token' => str_repeat('a', 40), 'terms' => '<p>Términos</p>']);
+
+        // Firma con enlace único: guía sin código
+        $this->get(route('contrato.firmar', $contract->sign_token))->assertOk()
+            ->assertSee('Cómo firmar tu contrato')->assertSee('ESTÁS AQUÍ · PASO 1')->assertSee('Lee el contrato')->assertDontSee('Verifica tu identidad');
+
+        // Firma por acudiente: sin WhatsApp configurado pasa directo a firmar (paso 2)
+        $signer = \App\Modules\Chaquetas\Models\ContractSigner::create(['contract_id' => $contract->id, 'name' => 'Ana', 'token' => str_repeat('b', 40)]);
+        $this->get(route('firmar.multi', $signer->token))->assertOk()
+            ->assertSee('Cómo firmar tu contrato')->assertSee('ESTÁS AQUÍ · PASO 2')->assertSee('Dibuja tu firma');
+
+        // Portal del colegio en producción
+        $contract->update(['production_status' => 'en_produccion', 'contract_status' => 'firmado']);
+        $this->actingAs($user)->get(route('portal.contract', $contract))->assertOk()
+            ->assertSee('Qué sigue en tu pedido')->assertSee('ESTÁS AQUÍ · PASO 4')->assertSee('Revisa los pagos');
+
+        // Portal del estudiante
+        $student = \App\Modules\Chaquetas\Models\Student::create(['contract_id' => $contract->id, 'name' => 'Pedro', 'document' => '123']);
+        $this->withSession(['student_id' => $student->id])->get(route('student.home'))->assertOk()
+            ->assertSee('Tu chaqueta paso a paso')->assertSee('ESTÁS AQUÍ · PASO 4');
+
+        // Entregado: todo completo
+        $contract->update(['production_status' => 'entregado']);
+        $this->actingAs($user)->get(route('portal.contract', $contract))->assertOk()->assertSee('Completaste todos los pasos');
     }
 }

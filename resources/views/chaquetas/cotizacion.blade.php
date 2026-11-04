@@ -95,12 +95,12 @@ body{background:#2B2B2B;color:#0E0E0E;font-family:'Montserrat',sans-serif;-webki
             <h1>Hola {{ $first }}, esta es tu <span class="y">cotización {{ $quote->code() }}</span></h1>
             <p>{{ $business ? 'Revisa cada prenda con su valor al por mayor. Puedes descargarla en PDF o escribirnos por WhatsApp para aprobarla o ajustarla.' : 'Revísala con calma. Puedes descargarla en PDF o escribirnos por WhatsApp para separar tu fecha.' }}</p>
         </div>
-        <div class="lbl">Estado de tu proceso</div>
-        <div class="track" style="margin-top:-6px">
-            @foreach($quote->customerSteps() as $st)
-                <div class="{{ $st['done'] ? 'done' : '' }} {{ $st['current'] ? 'cur' : '' }}">{{ $st['label'] }}</div>
-            @endforeach
-        </div>
+        @php
+            $csteps = $quote->customerSteps();
+            $cat = collect($csteps)->search(fn ($x) => $x['current']);
+            $cat = $cat === false ? count($csteps) : $cat;   // todo listo = entregado
+        @endphp
+        @include('partials.guia', ['guide' => $business ? 'cotizacion_empresa' : 'cotizacion', 'at' => $cat])
         @if(count($summary['lines']))
             <div class="mine">
                 <table>

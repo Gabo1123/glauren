@@ -37,6 +37,10 @@
 <div class="wrap">
     <div class="brand">{{ $brand }}</div>
 
+    <div style="margin-top:16px">
+        @include('partials.guia', ['guide' => 'firma', 'at' => $signer->hasSigned() ? 99 : ($step === 'verify' ? 0 : 1), 'open' => ! $signer->hasSigned(), 'compact' => true])
+    </div>
+
     @if($signer->hasSigned())
         {{-- Ya firmó --}}
         <div class="card" style="text-align:center">

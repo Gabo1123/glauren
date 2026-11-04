@@ -11,6 +11,9 @@
     </div>
 </div>
 
+@php $gIdx = $contract->stageIndex(); @endphp
+@include('partials.guia', ['guide' => 'portal_colegio', 'at' => $contract->production_status === 'entregado' ? 99 : $gIdx])
+
 {{-- Firma pendiente --}}
 @if($contract->contract_status === 'enviado' && $contract->sign_token)
     <div style="background:rgba(224,164,34,.1);border:1px solid rgba(224,164,34,.35);border-radius:var(--g-r);padding:20px 22px;margin-bottom:26px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">

@@ -115,6 +115,9 @@
     </div>
 
     <div class="wrap">
+        @if($c)
+            @include('partials.guia', ['guide' => 'portal_estudiante', 'at' => $c->production_status === 'entregado' ? 99 : $idx, 'open' => true, 'compact' => true])
+        @endif
         {{-- Anuario --}}
         <a href="{{ route('student.yearbook') }}" style="display:flex;align-items:center;gap:12px;background:linear-gradient(120deg,#2a2015,#1c1c22);border:1px solid var(--gold);border-radius:14px;padding:16px 18px;margin-top:18px;text-decoration:none;color:var(--paper)">
             <span style="font-size:28px">📖</span>
