@@ -98,7 +98,7 @@ class PortalController extends Controller
         abort_unless($contract->school_id === $school->id, 403);
         $contract->update(['design_approved_at' => now()]);
 
-        return back()->with('ok', '¡Diseño aprobado! El equipo procederá con la producción.');
+        return back()->with('ok', '¡Diseño aprobado! El equipo procederá con la producción.')->withFragment('diseno');
     }
 
     /** El colegio aprueba o rechaza un cambio que afecta el precio. */
@@ -110,7 +110,7 @@ class PortalController extends Controller
         $data = $request->validate(['decision' => 'required|in:aprobado,rechazado']);
         $change->update(['status' => $data['decision'], 'decided_at' => now()]);
 
-        return back()->with('ok', $data['decision'] === 'aprobado' ? 'Cambio aprobado.' : 'Cambio rechazado.');
+        return back()->with('ok', $data['decision'] === 'aprobado' ? 'Cambio aprobado.' : 'Cambio rechazado.')->withFragment('mensajes');
     }
 
     /** Certificado de entrega (imprimible) para próximos contratos. */
@@ -164,7 +164,7 @@ class PortalController extends Controller
         $data['combo'] = $contract->defaultCombo();
         $contract->students()->create($data);
 
-        return back()->with('ok', 'Alumno agregado. El equipo Glauren tomará las medidas.');
+        return back()->with('ok', 'Alumno agregado. El equipo Glauren tomará las medidas.')->withFragment('alumnos');
     }
 
     public function deleteStudent(Contract $contract, $student)
@@ -180,6 +180,6 @@ class PortalController extends Controller
 
         $student->delete();
 
-        return back()->with('ok', 'Alumno eliminado.');
+        return back()->with('ok', 'Alumno eliminado.')->withFragment('alumnos');
     }
 }

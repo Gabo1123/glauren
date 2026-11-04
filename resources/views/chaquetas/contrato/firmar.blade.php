@@ -69,6 +69,10 @@
     <h1>@if($contract->contract_status==='firmado')Contrato firmado @else Revisa y firma @endif</h1>
     <p class="sub no-print">Lee el contrato completo y fírmalo al final. Queda registrado con fecha y hora.</p>
 
+    <div class="no-print" style="margin:16px 0">
+        @include('partials.guia', ['guide' => 'firma_simple', 'at' => $contract->contract_status === 'firmado' ? 99 : 0, 'open' => $contract->contract_status !== 'firmado', 'compact' => true])
+    </div>
+
     <div class="doc">{!! $contract->terms !!}</div>
     <div class="doc-hint no-print">↑ Desplázate dentro del documento para leerlo completo</div>
 
