@@ -170,6 +170,36 @@ class PortalController extends Controller
         return back()->with('ok', 'Alumno agregado. El equipo Glauren tomará las medidas.')->withFragment('alumnos');
     }
 
+    /** El colegio sube el comprobante del anticipo. */
+    public function depositProof(Request $request, Contract $contract)
+    {
+        $school = $this->school();
+        abort_unless($contract->school_id === $school->id && $contract->hasDeposit(), 403);
+        $request->validate(['proof' => 'required|file|mimes:jpg,jpeg,png,webp,pdf|max:8192'], [
+            'proof.required' => 'Adjunta la foto o el PDF del comprobante.',
+            'proof.mimes'    => 'El comprobante debe ser una imagen o un PDF.',
+        ]);
+        $path = $request->file('proof')->store('anticipos/'.$contract->id, 'public');
+        $contract->update(['deposit_proof' => $path, 'deposit_declared_at' => now()]);
+
+        // Aviso al administrador
+        $to = \App\Modules\Chaquetas\Models\Setting::get('contact_notify_email') ?: config('mail.from.address');
+        if ($to) {
+            try {
+                \Illuminate\Support\Facades\Mail::to($to)->send(new \App\Modules\Chaquetas\Mail\SimpleMail(
+                    '💰 '.$school->name.' subió el comprobante del anticipo',
+                    'Comprobante de anticipo por revisar',
+                    $school->name.' (contrato '.$contract->code.') subió el comprobante del anticipo de $'.number_format((float) $contract->deposit_amount, 0, ',', '.').'. Revísalo y apruébalo en el contrato.',
+                    [], 'Abrir contrato', route('admin.contracts.show', $contract).'#anticipo',
+                ));
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Aviso de anticipo: correo falló', ['msg' => $e->getMessage()]);
+            }
+        }
+
+        return back()->with('ok', '¡Gracias! Recibimos el comprobante del anticipo. Te confirmamos apenas lo revisemos.');
+    }
+
     /** Formato de Excel para cargar a todo el curso de una vez. */
     public function studentsTemplate(Contract $contract)
     {

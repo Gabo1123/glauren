@@ -437,6 +437,17 @@
             </details>
         </div>
 
+        @if(\App\Modules\Chaquetas\Support\ProductionCapacity::configured() && in_array($quote->status, \App\Modules\Chaquetas\Models\Quote::OPEN_STATUSES, true))
+            @php $cap = \App\Modules\Chaquetas\Support\ProductionCapacity::check(\App\Modules\Chaquetas\Support\ProductionCapacity::estimatedDelivery(), \App\Modules\Chaquetas\Support\ProductionCapacity::quoteUnits($quote)); @endphp
+            <div class="card p-3 qx-card mb-4" style="border-color:{{ $cap['over'] ? 'rgba(255,107,107,.55)' : 'var(--g-line)' }}">
+                <div class="small"><i class="bi bi-calendar3-range" style="color:#FFC72C"></i> <b>¿Hay cupo?</b> Si firma hoy, entrega en <b>{{ $cap['month'] }}</b>:
+                    taller en {{ $cap['after'] }}/{{ $cap['capacity'] }} prendas ({{ $cap['pct'] }}%) con sus {{ $cap['units'] }}.
+                    @if($cap['over'])<span class="text-danger fw-bold">Ese mes no alcanza.</span>@if($cap['suggest']) Ofrece entrega en <b>{{ $cap['suggest'] }}</b>.@endif
+                    @elseif($cap['pct'] >= 85)<span class="text-warning">Quedan pocos cupos: buen argumento para cerrar ya.</span>@endif
+                </div>
+            </div>
+        @endif
+
         <div class="card p-4 qx-card">
             <h6 class="t"><i class="bi bi-calendar-check" style="color:#FFC72C"></i> Seguimiento</h6>
             <form method="POST" action="{{ route('admin.quotes.update', $quote) }}">

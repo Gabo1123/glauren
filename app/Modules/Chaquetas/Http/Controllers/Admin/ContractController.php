@@ -58,9 +58,18 @@ class ContractController extends Controller
             'received' => $contract->students->where('payment_status', 'pagado')->sum(fn ($s) => (float) ($s->amount ?? $unit)),
             'expenses' => (float) \App\Modules\Chaquetas\Models\Expense::where('contract_id', $contract->id)->sum('amount'),
         ];
+        // El anticipo del colegio también es plata recibida
+        $fin['deposit'] = (float) $contract->deposit_paid;
+        $fin['received'] += $fin['deposit'];
         $fin['profit'] = $fin['expected'] - $fin['expenses'];
         $fin['margin'] = $fin['expected'] > 0 ? round($fin['profit'] / $fin['expected'] * 100) : 0;
-        $fin['pending'] = $fin['expected'] - $fin['received'];
+        $fin['pending'] = max(0, $fin['expected'] - $fin['received']);
+
+        // ¿Cabe en el taller el mes de entrega?
+        $delivery = $contract->deliveryDate();
+        $capacity = $delivery && $contract->production_status !== 'entregado'
+            ? \App\Modules\Chaquetas\Support\ProductionCapacity::check($delivery, \App\Modules\Chaquetas\Support\ProductionCapacity::contractUnits($contract), $contract->id)
+            : null;
 
         // Mensajes con el colegio
         $messages = \App\Modules\Chaquetas\Models\ContractMessage::where('contract_id', $contract->id)->orderBy('id')->get();
@@ -71,7 +80,42 @@ class ContractController extends Controller
             ->withCount('votes')->orderBy('sort')->orderBy('id')->get();
         $totalVotes = $designOptions->sum('votes_count');
 
-        return view('admin.contracts.show', ['contract' => $contract, 'stages' => Contract::STAGES, 'fin' => $fin, 'messages' => $messages, 'designOptions' => $designOptions, 'totalVotes' => $totalVotes]);
+        return view('admin.contracts.show', ['contract' => $contract, 'stages' => Contract::STAGES, 'fin' => $fin, 'messages' => $messages, 'designOptions' => $designOptions, 'totalVotes' => $totalVotes, 'capacity' => $capacity]);
+    }
+
+    /** Registra (o aprueba) el anticipo que pagó el colegio. */
+    public function deposit(Request $request, Contract $contract)
+    {
+        $data = $request->validate([
+            'deposit_amount' => 'nullable|numeric|min:0',
+            'paid'           => 'nullable|numeric|min:0',
+            'paid_at'        => 'nullable|date',
+            'method'         => 'nullable|string|max:60',
+        ]);
+        $update = [];
+        if ($request->filled('deposit_amount')) {
+            $update['deposit_amount'] = $data['deposit_amount'];
+        }
+        if ($request->filled('paid')) {
+            $update['deposit_paid'] = $data['paid'];
+            $update['deposit_paid_at'] = isset($data['paid_at']) ? \Carbon\Carbon::parse($data['paid_at'])->setTimeFrom(now()) : now();
+            $update['deposit_method'] = $data['method'] ?? null;
+        }
+        $contract->update($update);
+
+        $msg = isset($update['deposit_paid'])
+            ? 'Anticipo registrado: $'.number_format((float) $update['deposit_paid'], 0, ',', '.').'.'
+            : 'Anticipo actualizado.';
+
+        return back()->with('ok', $msg)->withFragment('anticipo');
+    }
+
+    /** El comprobante no corresponde: se le pide al colegio que lo vuelva a subir. */
+    public function rejectDeposit(Contract $contract)
+    {
+        $contract->update(['deposit_declared_at' => null]);
+
+        return back()->with('ok', 'Comprobante rechazado. El colegio verá que debe subirlo de nuevo.')->withFragment('anticipo');
     }
 
     /** Guarda los materiales de una prenda para ESTE contrato (no el modelo global). */
@@ -318,6 +362,7 @@ HTML;
             'price_per_unit'    => 'nullable|numeric|min:0',
             'production_status' => 'required|in:'.implode(',', array_keys(Contract::STAGES)),
             'notes'             => 'nullable|string',
+            'deposit_amount'    => 'nullable|numeric|min:0',
             'objeto'            => 'nullable|string',
             'product_details'   => 'nullable|string',
             'combo_value'       => 'nullable|numeric|min:0',

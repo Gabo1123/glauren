@@ -13,6 +13,17 @@
 @if(!empty($fromQuote))
     <div class="alert alert-success" style="max-width:700px"><i class="bi bi-magic"></i> <b>Prellenado desde la cotización {{ $fromQuote->code() }}</b>: prendas, precio por estudiante, cantidad, total y valor en letras. Revisa y ajusta lo que haga falta antes de guardar.</div>
 @endif
+@php $capPlan = \App\Modules\Chaquetas\Support\ProductionCapacity::configured() ? array_slice(\App\Modules\Chaquetas\Support\ProductionCapacity::plan(5), 0, 5) : []; @endphp
+@if($capPlan)
+    <div class="card p-3 mb-3" style="max-width:700px">
+        <div class="small fw-bold mb-2"><i class="bi bi-calendar3-range"></i> Cupo del taller (prendas libres por mes)</div>
+        <div class="d-flex gap-2 flex-wrap">
+            @foreach($capPlan as $row)
+                <span class="badge {{ $row['free'] <= 0 ? 'bg-danger' : ($row['pct'] >= 85 ? 'bg-warning text-dark' : 'bg-success') }}" style="font-size:12px;font-weight:600">{{ $row['month']->locale('es')->isoFormat('MMM') }}: {{ $row['free'] }} libres</span>
+            @endforeach
+        </div>
+    </div>
+@endif
 <div class="card p-4" style="max-width:700px">
     <form method="POST" action="{{ $isNew ? route('admin.contracts.store') : route('admin.contracts.update', $contract) }}">
         @csrf @unless($isNew) @method('PUT') @endunless
@@ -62,6 +73,11 @@
             <div class="col-12"><label class="form-label small">Objeto (cláusula primera)</label><textarea name="objeto" class="form-control" rows="2" placeholder="Ej: Diseño y confección de 17 chaquetas beisboleras y 18 busos para el grado once del Colegio X.">{{ old('objeto', $contract->objeto) }}</textarea></div>
             <div class="col-md-4"><label class="form-label small">Valor combo (por unidad)</label><input type="number" step="0.01" name="combo_value" class="form-control" value="{{ old('combo_value', $contract->combo_value) }}" placeholder="310500"></div>
             <div class="col-md-4"><label class="form-label small">Valor total del contrato</label><input type="number" step="0.01" name="contract_total" class="form-control" value="{{ old('contract_total', $contract->contract_total) }}" placeholder="5589000"></div>
+            @php $depPct = (int) \App\Modules\Chaquetas\Models\Setting::get('deposit_percent', '30'); @endphp
+            <div class="col-md-4"><label class="form-label small">Anticipo al firmar</label>
+                <input type="number" step="1000" min="0" name="deposit_amount" id="depAmt" class="form-control" value="{{ old('deposit_amount', $contract->deposit_amount ? (int) $contract->deposit_amount : '') }}" placeholder="Sin anticipo">
+                <div class="d-flex gap-1 mt-1">@foreach(array_unique([$depPct ?: 30, 50]) as $p)<button type="button" class="btn btn-outline-light btn-sm py-0" onclick="var t=+document.querySelector('[name=contract_total]').value||0;document.getElementById('depAmt').value=Math.round(t*{{ $p }}/100/1000)*1000">{{ $p }}%</button>@endforeach</div>
+            </div>
             <div class="col-md-4"><label class="form-label small">Días hábiles de entrega</label><input type="number" name="delivery_business_days" class="form-control" value="{{ old('delivery_business_days', $contract->delivery_business_days ?? 35) }}" placeholder="35"><div class="small text-secondary mt-1">Se calcula con festivos de Colombia desde la firma.</div></div>
             <div class="col-md-4"><label class="form-label small">O fecha exacta (opcional)</label><input type="date" name="delivery_date" class="form-control" value="{{ old('delivery_date', optional($contract->delivery_date)->format('Y-m-d')) }}"><div class="small text-secondary mt-1">Si la pones, manda sobre los días hábiles.</div></div>
             <div class="col-12"><label class="form-label small">Valor en letras</label><input type="text" name="total_words" class="form-control" value="{{ old('total_words', $contract->total_words) }}" placeholder="Cinco millones quinientos ochenta y nueve mil pesos"></div>

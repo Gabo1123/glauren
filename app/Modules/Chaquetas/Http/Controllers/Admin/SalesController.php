@@ -159,7 +159,8 @@ class SalesController extends Controller
             if ($total <= 0 && $c->contract_total) {
                 $total = (float) $c->contract_total;
             }
-            $paid = $c->paidValue();
+            $deposit = (float) $c->deposit_paid;
+            $paid = $c->paidValue() + $deposit;
             $review = (float) $c->students->where('payment_status', 'en_revision')->sum(fn ($s) => (float) ($s->amount ?? $unit));
 
             return [
@@ -172,7 +173,9 @@ class SalesController extends Controller
                 'pending_students' => $c->students->filter(fn ($s) => ! $s->isPaid())->count(),
                 'total'            => $total,
                 'paid'             => $paid,
-                'review'           => $review,
+                'review'           => $review + ($c->depositStatus() === 'en_revision' ? $c->depositDue() : 0),
+                'deposit'          => $deposit,
+                'deposit_status'   => $c->depositStatus(),
                 'balance'          => max(0, $total - $paid),
                 'pct'              => $total > 0 ? (int) round($paid / $total * 100) : 0,
             ];

@@ -75,6 +75,7 @@
             <button type="button" class="nav-sec" data-group="produccion">Producción <i class="bi bi-chevron-down chev"></i></button>
             <div class="nav-group" data-group="produccion">
                 <a href="{{ route('admin.contracts.index') }}" class="{{ request()->routeIs('admin.contracts.*') ? 'active' : '' }}"><i class="bi bi-file-earmark-check"></i> Contratos</a>
+                <a href="{{ route('admin.capacity.index') }}" class="{{ request()->routeIs('admin.capacity.*') ? 'active' : '' }}"><i class="bi bi-calendar3-range"></i> Capacidad del taller</a>
                 <a href="{{ route('admin.schools.index') }}" class="{{ request()->routeIs('admin.schools.*') ? 'active' : '' }}"><i class="bi bi-building"></i> Colegios</a>
                 <a href="{{ route('admin.types.index') }}" class="{{ request()->routeIs('admin.types.*') ? 'active' : '' }}"><i class="bi bi-tags"></i> Tipos de chaqueta</a>
                 <a href="{{ route('admin.approvals.index') }}" class="{{ request()->routeIs('admin.approvals.*') ? 'active' : '' }}"><i class="bi bi-patch-check"></i> Pagos por aprobar @if($pendApprovals)<span class="badge bg-warning ms-1">{{ $pendApprovals }}</span>@endif</a>

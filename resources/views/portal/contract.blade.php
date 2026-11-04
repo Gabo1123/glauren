@@ -105,6 +105,37 @@
     </div>
 @endif
 
+{{-- Anticipo del colegio --}}
+@php $dst = $contract->depositStatus(); @endphp
+@if($dst && $dst !== 'pagado')
+    @php $cuenta = \App\Modules\Chaquetas\Models\Setting::get('contratista_cuenta', ''); @endphp
+    <div id="anticipo" style="background:{{ $dst === 'en_revision' ? 'rgba(78,161,255,.08)' : 'rgba(224,164,34,.1)' }};border:1px solid {{ $dst === 'en_revision' ? 'rgba(78,161,255,.35)' : 'rgba(224,164,34,.35)' }};border-radius:var(--g-r);padding:20px 22px;margin-bottom:26px">
+        @if($dst === 'en_revision')
+            <div style="font-weight:700;color:#8cc4ff"><i class="bi bi-hourglass-split"></i> Recibimos tu comprobante del anticipo</div>
+            <div style="color:var(--g-muted);font-size:14px;margin-top:4px">Lo estamos revisando. Te confirmamos por aquí apenas quede aprobado.</div>
+        @else
+            <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start">
+                <div>
+                    <div style="font-weight:700;color:var(--g-warn)"><i class="bi bi-safe"></i> Anticipo para iniciar la producción</div>
+                    <div style="font-family:var(--g-font-display);font-size:34px;line-height:1.1;margin:6px 0">${{ number_format($contract->depositDue(), 0, ',', '.') }}</div>
+                    @if($dst === 'parcial')<div style="font-size:13px;color:var(--g-muted)">Ya recibimos ${{ number_format((float) $contract->deposit_paid, 0, ',', '.') }} de ${{ number_format((float) $contract->deposit_amount, 0, ',', '.') }}.</div>@endif
+                    @if($cuenta)<div style="font-size:14px;color:var(--g-bone);margin-top:6px"><i class="bi bi-bank"></i> Consigna o transfiere a: <b>{{ $cuenta }}</b></div>@endif
+                    <div style="font-size:13px;color:var(--g-muted);margin-top:4px">Con el anticipo apartamos tu cupo en el taller y arrancamos la producción.</div>
+                </div>
+                <form method="POST" action="{{ route('portal.deposit', $contract) }}" enctype="multipart/form-data" style="min-width:250px;flex:0 1 320px">
+                    @csrf
+                    <label style="font-size:12px;color:var(--g-muted);display:block;margin-bottom:6px">¿Ya pagaste? Sube el comprobante (foto o PDF)</label>
+                    <input type="file" name="proof" accept="image/*,.pdf" required style="width:100%;background:var(--g-ink);border:1px solid var(--g-line);color:var(--g-bone);padding:8px;border-radius:6px;margin-bottom:8px">
+                    @error('proof')<div style="color:#ff8a80;font-size:13px;margin-bottom:8px">{{ $message }}</div>@enderror
+                    <button style="width:100%;background:var(--g-gold);color:#1a1405;border:none;padding:10px;border-radius:6px;font-weight:700;cursor:pointer"><i class="bi bi-upload"></i> Enviar comprobante</button>
+                </form>
+            </div>
+        @endif
+    </div>
+@elseif($dst === 'pagado')
+    <div style="background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.3);border-radius:var(--g-r);padding:12px 18px;margin-bottom:22px;color:var(--g-ok);font-size:14px"><i class="bi bi-check2-circle"></i> Anticipo de ${{ number_format((float) $contract->deposit_paid, 0, ',', '.') }} recibido @if($contract->deposit_paid_at) el {{ $contract->deposit_paid_at->format('d/m/Y') }}@endif. ¡Gracias!</div>
+@endif
+
 <div class="pc-grid2">
 {{-- Ruta de tu promoción (guía paso a paso) --}}
 @php

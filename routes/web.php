@@ -151,6 +151,7 @@ Route::prefix('colegio')->name('portal.')->group(function () {
         Route::get('contrato/{contract}/documento', [PortalController::class, 'contractDocument'])->name('contract.doc');
         Route::post('contrato/{contract}/alumnos', [PortalController::class, 'addStudent'])->name('students.store');
         Route::delete('contrato/{contract}/alumnos/{student}', [PortalController::class, 'deleteStudent'])->name('students.destroy');
+        Route::post('contrato/{contract}/anticipo', [PortalController::class, 'depositProof'])->name('deposit');
         Route::get('contrato/{contract}/alumnos/plantilla', [PortalController::class, 'studentsTemplate'])->name('students.template');
         Route::post('contrato/{contract}/alumnos/importar', [PortalController::class, 'importStudents'])->name('students.import');
         Route::patch('contrato/{contract}/alumnos/{student}/celular', [PortalController::class, 'updateStudentPhone'])->name('students.phone');
@@ -239,6 +240,8 @@ Route::prefix('gtorres')->name('admin.')->group(function () {
         Route::get('ventas', [\App\Modules\Chaquetas\Http\Controllers\Admin\SalesController::class, 'dashboard'])->name('sales.dashboard');
         Route::put('ventas/automatizaciones', [\App\Modules\Chaquetas\Http\Controllers\Admin\SalesController::class, 'saveAutomation'])->name('sales.automation');
         Route::post('ventas/resumen-ahora', [\App\Modules\Chaquetas\Http\Controllers\Admin\SalesController::class, 'sendDigestNow'])->name('sales.digest');
+        Route::get('capacidad', [\App\Modules\Chaquetas\Http\Controllers\Admin\CapacityController::class, 'index'])->name('capacity.index');
+        Route::put('capacidad', [\App\Modules\Chaquetas\Http\Controllers\Admin\CapacityController::class, 'save'])->name('capacity.save');
         Route::get('cartera', [\App\Modules\Chaquetas\Http\Controllers\Admin\SalesController::class, 'cartera'])->name('sales.cartera');
         Route::get('cartera/exportar', [\App\Modules\Chaquetas\Http\Controllers\Admin\SalesController::class, 'carteraExport'])->name('sales.cartera.export');
         Route::get('cotizaciones', [QuoteController::class, 'index'])->name('quotes.index');
@@ -278,6 +281,8 @@ Route::prefix('gtorres')->name('admin.')->group(function () {
         Route::get('contratos/{contract}/editar', [ContractController::class, 'edit'])->name('contracts.edit');
         Route::put('contratos/{contract}', [ContractController::class, 'update'])->name('contracts.update');
         Route::put('contratos/{contract}/estado', [ContractController::class, 'updateStatus'])->name('contracts.status');
+        Route::put('contratos/{contract}/anticipo', [ContractController::class, 'deposit'])->name('contracts.deposit');
+        Route::post('contratos/{contract}/anticipo/rechazar', [ContractController::class, 'rejectDeposit'])->name('contracts.deposit.reject');
         Route::put('contratos/{contract}/materiales', [ContractController::class, 'saveMaterials'])->name('contracts.materials');
         Route::get('contratos/{contract}/contrato', [ContractController::class, 'contract'])->name('contracts.contract');
         Route::put('contratos/{contract}/contrato', [ContractController::class, 'saveTerms'])->name('contracts.terms');

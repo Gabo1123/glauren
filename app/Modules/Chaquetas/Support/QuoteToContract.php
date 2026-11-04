@@ -56,6 +56,8 @@ class QuoteToContract
             'combo_value'     => $unit ?: null,
             'contract_total'  => $total ?: null,
             'total_words'     => $total ? NumberToWords::pesos($total) : null,
+            'deposit_amount'  => $total && ($pct = (int) \App\Modules\Chaquetas\Models\Setting::get('deposit_percent', '30')) > 0
+                ? (int) (round($total * $pct / 100 / 1000) * 1000) : null,
             'objeto'          => $objeto,
             'product_details' => $details ?: null,
             'notes'           => 'Desde cotización '.$quote->code().($qty ? ' · '.$qty.' estudiantes' : '').'.',

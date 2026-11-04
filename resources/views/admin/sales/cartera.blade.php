@@ -39,7 +39,7 @@
                     <td><span class="badge bg-secondary">{{ $r['stage'] }}</span></td>
                     <td class="text-center">{{ $r['students'] }}@if($r['pending_students'])<div class="small text-warning">{{ $r['pending_students'] }} deben</div>@endif</td>
                     <td class="text-end">{{ $money($r['total']) }}</td>
-                    <td class="text-end text-success">{{ $money($r['paid']) }}@if($r['review'] > 0)<div class="small text-info">+{{ $money($r['review']) }} en revisión</div>@endif</td>
+                    <td class="text-end text-success">{{ $money($r['paid']) }}@if($r['deposit'] > 0)<div class="small text-secondary">incl. anticipo {{ $money($r['deposit']) }}</div>@elseif(in_array($r['deposit_status'], ['pendiente', 'parcial'], true))<div class="small text-warning">anticipo pendiente</div>@endif @if($r['review'] > 0)<div class="small text-info">+{{ $money($r['review']) }} en revisión</div>@endif</td>
                     <td class="text-end fw-bold {{ $r['balance'] > 0 ? 'text-warning' : 'text-success' }}">{{ $r['balance'] > 0 ? $money($r['balance']) : 'Al día ✓' }}</td>
                     <td><div class="pbar"><i style="width:{{ $r['pct'] }}%"></i></div><div class="small text-secondary">{{ $r['pct'] }}%</div></td>
                     <td class="text-end text-nowrap">

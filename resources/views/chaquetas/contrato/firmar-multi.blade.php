@@ -52,6 +52,14 @@
             @else
                 <div class="kv">Faltan otros acudientes por firmar. Cada uno recibe su propio enlace.</div>
             @endif
+            @if($contract->hasDeposit() && $contract->depositStatus() !== 'pagado')
+                @php $cuenta = \App\Modules\Chaquetas\Models\Setting::get('contratista_cuenta', ''); @endphp
+                <div class="kv" style="margin-top:14px;text-align:left">
+                    <b>💰 Siguiente paso: el anticipo de ${{ number_format($contract->depositDue(), 0, ',', '.') }}</b><br>
+                    Con él apartamos el cupo en el taller y arrancamos la producción.@if($cuenta) Consígnalo a: <b>{{ $cuenta }}</b>.@endif
+                    El comprobante se sube en el portal del colegio.
+                </div>
+            @endif
         </div>
     @elseif($step === 'verify')
         {{-- Verificar identidad con código --}}
