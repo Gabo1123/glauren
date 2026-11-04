@@ -216,6 +216,12 @@ Route::prefix('gtorres')->name('admin.')->group(function () {
         Route::post('empresas', [\App\Modules\Chaquetas\Http\Controllers\Admin\BusinessQuoteController::class, 'store'])->name('business.store');
         Route::get('empresas/{quote}/editar', [\App\Modules\Chaquetas\Http\Controllers\Admin\BusinessQuoteController::class, 'edit'])->name('business.edit');
         Route::put('empresas/{quote}', [\App\Modules\Chaquetas\Http\Controllers\Admin\BusinessQuoteController::class, 'update'])->name('business.update');
+        // Cotizaciones personalizadas para colegios
+        Route::get('personalizadas', [\App\Modules\Chaquetas\Http\Controllers\Admin\CustomQuoteController::class, 'index'])->name('custom.index');
+        Route::get('personalizadas/crear', [\App\Modules\Chaquetas\Http\Controllers\Admin\CustomQuoteController::class, 'create'])->name('custom.create');
+        Route::post('personalizadas', [\App\Modules\Chaquetas\Http\Controllers\Admin\CustomQuoteController::class, 'store'])->name('custom.store');
+        Route::get('personalizadas/{quote}/editar', [\App\Modules\Chaquetas\Http\Controllers\Admin\CustomQuoteController::class, 'edit'])->name('custom.edit');
+        Route::put('personalizadas/{quote}', [\App\Modules\Chaquetas\Http\Controllers\Admin\CustomQuoteController::class, 'update'])->name('custom.update');
         Route::get('cotizaciones', [QuoteController::class, 'index'])->name('quotes.index');
         Route::get('cotizaciones/crear', [QuoteController::class, 'create'])->name('quotes.create');
         Route::post('cotizaciones', [QuoteController::class, 'store'])->name('quotes.store');

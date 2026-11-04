@@ -4,6 +4,7 @@
     $img = $baseUrl.'/img/cotizacion';
     $lines = $quote->businessLines();
     $totals = $quote->businessTotals();
+    $school = $quote->isSchoolCustom();
     $font = "font-family:'Montserrat',Arial,Helvetica,sans-serif;";
     $display = "font-family:'Anton','Arial Black',Impact,Arial,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.5px;";
 @endphp
@@ -45,11 +46,16 @@
     </td></tr>
 
     <tr><td class="px" style="background:#FFC72C;padding:30px 36px 28px;border-radius:18px 18px 0 0;{{ $font }}">
-        <div style="font-size:12px;font-weight:800;letter-spacing:4px;color:#0E0E0E;">COTIZACIÓN EMPRESARIAL</div>
+        <div style="font-size:12px;font-weight:800;letter-spacing:4px;color:#0E0E0E;">{{ $school ? 'COTIZACIÓN PERSONALIZADA' : 'COTIZACIÓN EMPRESARIAL' }}</div>
         <div class="h1" style="{{ $display }}font-size:44px;line-height:1;color:#0E0E0E;margin:8px 0 12px;">¡Hola, {{ $first }}!</div>
         <div style="font-size:15px;line-height:1.6;color:#1A1A1A;">
-            Gracias por pensar en G'Lauren para las prendas de <b>{{ $quote->school }}</b>.
-            Preparamos tu cotización con cada prenda, sus características y el valor por unidad al por mayor.
+            @if($school)
+                Gracias por confiar en G'Lauren para la promoción de <b>{{ $quote->school }}</b>.
+                Preparamos tu cotización personalizada con cada prenda, su diseño, características y valor por estudiante.
+            @else
+                Gracias por pensar en G'Lauren para las prendas de <b>{{ $quote->school }}</b>.
+                Preparamos tu cotización con cada prenda, sus características y el valor por unidad al por mayor.
+            @endif
         </div>
     </td></tr>
 
@@ -62,19 +68,23 @@
                 <td valign="middle" style="padding:12px 14px;">
                     <div style="{{ $display }}font-size:19px;color:#0E0E0E;line-height:1.1;">{{ $l['name'] }}</div>
                     @if($l['features'])<div style="font-size:12px;color:#555555;line-height:1.5;margin-top:4px;">{{ implode(' · ', array_slice($l['features'], 0, 4)) }}</div>@endif
-                    <div style="font-size:13px;color:#1A1A1A;margin-top:6px;"><b>{{ $l['qty'] }}</b> und. × <b>{{ $money($l['unit_price']) }}</b> = <b style="color:#0E0E0E;">{{ $money($l['subtotal']) }}</b></div>
+                    <div style="font-size:13px;color:#1A1A1A;margin-top:6px;"><b>{{ $l['qty'] }}</b> {{ $school ? 'est.' : 'und.' }} × <b>{{ $money($l['unit_price']) }}</b> = <b style="color:#0E0E0E;">{{ $money($l['subtotal']) }}</b></div>
                 </td>
             </tr></table>
         @endforeach
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0E0E0E;border-radius:14px;"><tr>
-            <td style="padding:16px 18px;font-size:14px;font-weight:800;color:#FFFFFF;">Total · {{ $totals['units'] }} unidades</td>
+            <td style="padding:16px 18px;font-size:14px;font-weight:800;color:#FFFFFF;">Total · {{ $totals['units'] }} {{ $school ? 'prendas' : 'unidades' }}</td>
             <td align="right" style="padding:16px 18px;{{ $display }}font-size:28px;color:#FFC72C;white-space:nowrap;">{{ $money($totals['total']) }}</td>
         </tr></table>
 
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;background:#FFF4D6;border:2px solid #FFC72C;border-radius:14px;"><tr><td style="padding:14px 18px;">
-            <div style="{{ $display }}font-size:18px;color:#0E0E0E;">🎁 Obsequios incluidos</div>
+            <div style="{{ $display }}font-size:18px;color:#0E0E0E;">🎁 {{ $school ? 'Incluido en tu prom' : 'Obsequios incluidos' }}</div>
             <div style="font-size:13px;line-height:1.7;color:#1A1A1A;font-weight:700;">
+                @if($school)
+                    @foreach(config('cotizacion.included') as $inc)✓ {{ $inc }}<br>@endforeach
+                @else
                 ✓ Tula de obsequio<br>
+                @endif
                 ✓ 1 chaqueta adicional de obsequio por cada 25 unidades
                 @if($totals['gift_jackets'] > 0) — <span style="color:#C2410C;">tu pedido recibe {{ $totals['gift_jackets'] }}</span>@endif
             </div>
@@ -85,11 +95,11 @@
                 <a href="{{ $url }}" style="display:block;padding:18px 24px;{{ $display }}font-size:22px;color:#FFC72C;text-decoration:none;">Ver la cotización completa →</a>
             </td>
         </tr></table>
-        <div style="text-align:center;font-size:12px;color:#555555;margin:12px 0 22px;">Fotos, características, valores al por mayor, obsequios y condiciones · Puedes descargarla en PDF</div>
+        <div style="text-align:center;font-size:12px;color:#555555;margin:12px 0 22px;">{{ $school ? 'Diseños, valores por estudiante, beneficios, proceso y paquete de fotografía' : 'Fotos, características, valores al por mayor, obsequios y condiciones' }} · Puedes descargarla en PDF</div>
     </td></tr>
 
     <tr><td class="px" align="center" style="background:#1A1A1A;padding:26px 36px;border-radius:0 0 18px 18px;{{ $font }}">
-        <div style="font-size:12px;line-height:1.7;color:#D6D6D6;">Entrega en 25–35 días hábiles · Pago 50/50 · Garantía por defectos de fabricación · Telas Lafayette y Patprimo</div>
+        <div style="font-size:12px;line-height:1.7;color:#D6D6D6;">Entrega en 25–35 días hábiles · Pago 50/50 · Garantía {{ $school ? 'todo el año escolar' : 'por defectos de fabricación' }} · Telas Lafayette y Patprimo</div>
         @if($waUrl)
         <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin-top:16px;"><tr>
             <td align="center" style="background:#25D366;border-radius:999px;">

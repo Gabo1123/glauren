@@ -34,6 +34,9 @@ class QuotePages
         $detail = $quote->school
             ? $quote->school.' · Promoción '.$year
             : 'Promoción grado 11 · '.$year;
+        if ($quote->isCustom() && $quote->company()['course']) {
+            $detail = trim(($quote->school ? $quote->school.' · ' : '').$quote->company()['course']);
+        }
         if ($quote->quantity > 1) {
             $detail .= ' · '.$quote->quantity.' estudiantes';
         }

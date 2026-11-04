@@ -15,7 +15,9 @@
     $phases = ['venta' => 'Venta', 'cierre' => 'Cierre', 'produccion' => 'Producción y entrega'];
     $unit = $summary['unit_total'] ?: ($quote->quantity ? $quote->estimated_price / max(1, $quote->quantity) : 0);
     $biz = $quote->isBusiness();
-    $bizTotals = $biz ? $quote->businessTotals() : null;
+    $custom = $quote->isCustom();
+    $editUrl = $quote->customEditUrl();
+    $bizTotals = $custom ? $quote->businessTotals() : null;
     $title = $biz ? ($quote->school ?: $quote->customer_name) : $quote->customer_name;
     $initial = mb_strtoupper(mb_substr(trim($title) ?: '?', 0, 1));
 @endphp
@@ -31,7 +33,7 @@
 .qx-btn:hover{border-color:var(--g-gold);color:var(--g-gold)}
 .qx-btn.wa{background:#25d366;border-color:#25d366;color:#04240f}
 .qx-btn.wa:hover{filter:brightness(1.08);color:#04240f}
-.qx-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:20px}
+.qx-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:20px}
 .qx-kpi{background:var(--g-surface-2);border:1px solid var(--g-line);border-radius:12px;padding:12px 14px}
 .qx-kpi small{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--g-muted)}
 .qx-kpi b{display:block;font-size:20px;margin-top:2px;line-height:1.15}
@@ -98,7 +100,7 @@
                 <span><i class="bi bi-hash"></i>{{ $quote->code() }}</span>
                 @if($quote->school && ! $biz)<span><i class="bi bi-building"></i> {{ $quote->school }}</span>@endif
                 <span><i class="bi bi-calendar3"></i> {{ $quote->created_at->format('d/m/Y') }}</span>
-                <span><i class="bi bi-globe2"></i> {{ match($quote->source) { 'manual' => 'Creada en el panel', 'lead' => 'Leads / Contactos', 'empresa' => 'Cotización empresa', default => 'Web · diseñador 3D' } }}</span>
+                <span><i class="bi bi-globe2"></i> {{ match($quote->source) { 'manual' => 'Creada en el panel', 'lead' => 'Leads / Contactos', 'empresa' => 'Cotización empresa', 'personalizada' => 'Personalizada colegio', default => 'Web · diseñador 3D' } }}</span>
                 @if($quote->lead_id)<a href="{{ route('admin.leads.show', $quote->lead_id) }}" class="text-secondary"><i class="bi bi-person-lines-fill"></i> Ver contacto</a>@endif
             </div>
         </div>
@@ -108,17 +110,21 @@
             @if($quote->customer_email)<a class="qx-btn" href="mailto:{{ $quote->customer_email }}"><i class="bi bi-envelope"></i> Correo</a>@endif
             <a class="qx-btn" href="{{ $quote->publicUrl() }}" target="_blank"><i class="bi bi-eye"></i> Ver como cliente</a>
             <a class="qx-btn" href="{{ route('admin.quotes.pdf', $quote) }}" target="_blank"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
-            @if($biz)<a class="qx-btn" href="{{ route('admin.business.edit', $quote) }}"><i class="bi bi-pencil"></i> Editar</a>@endif
+            @if($editUrl)<a class="qx-btn" href="{{ $editUrl }}"><i class="bi bi-pencil"></i> Editar</a>@endif
         </div>
     </div>
     <div class="qx-kpis">
-        @if($biz)
-            <div class="qx-kpi"><small>Unidades</small><b>{{ $bizTotals['units'] }}</b></div>
-            <div class="qx-kpi"><small>Obsequio</small><b>{{ $bizTotals['gift_jackets'] ? $bizTotals['gift_jackets'].' chaqueta'.($bizTotals['gift_jackets'] > 1 ? 's' : '') : 'Tula' }}</b></div>
+        @if($custom)
+            <div class="qx-kpi"><small>{{ $biz ? 'Unidades' : 'Prendas' }}</small><b>{{ $bizTotals['units'] }}</b></div>
         @else
         <div class="qx-kpi"><small>Estudiantes</small><b>{{ $quote->quantity }}</b></div>
         <div class="qx-kpi"><small>Por estudiante</small><b>{{ $unit ? $money($unit) : '—' }}</b></div>
         @endif
+        @php $gifts = $quote->giftJackets(); @endphp
+        <div class="qx-kpi" title="1 chaqueta de obsequio por cada 25 unidades{{ $quote->giftIsManual() ? ' · cantidad fijada a mano' : '' }}">
+            <small><i class="bi bi-gift"></i> Obsequio</small>
+            <b class="{{ $gifts ? 'hot' : '' }}">{{ $gifts }} chaqueta{{ $gifts == 1 ? '' : 's' }}</b>
+        </div>
         <div class="qx-kpi"><small>Total estimado</small><b class="hot">{{ (float) $quote->estimated_price ? $money($quote->estimated_price) : '—' }}</b></div>
         <div class="qx-kpi"><small>La ha visto</small><b>{{ $quote->view_count ? $quote->view_count.' '.($quote->view_count == 1 ? 'vez' : 'veces') : 'Aún no' }}</b></div>
         <div class="qx-kpi"><small>Próxima llamada</small><b class="{{ $quote->needsFollowUp() ? 'hot' : '' }}">{{ $quote->follow_up_at ? ($quote->needsFollowUp() ? '¡Hoy!' : $quote->follow_up_at->format('d/m')) : '—' }}</b></div>
@@ -187,7 +193,7 @@
                 case 'negociando':
                     if ($biz) {
                         $now = ['icon' => 'bi-hand-thumbs-up', 'title' => 'Cierra el trato', 'text' => 'Ajusta prendas o valores si te lo piden (botón Editar) y, cuando la empresa apruebe, márcala como ganada.',
-                            'buttons' => [['href' => route('admin.business.edit', $quote), 'text' => 'Editar cotización'], $stageBtn('ganada', 'Marcar como ganada')]];
+                            'buttons' => [['href' => $editUrl, 'text' => 'Editar cotización'], $stageBtn('ganada', 'Marcar como ganada')]];
                         break;
                     }
                     $now = ['icon' => 'bi-hand-thumbs-up', 'title' => 'Cierra el trato', 'text' => 'Cuando te confirme, conviértelo en colegio: se marca como ganada y pasas al contrato.',
@@ -294,7 +300,7 @@
 
         <div class="card p-4 mt-4 qx-card">
             <h6 class="t"><i class="bi bi-bag-check" style="color:#FFC72C"></i> Lo que se cotizó</h6>
-            @if($biz)
+            @if($custom)
                 @foreach($quote->businessLines() as $l)
                     <div class="d-flex gap-3 align-items-center py-2" style="border-bottom:1px solid var(--g-line)">
                         @if($l['photo_url'])<img src="{{ $l['photo_url'] }}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:12px;background:#fff">@else<span style="width:64px;height:64px;border-radius:12px;background:var(--g-surface-2);display:grid;place-items:center"><i class="bi bi-image text-secondary"></i></span>@endif
@@ -306,8 +312,8 @@
                     </div>
                 @endforeach
                 <div class="d-flex justify-content-between pt-3" style="color:#FFC72C;font-weight:800;font-size:16px"><span>Total · {{ $bizTotals['units'] }} unidades</span><span>{{ $money($bizTotals['total']) }}</span></div>
-                <div class="small text-secondary mt-2"><i class="bi bi-gift"></i> Obsequios: tula + {{ $bizTotals['gift_jackets'] ?: 'ninguna' }} chaqueta(s) adicional(es) (1 por cada 25 unidades)</div>
-                <a href="{{ route('admin.business.edit', $quote) }}" class="btn btn-sm btn-outline-light mt-3"><i class="bi bi-pencil"></i> Editar prendas, fotos y valores</a>
+                <div class="small text-secondary mt-2"><i class="bi bi-gift"></i> Obsequios: {{ $biz ? 'tula' : 'lo incluido en la prom' }} + {{ $bizTotals['gift_jackets'] ?: 'ninguna' }} chaqueta(s) adicional(es){{ $quote->giftIsManual() ? ' (cantidad fijada a mano)' : ' (1 por cada 25 unidades)' }}</div>
+                <a href="{{ $editUrl }}" class="btn btn-sm btn-outline-light mt-3"><i class="bi bi-pencil"></i> Editar prendas, fotos y valores</a>
             @elseif(count($summary['lines']))
                 <table class="table table-sm mb-0 qx-sel">
                     @foreach($summary['lines'] as $l)
@@ -328,7 +334,7 @@
                 </div>
             @endif
 
-            @unless($biz)
+            @unless($custom)
             <details class="mt-3">
                 <summary class="small" style="cursor:pointer;color:#FFC72C"><i class="bi bi-pencil"></i> Cambiar prendas o cantidad</summary>
                 <form method="POST" action="{{ route('admin.quotes.update', $quote) }}" class="mt-3">
@@ -379,6 +385,7 @@
                 @csrf @method('PUT')
                 <input type="hidden" name="status" value="{{ $quote->status }}">
                 <label class="form-label small">Próxima llamada</label>
+                <input type="hidden" name="gift_mode" value="1">
                 <input type="date" name="follow_up_at" id="fu" value="{{ $quote->follow_up_at?->toDateString() }}" class="form-control mb-2">
                 <div class="qx-chips">
                     @foreach(['Hoy' => 0, 'Mañana' => 1, 'En 3 días' => 3, 'En 1 semana' => 7] as $t => $d)
@@ -386,6 +393,12 @@
                     @endforeach
                     <button type="button" onclick="document.getElementById('fu').value=''">Sin fecha</button>
                 </div>
+                <label class="form-label small"><i class="bi bi-gift" style="color:#FFC72C"></i> Chaquetas de obsequio</label>
+                <div class="input-group mb-1">
+                    <input type="number" name="gift_jackets" min="0" max="1000" class="form-control" value="{{ $quote->giftIsManual() ? $quote->giftJackets() : '' }}" placeholder="Automático: {{ $quote->giftJacketsAuto() }}">
+                    <span class="input-group-text" style="background:var(--g-surface-3);color:var(--g-bone);border-color:var(--g-line)">prendas gratis</span>
+                </div>
+                <div class="small text-secondary mb-3">{{ $quote->giftUnits() }} unidades → {{ $quote->giftJacketsAuto() }} automáticas (1 por cada 25). Déjalo vacío para calcularlo solo o escribe otra cantidad si negociaste más.</div>
                 <label class="form-label small">Notas internas</label>
                 <textarea name="notes" class="form-control mb-3" rows="3" placeholder="Qué busca, presupuesto, quién decide…">{{ $quote->notes }}</textarea>
                 <button class="btn btn-primary w-100"><i class="bi bi-save"></i> Guardar</button>

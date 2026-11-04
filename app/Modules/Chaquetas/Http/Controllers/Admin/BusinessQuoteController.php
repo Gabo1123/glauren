@@ -19,28 +19,63 @@ use Illuminate\Support\Facades\Storage;
  */
 class BusinessQuoteController extends Controller
 {
+    /** source de la cotización y prefijo de rutas de este apartado. */
+    protected string $kind = 'empresa';
+
+    protected string $routes = 'admin.business';
+
+    /** Textos que cambian entre empresas y colegios. */
+    protected function labels(): array
+    {
+        return [
+            'title'       => 'Cotizaciones para empresas',
+            'subtitle'    => 'Dotación y prendas corporativas: varias prendas con foto, características y valor por unidad al por mayor.',
+            'new'         => 'Nueva cotización empresa',
+            'new_title'   => 'Nueva cotización para empresa',
+            'entity'      => 'Empresa',
+            'entity_ph'   => 'Ej.: Constructora Andes S.A.S.',
+            'role_ph'     => 'Compras, RR. HH.…',
+            'qty'         => 'Cantidad',
+            'units'       => 'Unidades',
+            'price'       => 'Valor x unidad',
+            'price_ph'    => 'Al por mayor',
+            'empty'       => 'Aún no hay cotizaciones para empresas.',
+            'icon'        => 'bi-briefcase',
+            'garment'     => 'Chaqueta',
+            'default_qty' => 25,
+            'gifts'       => ['Tula de obsequio', '1 chaqueta adicional por cada 25 unidades'],
+            'school'      => false,
+        ];
+    }
+
+    protected function viewData(array $extra = []): array
+    {
+        return $extra + ['kind' => $this->kind, 'rp' => $this->routes, 'L' => $this->labels()];
+    }
+
     public function index(Request $request)
     {
         $q = trim((string) $request->get('q'));
-        $quotes = Quote::business()
+        $quotes = Quote::kind($this->kind)
             ->when($q, fn ($w) => $w->where(fn ($x) => $x->where('school', 'like', "%{$q}%")
                 ->orWhere('customer_name', 'like', "%{$q}%")
                 ->orWhere('customer_phone', 'like', "%{$q}%")
                 ->orWhere('number', 'like', "%{$q}%")))
             ->latest()->paginate(25)->withQueryString();
 
+
         $stats = [
-            'abiertas' => Quote::business()->whereIn('status', Quote::OPEN_STATUSES)->count(),
-            'ganadas'  => Quote::business()->where('status', 'cerrado')->count(),
-            'valor'    => (float) Quote::business()->whereIn('status', Quote::OPEN_STATUSES)->sum('estimated_price'),
+            'abiertas' => Quote::kind($this->kind)->whereIn('status', Quote::OPEN_STATUSES)->count(),
+            'ganadas'  => Quote::kind($this->kind)->where('status', 'cerrado')->count(),
+            'valor'    => (float) Quote::kind($this->kind)->whereIn('status', Quote::OPEN_STATUSES)->sum('estimated_price'),
         ];
 
-        return view('admin.business.index', compact('quotes', 'q', 'stats'));
+        return view('admin.business.index', $this->viewData(compact('quotes', 'q', 'stats')));
     }
 
     public function create()
     {
-        return view('admin.business.form', ['quote' => new Quote(['quantity' => 1]), 'lines' => [], 'company' => (new Quote)->company()]);
+        return view('admin.business.form', $this->viewData(['quote' => new Quote(['quantity' => 1]), 'lines' => [], 'company' => (new Quote)->company()]));
     }
 
     public function store(Request $request)
@@ -48,14 +83,14 @@ class BusinessQuoteController extends Controller
         [$data, $lines] = $this->validated($request);
 
         $quote = Quote::create([
-            'source'          => 'empresa',
+            'source'          => $this->kind,
             'school'          => $data['company_name'],
             'customer_name'   => $data['contact_name'],
             'customer_phone'  => $data['contact_phone'],
             'customer_email'  => $data['contact_email'] ?? null,
             'config'          => ['company' => $this->companyData($data)],
-            'items'           => ['type' => 'empresa', 'lines' => $lines],
-            'quantity'        => max(1, array_sum(array_column($lines, 'qty'))),
+            'items'           => ['type' => $this->kind, 'lines' => $lines],
+            'quantity'        => $this->quantity($lines),
             'estimated_price' => $this->total($lines),
             'status'          => 'nuevo',
             'follow_up_at'    => $data['follow_up_at'] ?? today()->addDays(2),
@@ -72,14 +107,14 @@ class BusinessQuoteController extends Controller
 
     public function edit(Quote $quote)
     {
-        abort_unless($quote->isBusiness(), 404);
+        abort_unless($quote->source === $this->kind, 404);
 
-        return view('admin.business.form', ['quote' => $quote, 'lines' => $quote->businessLines(), 'company' => $quote->company()]);
+        return view('admin.business.form', $this->viewData(['quote' => $quote, 'lines' => $quote->businessLines(), 'company' => $quote->company()]));
     }
 
     public function update(Request $request, Quote $quote)
     {
-        abort_unless($quote->isBusiness(), 404);
+        abort_unless($quote->source === $this->kind, 404);
         [$data, $lines] = $this->validated($request, $quote);
 
         // Fotos que se quitaron o reemplazaron: se borran del disco.
@@ -98,8 +133,8 @@ class BusinessQuoteController extends Controller
             'customer_phone'  => $data['contact_phone'],
             'customer_email'  => $data['contact_email'] ?? null,
             'config'          => $config,
-            'items'           => ['type' => 'empresa', 'lines' => $lines],
-            'quantity'        => max(1, array_sum(array_column($lines, 'qty'))),
+            'items'           => ['type' => $this->kind, 'lines' => $lines],
+            'quantity'        => $this->quantity($lines),
             'estimated_price' => $this->total($lines),
             'follow_up_at'    => $data['follow_up_at'] ?? $quote->follow_up_at,
             'notes'           => $data['notes'] ?? null,
@@ -115,6 +150,7 @@ class BusinessQuoteController extends Controller
         $data = $request->validate([
             'company_name'         => 'required|string|max:160',
             'company_nit'          => 'nullable|string|max:40',
+            'company_course'       => 'nullable|string|max:80',
             'company_city'         => 'nullable|string|max:120',
             'contact_name'         => 'required|string|max:120',
             'contact_role'         => 'nullable|string|max:120',
@@ -169,10 +205,19 @@ class BusinessQuoteController extends Controller
     {
         return [
             'nit'      => $data['company_nit'] ?? null,
+            'course'   => $data['company_course'] ?? null,
             'city'     => $data['company_city'] ?? null,
             'role'     => $data['contact_role'] ?? null,
             'validity' => (int) ($data['validity'] ?? 30),
         ];
+    }
+
+    /** Empresas: total de unidades. Colegios: número de estudiantes (la prenda con más unidades). */
+    private function quantity(array $lines): int
+    {
+        $qty = array_column($lines, 'qty');
+
+        return max(1, $this->labels()['school'] ? (int) max($qty ?: [1]) : array_sum($qty));
     }
 
     private function total(array $lines): int
