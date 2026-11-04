@@ -2,8 +2,40 @@
 @section('title', $school->name)
 
 @section('content')
-<h1 class="p-h">Hola, {{ $school->name }}</h1>
-<p class="p-sub">Aquí ves tus contratos, el avance de fabricación, las fotos del proceso y tu lista de alumnos.</p>
+@php
+    // Lo próximo que tiene que hacer el colegio (la tarea más urgente de sus contratos).
+    $next = null;
+    foreach ($contracts as $nc) {
+        if ($nc->contract_status === 'enviado') { $next = ['bi-pen', 'Firma el contrato '.$nc->code, 'Revísalo y fírmalo en línea para iniciar la producción.', route('portal.contract', $nc)]; break; }
+        if (! $nc->students_count) { $next = ['bi-person-plus', 'Agrega a tus alumnos', 'Registra a toda la promoción en '.$nc->code.' (con QR o a mano).', route('portal.contract', $nc).'#alumnos']; break; }
+    }
+    if (! $next && ($stats['pending_pay'] ?? 0) > 0) {
+        $next = ['bi-cash-coin', $stats['pending_pay'].' estudiante(s) por pagar', 'Recuérdales el pago para no retrasar la entrega.', route('portal.contract', $contracts->first()).'#pagos'];
+    }
+    if (! $next && ($stats['unread'] ?? 0) > 0) {
+        $next = ['bi-chat-dots', 'Tienes mensajes nuevos', 'G\'Lauren te escribió. Míralos en tu contrato.', route('portal.contract', $contracts->first()).'#mensajes'];
+    }
+@endphp
+<div class="pd-hero">
+    <div class="pd-av">{{ mb_strtoupper(mb_substr($school->name, 0, 1)) }}</div>
+    <div style="min-width:0">
+        <div class="pc-kick">PORTAL DEL COLEGIO</div>
+        <h1 class="p-h" style="margin:2px 0 4px">Hola, {{ $school->name }}</h1>
+        <div class="pc-sub">Tus contratos, el avance de fabricación, los pagos y tu lista de alumnos en un solo lugar.</div>
+    </div>
+    @if($next)
+        <a href="{{ $next[3] }}" class="pd-next">
+            <i class="bi {{ $next[0] }}" style="font-size:26px;color:var(--g-gold)"></i>
+            <div><small>LO PRÓXIMO</small><b>{{ $next[1] }}</b><span>{{ $next[2] }}</span></div>
+            <i class="bi bi-arrow-right go"></i>
+        </a>
+    @elseif(! $contracts->isEmpty())
+        <div class="pd-next" style="border-color:rgba(37,211,102,.5);background:rgba(37,211,102,.08)">
+            <i class="bi bi-check2-circle" style="font-size:26px;color:var(--g-ok)"></i>
+            <div><small style="color:var(--g-ok)">TODO AL DÍA</small><b>No tienes tareas pendientes</b><span>Te avisaremos cuando haya novedades.</span></div>
+        </div>
+    @endif
+</div>
 
 @php
     $badge = [
@@ -90,6 +122,7 @@
 </div>
 @endif
 
+<h2 class="pd-sec"><i class="bi bi-file-earmark-text" style="color:var(--g-gold)"></i> Tus contratos</h2>
 @if($contracts->isEmpty())
     <div style="background:var(--g-surface);border:1px solid var(--g-line);border-radius:var(--g-r);padding:40px;text-align:center;color:var(--g-muted)">
         <i class="bi bi-inbox" style="font-size:34px;display:block;margin-bottom:10px;opacity:.6"></i>
