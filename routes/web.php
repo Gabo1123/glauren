@@ -61,8 +61,10 @@ Route::prefix('estudiante')->name('student.')->group(function () {
     Route::post('/documento', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'checkDocument'])->name('doc');
     Route::get('/documento', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'resume']);
     Route::post('/entrar', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'auth'])->middleware('throttle:10,1')->name('auth');
-    Route::get('/entrar', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'resume']);
+    Route::get('/entrar', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'resume'])->name('resume');
     Route::post('/olvide-pin', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'forgotPin'])->middleware('throttle:5,10')->name('forgot');
+    Route::get('/olvide-pin', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'showReset']);
+    Route::get('/restablecer-pin', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'showReset'])->name('reset.show');
     Route::post('/restablecer-pin', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'resetPin'])->middleware('throttle:10,10')->name('reset');
     Route::post('/salir', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'logout'])->name('logout');
     Route::get('/mi-perfil', [\App\Modules\Chaquetas\Http\Controllers\StudentPortalController::class, 'home'])->name('home');

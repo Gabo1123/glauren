@@ -114,7 +114,7 @@ class StudentPortalController extends Controller
 
         $phone = $this->wa->normalize($student->phone);
         if (! $phone || ! $this->wa->configured()) {
-            return view('chaquetas.portal.login', ['step' => 'pin', 'student' => $student])
+            return redirect()->route('student.resume')
                 ->withErrors(['pin' => 'No tienes un WhatsApp registrado. Pídele a tu colegio o asesor que lo registre para recuperar tu PIN.']);
         }
 
@@ -127,9 +127,27 @@ class StudentPortalController extends Controller
         $this->wa->sendText($phone, "🔐 {$brand} — Tu código para restablecer el PIN es: {$code}\nVence en 10 minutos.");
 
         $hint = strlen($phone) > 4 ? str_repeat('•', strlen($phone) - 4).substr($phone, -4) : $phone;
+        $request->session()->put('pin_reset_hint', $hint);
 
-        return view('chaquetas.portal.login', ['step' => 'reset', 'student' => $student, 'phoneHint' => $hint])
-            ->with('ok', 'Te enviamos un código por WhatsApp.');
+        // Se redirige (no se muestra la vista desde el POST) para que recargar o volver atrás no dé error.
+        return redirect()->route('student.reset.show')->with('ok', 'Te enviamos un código por WhatsApp.');
+    }
+
+    /** Pantalla para escribir el código y el PIN nuevo (GET: se puede recargar sin errores). */
+    public function showReset(Request $request)
+    {
+        $doc = $request->session()->get('login_document');
+        $student = $doc ? Student::where('document', $doc)->latest()->first() : null;
+        if (! $student) {
+            return redirect()->route('student.login');
+        }
+        if (! $request->session()->has('pin_reset')) {
+            return redirect()->route('student.resume');
+        }
+
+        return view('chaquetas.portal.login', [
+            'step' => 'reset', 'student' => $student, 'phoneHint' => $request->session()->get('pin_reset_hint'),
+        ]);
     }
 
     /** Verifica el código y define un nuevo PIN. */
@@ -158,12 +176,11 @@ class StudentPortalController extends Controller
             $reset['tries'] = ($reset['tries'] ?? 0) + 1;
             $request->session()->put('pin_reset', $reset);
 
-            return view('chaquetas.portal.login', ['step' => 'reset', 'student' => $student])
-                ->withErrors(['code' => 'Código incorrecto.']);
+            return redirect()->route('student.reset.show')->withErrors(['code' => 'Código incorrecto. Revisa el mensaje de WhatsApp.']);
         }
 
         $student->update(['pin' => Hash::make($data['pin'])]);
-        $request->session()->forget(['pin_reset', 'login_document']);
+        $request->session()->forget(['pin_reset', 'pin_reset_hint', 'login_document']);
         $request->session()->regenerate();               // evita fijación de sesión
         $request->session()->put('student_id', $student->id);
 
