@@ -1,0 +1,11 @@
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+# Las carpetas android/ e ios/ se generan en Codemagic con scripts/preparar_plataformas.sh
+android/
+ios/
+*.iml
+.idea/

@@ -146,7 +146,7 @@ class SalesController extends Controller
         return StudentSheet::download('cartera-'.now()->format('Y-m-d').'.csv', $out);
     }
 
-    private function carteraRows(bool $all)
+    public function carteraRows(bool $all)
     {
         $q = Contract::with(['school', 'students', 'priceChanges']);
         if (! $all) {
