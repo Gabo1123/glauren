@@ -33,7 +33,7 @@
 .qx-btn:hover{border-color:var(--g-gold);color:var(--g-gold)}
 .qx-btn.wa{background:#25d366;border-color:#25d366;color:#04240f}
 .qx-btn.wa:hover{filter:brightness(1.08);color:#04240f}
-.qx-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:20px}
+.qx-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:20px}
 .qx-kpi{background:var(--g-surface-2);border:1px solid var(--g-line);border-radius:12px;padding:12px 14px}
 .qx-kpi small{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--g-muted)}
 .qx-kpi b{display:block;font-size:20px;margin-top:2px;line-height:1.15}
@@ -116,11 +116,15 @@
     <div class="qx-kpis">
         @if($custom)
             <div class="qx-kpi"><small>{{ $biz ? 'Unidades' : 'Prendas' }}</small><b>{{ $bizTotals['units'] }}</b></div>
-            <div class="qx-kpi"><small>Obsequio</small><b>{{ $bizTotals['gift_jackets'] ? $bizTotals['gift_jackets'].' chaqueta'.($bizTotals['gift_jackets'] > 1 ? 's' : '') : ($biz ? 'Tula' : 'Incluido') }}</b></div>
         @else
         <div class="qx-kpi"><small>Estudiantes</small><b>{{ $quote->quantity }}</b></div>
         <div class="qx-kpi"><small>Por estudiante</small><b>{{ $unit ? $money($unit) : '—' }}</b></div>
         @endif
+        @php $gifts = $quote->giftJackets(); @endphp
+        <div class="qx-kpi" title="1 chaqueta de obsequio por cada 25 unidades{{ $quote->giftIsManual() ? ' · cantidad fijada a mano' : '' }}">
+            <small><i class="bi bi-gift"></i> Obsequio</small>
+            <b class="{{ $gifts ? 'hot' : '' }}">{{ $gifts }} chaqueta{{ $gifts == 1 ? '' : 's' }}</b>
+        </div>
         <div class="qx-kpi"><small>Total estimado</small><b class="hot">{{ (float) $quote->estimated_price ? $money($quote->estimated_price) : '—' }}</b></div>
         <div class="qx-kpi"><small>La ha visto</small><b>{{ $quote->view_count ? $quote->view_count.' '.($quote->view_count == 1 ? 'vez' : 'veces') : 'Aún no' }}</b></div>
         <div class="qx-kpi"><small>Próxima llamada</small><b class="{{ $quote->needsFollowUp() ? 'hot' : '' }}">{{ $quote->follow_up_at ? ($quote->needsFollowUp() ? '¡Hoy!' : $quote->follow_up_at->format('d/m')) : '—' }}</b></div>
@@ -308,7 +312,7 @@
                     </div>
                 @endforeach
                 <div class="d-flex justify-content-between pt-3" style="color:#FFC72C;font-weight:800;font-size:16px"><span>Total · {{ $bizTotals['units'] }} unidades</span><span>{{ $money($bizTotals['total']) }}</span></div>
-                <div class="small text-secondary mt-2"><i class="bi bi-gift"></i> Obsequios: {{ $biz ? 'tula' : 'lo incluido en la prom' }} + {{ $bizTotals['gift_jackets'] ?: 'ninguna' }} chaqueta(s) adicional(es) (1 por cada 25 unidades)</div>
+                <div class="small text-secondary mt-2"><i class="bi bi-gift"></i> Obsequios: {{ $biz ? 'tula' : 'lo incluido en la prom' }} + {{ $bizTotals['gift_jackets'] ?: 'ninguna' }} chaqueta(s) adicional(es){{ $quote->giftIsManual() ? ' (cantidad fijada a mano)' : ' (1 por cada 25 unidades)' }}</div>
                 <a href="{{ $editUrl }}" class="btn btn-sm btn-outline-light mt-3"><i class="bi bi-pencil"></i> Editar prendas, fotos y valores</a>
             @elseif(count($summary['lines']))
                 <table class="table table-sm mb-0 qx-sel">
@@ -381,6 +385,7 @@
                 @csrf @method('PUT')
                 <input type="hidden" name="status" value="{{ $quote->status }}">
                 <label class="form-label small">Próxima llamada</label>
+                <input type="hidden" name="gift_mode" value="1">
                 <input type="date" name="follow_up_at" id="fu" value="{{ $quote->follow_up_at?->toDateString() }}" class="form-control mb-2">
                 <div class="qx-chips">
                     @foreach(['Hoy' => 0, 'Mañana' => 1, 'En 3 días' => 3, 'En 1 semana' => 7] as $t => $d)
@@ -388,6 +393,12 @@
                     @endforeach
                     <button type="button" onclick="document.getElementById('fu').value=''">Sin fecha</button>
                 </div>
+                <label class="form-label small"><i class="bi bi-gift" style="color:#FFC72C"></i> Chaquetas de obsequio</label>
+                <div class="input-group mb-1">
+                    <input type="number" name="gift_jackets" min="0" max="1000" class="form-control" value="{{ $quote->giftIsManual() ? $quote->giftJackets() : '' }}" placeholder="Automático: {{ $quote->giftJacketsAuto() }}">
+                    <span class="input-group-text" style="background:var(--g-surface-3);color:var(--g-bone);border-color:var(--g-line)">prendas gratis</span>
+                </div>
+                <div class="small text-secondary mb-3">{{ $quote->giftUnits() }} unidades → {{ $quote->giftJacketsAuto() }} automáticas (1 por cada 25). Déjalo vacío para calcularlo solo o escribe otra cantidad si negociaste más.</div>
                 <label class="form-label small">Notas internas</label>
                 <textarea name="notes" class="form-control mb-3" rows="3" placeholder="Qué busca, presupuesto, quién decide…">{{ $quote->notes }}</textarea>
                 <button class="btn btn-primary w-100"><i class="bi bi-save"></i> Guardar</button>

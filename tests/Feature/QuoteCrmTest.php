@@ -500,4 +500,35 @@ class QuoteCrmTest extends TestCase
         $this->actingAs($admin)->get(route('admin.business.edit', $quote))->assertNotFound();
         $this->actingAs($admin)->get(route('admin.business.index'))->assertDontSee('Colegio San José');
     }
+
+    public function test_gift_jackets_auto_and_manual(): void
+    {
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+        $admin = $this->admin();
+        $quote = Quote::create(['customer_name' => 'Ana', 'customer_phone' => '3000000000', 'school' => 'Colegio X', 'quantity' => 52,
+            'items' => ['combo' => 2], 'estimated_price' => 0, 'notes' => 'nota previa']);
+
+        $this->assertSame(2, $quote->giftJackets());
+        $this->actingAs($admin)->get(route('admin.quotes.show', $quote))->assertOk()->assertSee('2 chaquetas')->assertSee('Automático: 2');
+        $this->get(route('cotizacion.show', $quote->public_token))->assertSee('2 chaquetas gratis');
+        $this->assertStringContainsString('2 chaquetas gratis', (new QuoteMail($quote))->render());
+
+        // Fijar a mano
+        $this->actingAs($admin)->put(route('admin.quotes.update', $quote), ['status' => 'nuevo', 'gift_mode' => 1, 'gift_jackets' => 3, 'notes' => 'nota previa']);
+        $quote->refresh();
+        $this->assertTrue($quote->giftIsManual());
+        $this->assertSame(3, $quote->giftJackets());
+        $this->assertSame('nota previa', $quote->notes);
+        $this->assertTrue($quote->activities()->where('description', 'like', 'Obsequio: 3%')->exists());
+        $this->get(route('cotizacion.show', $quote->public_token))->assertSee('3 chaquetas gratis');
+
+        // Editar prendas sin tocar el obsequio no lo borra
+        $this->actingAs($admin)->put(route('admin.quotes.update', $quote), ['status' => 'nuevo', 'edit_items' => 1, 'quantity' => 30, 'combo' => 1]);
+        $this->assertSame(3, $quote->fresh()->giftJackets());
+
+        // Vacío = vuelve a automático
+        $this->actingAs($admin)->put(route('admin.quotes.update', $quote), ['status' => 'nuevo', 'gift_mode' => 1, 'gift_jackets' => '']);
+        $this->assertFalse($quote->fresh()->giftIsManual());
+        $this->assertSame(1, $quote->fresh()->giftJackets());
+    }
 }

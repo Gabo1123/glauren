@@ -373,6 +373,32 @@ class Quote extends Model
         return $out;
     }
 
+    /** Unidades que cuentan para el obsequio (1 chaqueta por cada 25). */
+    public function giftUnits(): int
+    {
+        return $this->isCustom()
+            ? array_sum(array_column($this->businessLines(), 'qty'))
+            : (int) $this->quantity;
+    }
+
+    /** Chaquetas de obsequio calculadas solas: 1 por cada 25 unidades. */
+    public function giftJacketsAuto(): int
+    {
+        return intdiv(max(0, $this->giftUnits()), self::BUSINESS_GIFT_EVERY);
+    }
+
+    /** ¿El asesor puso a mano la cantidad de obsequio? */
+    public function giftIsManual(): bool
+    {
+        return isset($this->config['gift_jackets']) && $this->config['gift_jackets'] !== null && $this->config['gift_jackets'] !== '';
+    }
+
+    /** Chaquetas (prendas) de obsequio de esta cotización: la manual si existe, si no la automática. */
+    public function giftJackets(): int
+    {
+        return $this->giftIsManual() ? max(0, (int) $this->config['gift_jackets']) : $this->giftJacketsAuto();
+    }
+
     /** @return array{units:int,total:int,gift_jackets:int,missing_for_gift:int} */
     public function businessTotals(): array
     {
@@ -383,7 +409,7 @@ class Quote extends Model
         return [
             'units'            => $units,
             'total'            => array_sum(array_column($lines, 'subtotal')),
-            'gift_jackets'     => intdiv($units, $every),
+            'gift_jackets'     => $this->giftJackets(),
             'missing_for_gift' => $units % $every === 0 && $units > 0 ? 0 : $every - ($units % $every),
         ];
     }

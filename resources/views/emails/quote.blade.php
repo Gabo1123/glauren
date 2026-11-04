@@ -116,6 +116,13 @@
             </tr></table>
         @endif
 
+        @if($quote->giftJackets() > 0)
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;background:#FFF4D6;border:2px solid #FFC72C;border-radius:14px;"><tr>
+                <td style="padding:14px 18px;font-size:14px;font-weight:800;color:#0E0E0E;">🎁 Obsequio incluido<br><span style="font-weight:600;font-size:12px;color:#444444;">1 chaqueta por cada 25 unidades</span></td>
+                <td align="right" style="padding:14px 18px;{{ $display }}font-size:22px;color:#0E0E0E;white-space:nowrap;">{{ $quote->giftJackets() }} chaqueta{{ $quote->giftJackets() == 1 ? '' : 's' }} gratis</td>
+            </tr></table>
+        @endif
+
         {{-- Botón principal --}}
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;"><tr>
             <td align="center" style="background:#0E0E0E;border-radius:999px;box-shadow:0 6px 0 #FF6B1A;">

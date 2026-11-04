@@ -5,6 +5,7 @@
     $first = \Illuminate\Support\Str::of($quote->customer_name)->explode(' ')->first();
     $business = $quote->isBusiness();
     $custom = $quote->isCustom();
+    $gifts = $quote->giftJackets();
     if ($custom) {
         $pages = \App\Modules\Chaquetas\Support\QuoteBusinessPages::pages($quote);
     } else {
@@ -53,6 +54,9 @@ body{background:#2B2B2B;color:#0E0E0E;font-family:'Montserrat',sans-serif;-webki
 .mine td{padding:10px 14px;border-top:1px solid #e6e6e6;font-size:14px;font-weight:600}
 .mine td:last-child{text-align:right;font-family:'Anton';font-size:20px;white-space:nowrap}
 .mine .tot td{background:#FFC72C;font-weight:800}
+.mine .gift td{background:#0E0E0E;color:#FFC72C;font-weight:800}
+.mine .gift td:last-child{color:#FFC72C;font-size:20px}
+.giftbar{background:#FFC72C;color:#0E0E0E;border-radius:14px;padding:12px 16px;font-size:14px;font-weight:600}
 .mine caption{caption-side:top;text-align:left;padding:10px 14px;background:#0E0E0E;color:#FFC72C;font-size:11px;font-weight:800;letter-spacing:3px}
 
 /* Hojas: idénticas al PDF (794 × 1123 px = A4), escaladas al ancho de la pantalla */
@@ -112,8 +116,13 @@ body{background:#2B2B2B;color:#0E0E0E;font-family:'Montserrat',sans-serif;-webki
                     @if(! $custom && $quote->quantity > 1)
                         <tr class="tot"><td>Total aproximado · {{ $quote->quantity }} estudiantes</td><td>{{ $m($summary['unit_total'] * $quote->quantity) }}</td></tr>
                     @endif
+                    @if($gifts)
+                        <tr class="gift"><td>🎁 Obsequio · 1 chaqueta por cada 25 unidades</td><td>{{ $gifts }} chaqueta{{ $gifts == 1 ? '' : 's' }} gratis</td></tr>
+                    @endif
                 </table>
             </div>
+        @elseif($gifts)
+            <div class="giftbar">🎁 Tu pedido incluye <b>{{ $gifts }} chaqueta{{ $gifts == 1 ? '' : 's' }} de obsequio</b> (1 por cada 25 unidades)</div>
         @endif
     </div>
 </header>

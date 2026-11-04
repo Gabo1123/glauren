@@ -293,6 +293,8 @@ class QuoteController extends Controller
             'extras'       => 'nullable|array',
             'extras.*'     => ['string', Rule::in(array_keys(QuoteCatalog::extras()))],
             'edit_items'   => 'nullable|boolean',
+            'gift_mode'    => 'nullable|boolean',
+            'gift_jackets' => 'nullable|integer|min:0|max:1000',
         ]);
 
         $update = [
@@ -313,7 +315,22 @@ class QuoteController extends Controller
             $update['estimated_price'] = QuoteCatalog::summarize($items)['unit_total'] * $qty;
         }
 
+        // Obsequio: vacío = automático (1 por cada 25); un número = cantidad fija.
+        if ($request->boolean('gift_mode')) {
+            $config = (array) $quote->config;
+            $before = $quote->giftJackets();
+            if ($request->filled('gift_jackets')) {
+                $config['gift_jackets'] = (int) $data['gift_jackets'];
+            } else {
+                unset($config['gift_jackets']);
+            }
+            $update['config'] = $config;
+        }
+
         $quote->update($update);
+        if (isset($before) && $before !== $quote->giftJackets()) {
+            $quote->log('nota', 'Obsequio: '.$quote->giftJackets().' chaqueta(s)'.($quote->giftIsManual() ? ' (fijado a mano)' : ' (automático)'));
+        }
 
         return back()->with('ok', 'Cotización actualizada.');
     }
