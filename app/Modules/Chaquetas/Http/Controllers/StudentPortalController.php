@@ -225,7 +225,7 @@ class StudentPortalController extends Controller
             'student_post_id' => $post->id, 'student_id' => $student->id, 'body' => $data['body'],
         ]);
 
-        return back()->with('ok', 'Comentario publicado.');
+        return back()->with('ok', 'Comentario publicado.')->withFragment('muro');
     }
 
     /** Anuario digital del curso. */
@@ -253,7 +253,7 @@ class StudentPortalController extends Controller
             abort(403);
         }
         if (! $student->contract?->voting_enabled) {
-            return back()->withErrors(['vote' => 'La votación está cerrada.']);
+            return back()->withErrors(['vote' => 'La votación está cerrada.'])->withFragment('chaqueta');
         }
 
         \App\Modules\Chaquetas\Models\DesignVote::updateOrCreate(
@@ -261,7 +261,7 @@ class StudentPortalController extends Controller
             ['design_option_id' => $option->id]
         );
 
-        return back()->with('ok', '¡Tu voto quedó registrado! 🗳️');
+        return back()->with('ok', '¡Tu voto quedó registrado! 🗳️')->withFragment('chaqueta');
     }
 
     /** Dar / quitar "me gusta" a una publicación. */
@@ -283,7 +283,7 @@ class StudentPortalController extends Controller
             ]);
         }
 
-        return back();
+        return back()->withFragment('muro');
     }
 
     /** Actualiza perfil (apodo, bio, foto). */
@@ -304,7 +304,7 @@ class StudentPortalController extends Controller
         if ($request->hasFile('photo')) {
             $safe = $this->storeSafeImage($request->file('photo'), 'estudiantes');
             if (! $safe) {
-                return back()->withErrors(['photo' => 'La imagen no es válida. Sube una foto JPG, PNG o WEBP.']);
+                return back()->withErrors(['photo' => 'La imagen no es válida. Sube una foto JPG, PNG o WEBP.'])->withFragment('perfil');
             }
             if ($student->photo) {
                 Storage::disk('public')->delete($student->photo);
@@ -313,7 +313,7 @@ class StudentPortalController extends Controller
         }
         $student->update($update);
 
-        return back()->with('ok', 'Perfil actualizado.');
+        return back()->with('ok', 'Perfil actualizado.')->withFragment('perfil');
     }
 
     /** Publica en el muro (texto y/o foto). */
@@ -329,14 +329,14 @@ class StudentPortalController extends Controller
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp', 'max:4096', 'dimensions:max_width=6000,max_height=6000'],
         ]);
         if (empty($data['body']) && ! $request->hasFile('photo')) {
-            return back()->withErrors(['body' => 'Escribe algo o sube una foto.']);
+            return back()->withErrors(['body' => 'Escribe algo o sube una foto.'])->withFragment('muro');
         }
 
         $photo = null;
         if ($request->hasFile('photo')) {
             $photo = $this->storeSafeImage($request->file('photo'), 'muro');
             if (! $photo) {
-                return back()->withErrors(['photo' => 'La imagen no es válida. Sube una foto JPG, PNG o WEBP.']);
+                return back()->withErrors(['photo' => 'La imagen no es válida. Sube una foto JPG, PNG o WEBP.'])->withFragment('muro');
             }
         }
 
@@ -347,7 +347,7 @@ class StudentPortalController extends Controller
             'photo'       => $photo,
         ]);
 
-        return back()->with('ok', '¡Publicado!');
+        return back()->with('ok', '¡Publicado!')->withFragment('muro');
     }
 
     /**
@@ -412,6 +412,6 @@ class StudentPortalController extends Controller
         }
         $post->delete();
 
-        return back()->with('ok', 'Publicación eliminada.');
+        return back()->with('ok', 'Publicación eliminada.')->withFragment('muro');
     }
 }
