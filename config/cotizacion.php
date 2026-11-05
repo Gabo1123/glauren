@@ -58,7 +58,7 @@ return [
         ['title' => 'Entrega en 25–35 días', 'text' => 'Días hábiles, según los colegios atendidos en ese momento.'],
         ['title' => 'Pago 50 / 50', 'text' => '50% al iniciar y 50% al finalizar, por transferencia a Bancolombia.'],
         ['title' => 'Garantía todo el año', 'text' => 'Defectos de fabricación (confección y cremalleras) durante el año escolar.'],
-        ['title' => 'Toma de medidas', 'text' => 'En el colegio (Bogotá y Cundinamarca). Otras ciudades: tallas estándar con tabla y guía.'],
+        ['title' => 'Toma de medidas', 'text' => 'Vamos al colegio a medir a cada estudiante, o se eligen tallas estándar (S, M, L, XL…) con nuestra tabla y guía.'],
         ['title' => 'Seguimiento en línea', 'text' => 'Portal para el colegio y para cada estudiante, con fotos reales del avance.'],
         ['title' => 'Contrato formal', 'text' => 'Prestación de servicios, con firma en línea.'],
     ],

@@ -267,7 +267,7 @@ class QuoteCrmTest extends TestCase
         $this->actingAs($admin)->get(route('admin.quotes.show', $quote))->assertOk()->assertSee('¡Cliente ganado!');
 
         // El cliente ve que su contrato ya está en marcha
-        $this->get(route('cotizacion.show', $quote->public_token))->assertOk()->assertSee('Así funciona tu proceso')->assertSee('ESTÁS AQUÍ · PASO 3')->assertSee('Firma del contrato');
+        $this->get(route('cotizacion.show', $quote->public_token))->assertOk()->assertSee('Así funciona tu proceso')->assertSee('ESTÁS AQUÍ · PASO 4')->assertSee('Aprobación y contrato')->assertSee('Presentación en el colegio');
     }
 
     public function test_client_page_is_the_same_15_sheets_as_the_pdf(): void
@@ -379,7 +379,8 @@ class QuoteCrmTest extends TestCase
         // El cliente lo ve en su enlace
         $this->get(route('cotizacion.show', $quote->public_token))->assertOk();
         $steps = $quote->fresh()->customerSteps();
-        $this->assertTrue($steps[4]['current']);
+        $this->assertTrue($steps[5]['current']);   // En producción
+        $this->assertSame('Presentación en el colegio', $steps[2]['label']);
     }
 
     public function test_business_quote_with_photos_features_and_gifts(): void

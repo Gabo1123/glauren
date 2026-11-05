@@ -216,26 +216,38 @@ class Quote extends Model
      */
     public function customerSteps(): array
     {
-        $steps = ['Cotización enviada', 'Revisando la propuesta', 'Contrato firmado', 'Toma de medidas', 'En producción', 'Entrega'];
+        // Colegios: propuesta → presentación en el colegio → contrato → medidas → producción → entrega
+        $steps = ['Cotización enviada', 'Aceptas la propuesta', 'Presentación en el colegio', 'Contrato firmado', 'Toma de medidas', 'En producción', 'Entrega'];
         if ($this->isBusiness()) {
-            $steps[3] = 'Diseño y tallas';
+            $steps = ['Cotización enviada', 'Revisando la propuesta', 'Pedido aprobado', 'Diseño y tallas', 'En producción', 'Entrega'];
         }
+        $last = count($steps) - 1;
         $contract = $this->isBusiness() ? null : $this->contract();
 
         if ($contract) {
-            $map = ['cotizado' => 2, 'aprobado' => 2, 'toma_medidas' => 3, 'en_produccion' => 4, 'control_calidad' => 4, 'listo' => 5, 'entregado' => 6];
-            $at = $map[$contract->production_status] ?? 2;
+            $map = ['cotizado' => 3, 'aprobado' => 3, 'toma_medidas' => 4, 'en_produccion' => 5, 'control_calidad' => 5, 'listo' => 6, 'entregado' => 7];
+            $at = $map[$contract->production_status] ?? 3;
+            if ($at === 3 && $contract->isSigned()) {
+                $at = 4;
+            }
+        } elseif ($this->isBusiness()) {
+            $at = match ($this->status) {
+                'cerrado'             => 2,
+                'vista', 'negociando' => 1,
+                default               => 0,
+            };
         } else {
             $at = match ($this->status) {
-                'cerrado'            => 2,
-                'vista', 'negociando'=> 1,
-                default              => 0,
+                'cerrado'    => 3,     // el colegio aceptó: sigue firmar el contrato
+                'negociando' => 2,     // propuesta aceptada: vamos a presentarnos al colegio
+                'vista'      => 1,
+                default      => 0,
             };
         }
 
         $out = [];
         foreach ($steps as $i => $label) {
-            $out[] = ['label' => $label, 'done' => $i < $at || ($i === 5 && $at === 6), 'current' => $i === min($at, 5) && $at < 6];
+            $out[] = ['label' => $label, 'done' => $i < $at || ($i === $last && $at > $last), 'current' => $i === min($at, $last) && $at <= $last];
         }
 
         return $out;
