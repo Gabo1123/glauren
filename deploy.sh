@@ -10,7 +10,8 @@ PHP="${PHP:-php}"
 
 cd "$APP"
 echo "▶ Bajando cambios de GitHub…"
-git pull --ff-only origin main
+# Sin --ff-only: si en el servidor quedó un "merge" de un pull anterior, igual baja los cambios
+git pull --no-edit origin main || { echo "❌ git pull falló. Copia este error y envíalo."; exit 1; }
 
 if command -v composer >/dev/null 2>&1 && [ composer.lock -nt vendor/autoload.php ]; then
   echo "▶ Actualizando dependencias…"
@@ -19,7 +20,7 @@ fi
 
 echo "▶ Limpiando y regenerando cachés…"
 $PHP artisan optimize:clear
-$PHP artisan migrate --force
+$PHP artisan migrate --force || echo "⚠️  La migración falló (copia el error de arriba). Sigo con las cachés para que la web no se caiga."
 $PHP artisan config:cache
 $PHP artisan route:cache
 $PHP artisan view:cache
