@@ -32,7 +32,9 @@ $guias = [
                 'how' => ['Escojan si prefieren que vayamos a medir al colegio o usar tallas estándar.', 'Con tallas estándar: cada estudiante revisa la tabla de tallas y nos dice la suya.', 'Cada estudiante entra a su portal con su documento, crea su PIN y revisa que su nombre esté bien escrito (así sale bordado).', 'Si hay votación de diseño, cada uno vota desde su portal.']],
             ['icon' => '🧵', 'title' => 'Producción', 'text' => 'Fabricamos las prendas en 25 a 35 días hábiles. Verás fotos reales del avance en el portal.',
                 'how' => ['Entra al portal para ver el avance con fotos.', 'Ponte al día con los pagos para no retrasar la entrega.']],
-            ['icon' => '🎉', 'title' => 'Entrega', 'text' => 'Entregamos en el colegio con globos y fotografía. Se paga el 50% restante.',
+            ['icon' => '🎉', 'title' => 'Entrega', 'text' => 'Entregamos las prendas en el colegio, empacadas con el nombre de cada estudiante. Se paga el 50% restante.',
+                // Solo para colegios de Bogotá y Cundinamarca (se usa cuando la cotización tiene esa ciudad)
+                'text_local' => 'Entregamos en el colegio con globos y fotografía. Se paga el 50% restante.',
                 'how' => ['Cada estudiante recibe su prenda empacada con su nombre.', '¡Disfruten su prom y compartan las fotos en el muro del curso!']],
         ],
         'tip' => '¿Tienes dudas en cualquier paso? Escríbenos por WhatsApp y te respondemos.',
