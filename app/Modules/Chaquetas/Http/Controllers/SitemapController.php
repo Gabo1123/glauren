@@ -27,7 +27,7 @@ class SitemapController extends Controller
         foreach (JacketType::where('active', true)->get() as $t) {
             $urls[] = ['loc' => route('design', $t->slug), 'priority' => '0.8', 'freq' => 'monthly'];
         }
-        foreach (Page::where('published', true)->orderBy('sort')->get() as $p) {
+        foreach (Page::where('published', true)->where('slug', '!=', 'dotaciones-empresariales')->orderBy('sort')->get() as $p) {
             $urls[] = ['loc' => route('page.show', $p->slug), 'priority' => '0.7', 'freq' => 'monthly', 'lastmod' => $p->updated_at];
         }
         foreach (Post::published()->get() as $po) {

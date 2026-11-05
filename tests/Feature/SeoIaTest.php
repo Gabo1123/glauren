@@ -57,4 +57,13 @@ class SeoIaTest extends TestCase
             'cuanto-cuesta-una-chaqueta-de-prom-en-colombia', 'chaqueta-beisbolera-o-estructurada-cual-elegir', 'cuando-pedir-las-chaquetas-de-grado',
         ])->where('active', false)->count());
     }
+
+    public function test_business_landing_and_old_page_redirect(): void
+    {
+        $this->get('/p/dotaciones-empresariales')->assertRedirect('/empresas')->assertStatus(301);
+        $this->get('/empresas')->assertOk()
+            ->assertSee('Dotación de ley')->assertSee('30')->assertSee('Chalecos')->assertSee('Delantales')
+            ->assertSee('Visita el taller')->assertSee('google.com/maps', false)->assertSee('"@type":"FAQPage"', false)
+            ->assertSee('class="fab"', false);
+    }
 }

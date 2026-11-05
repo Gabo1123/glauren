@@ -108,6 +108,8 @@ Route::post('/ranking/{entry}/votar', [\App\Modules\Chaquetas\Http\Controllers\R
 
 Route::get('/noticias', [NewsController::class, 'index'])->name('news.index');
 Route::get('/noticias/{slug}', [NewsController::class, 'show'])->name('news.show');
+// La página vieja de dotaciones ahora es la landing completa de empresas
+Route::redirect('/p/dotaciones-empresariales', '/empresas', 301);
 Route::get('/p/{slug}', [PageController::class, 'show'])->name('page.show');
 
 // Fotografía de grados (página pública independiente del prom)

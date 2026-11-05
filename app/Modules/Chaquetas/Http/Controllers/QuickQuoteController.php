@@ -28,7 +28,7 @@ class QuickQuoteController extends Controller
         'no_se'      => 'Aún no sé, quiero asesoría',
     ];
 
-    public const BUSINESS_GARMENTS = ['Chaquetas', 'Busos', 'Chalecos', 'Camisetas polo', 'Camisetas deportivas', 'Gorras', 'Otro'];
+    public const BUSINESS_GARMENTS = ['Chaquetas', 'Chalecos', 'Busos', 'Camisas', 'Camisetas polo', 'Camisetas deportivas', 'Gorras', 'Delantales', 'Dotación de ley', 'Otro'];
 
     /** Cotiza en 1 minuto (colegios). */
     public function school(Request $request)
