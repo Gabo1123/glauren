@@ -1,5 +1,5 @@
 # Compilación en la nube de la app G'Lauren (carpeta movil/) con Codemagic.
-# No necesitas Mac: Codemagic compila iPhone en sus Mac y Android en Linux.
+# No necesitas Mac: Codemagic compila iPhone y Android en sus Mac (incluidos en el plan gratis).
 # Guía paso a paso: movil/PUBLICAR.md
 workflows:
 
@@ -16,8 +16,9 @@ workflows:
       branch_patterns:
         - pattern: '*'
     when:
-      changed:
-        includes: ['movil/']
+      changeset:
+        includes:
+          - 'movil/'
     scripts:
       - name: Preparar plataformas
         script: bash scripts/preparar_plataformas.sh
