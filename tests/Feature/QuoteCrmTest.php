@@ -563,4 +563,18 @@ class QuoteCrmTest extends TestCase
         $contract->update(['production_status' => 'entregado']);
         $this->actingAs($user)->get(route('portal.contract', $contract))->assertOk()->assertSee('Completaste todos los pasos');
     }
+
+    public function test_delivery_step_mentions_balloons_only_for_bogota_and_cundinamarca(): void
+    {
+        $quote = Quote::create(['customer_name' => 'Ana', 'customer_phone' => '3000000000', 'quantity' => 30, 'estimated_price' => 0, 'items' => ['combo' => 1]]);
+        $this->get(route('cotizacion.show', $quote->public_token))->assertOk()
+            ->assertDontSee('Entregamos en el colegio con globos y fotografía')->assertSee('empacadas con el nombre de cada estudiante');
+
+        $quote->update(['config' => ['client' => ['city' => 'Chía, Cundinamarca']]]);
+        $this->assertTrue($quote->fresh()->isLocal());
+        $this->get(route('cotizacion.show', $quote->public_token))->assertSee('Entregamos en el colegio con globos y fotografía');
+
+        $quote->update(['config' => ['client' => ['city' => 'Medellín']]]);
+        $this->assertFalse($quote->fresh()->isLocal());
+    }
 }

@@ -104,7 +104,7 @@ body{background:#2B2B2B;color:#0E0E0E;font-family:'Montserrat',sans-serif;-webki
             $cat = collect($csteps)->search(fn ($x) => $x['current']);
             $cat = $cat === false ? count($csteps) : $cat;   // todo listo = entregado
         @endphp
-        @include('partials.guia', ['guide' => $business ? 'cotizacion_empresa' : 'cotizacion', 'at' => $cat])
+        @include('partials.guia', ['guide' => $business ? 'cotizacion_empresa' : 'cotizacion', 'at' => $cat, 'local' => $quote->isLocal()])
         @if(count($summary['lines']))
             <div class="mine">
                 <table>

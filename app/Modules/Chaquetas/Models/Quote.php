@@ -352,6 +352,20 @@ class Quote extends Model
         };
     }
 
+    /**
+     * ¿El cliente es de Bogotá o Cundinamarca? (ahí aplican la toma de medidas en el colegio,
+     * la entrega con globos y fotografía, y el paquete de fotografía). Se toma de la ciudad de la ficha.
+     */
+    public function isLocal(): bool
+    {
+        $city = \Illuminate\Support\Str::of((string) ($this->client()['city'] ?? ''))->ascii()->lower()->toString();
+        if ($city === '') {
+            return false;
+        }
+
+        return (bool) preg_match('/bogota|cundinamarca|soacha|chia|zipaquira|funza|mosquera|madrid|cajica|cota|facatativa|fusagasuga|girardot|tocancipa|sopo|la calera|tabio|tenjo|sibate|gachancipa|cogua|nemocon|ubate|villeta|la mesa|anapoima|silvania|el rosal|subachoque|guasca|sesquile|choconta|bojaca|el colegio|tocaima|pacho|guaduas/', $city);
+    }
+
     /** Ficha del cliente que se va completando en la conversación. */
     public const CLIENT_FIELDS = [
         'course'      => 'Curso / grado',

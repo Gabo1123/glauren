@@ -4,10 +4,14 @@
       guide → clave en config/guias.php
       at    → índice del paso actual (0 = primero). Si es mayor que el último, todo queda hecho.
       open  → (opcional) abierta al cargar, por defecto sí
+      local → (opcional) true si el cliente es de Bogotá o Cundinamarca: usa 'text_local' cuando el paso lo tiene
 --}}
 @php
     $g = config('guias.'.$guide);
     $steps = $g['steps'] ?? [];
+    if (! empty($local)) {
+        $steps = array_map(fn ($st) => isset($st['text_local']) ? ['text' => $st['text_local']] + $st : $st, $steps);
+    }
     $total = count($steps);
     $at = max(0, (int) ($at ?? 0));
     $allDone = $at >= $total;
