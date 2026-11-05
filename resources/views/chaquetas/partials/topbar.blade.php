@@ -2,7 +2,7 @@
     use App\Modules\Chaquetas\Models\MenuItem;
     use App\Modules\Chaquetas\Models\Setting;
     $navItems = MenuItem::tree();
-    $brand = Setting::get('brand_name', 'Glauren');
+    $brand = \App\Modules\Chaquetas\Support\Brand::name();
     $brandLogo = Setting::get('brand_logo');
 @endphp
 <style>

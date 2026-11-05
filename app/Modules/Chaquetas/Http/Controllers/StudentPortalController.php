@@ -123,7 +123,7 @@ class StudentPortalController extends Controller
             'code' => Hash::make($code), 'expires' => now()->addMinutes(10)->timestamp, 'tries' => 0,
         ]);
 
-        $brand = Setting::get('brand_name', 'Glauren');
+        $brand = \App\Modules\Chaquetas\Support\Brand::name();
         $this->wa->sendText($phone, "🔐 {$brand} — Tu código para restablecer el PIN es: {$code}\nVence en 10 minutos.");
 
         $hint = strlen($phone) > 4 ? str_repeat('•', strlen($phone) - 4).substr($phone, -4) : $phone;

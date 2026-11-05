@@ -208,7 +208,7 @@ class Contract extends Model
             '{valor_letras}'   => $this->total_words ?: '[valor en letras]',
             '{anticipo}'       => $this->hasDeposit() ? $money($this->deposit_amount) : '[anticipo]',
             '{anticipo_letras}' => $this->hasDeposit() ? \App\Modules\Chaquetas\Support\NumberToWords::pesos((float) $this->deposit_amount) : '[anticipo en letras]',
-            '{contratista}'    => Setting::get('contratista_nombre', Setting::get('brand_name', 'Glauren')),
+            '{contratista}'    => Setting::get('contratista_nombre', \App\Modules\Chaquetas\Support\Brand::name()),
             '{nit}'            => Setting::get('contratista_nit', ''),
             '{cuenta}'         => Setting::get('contratista_cuenta', ''),
             '{cuenta_direccion}' => Setting::get('contact_address', 'Bogotá, Colombia'),

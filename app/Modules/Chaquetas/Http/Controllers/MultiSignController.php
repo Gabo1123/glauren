@@ -55,7 +55,7 @@ class MultiSignController extends Controller
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $signer->update(['otp' => Hash::make($code), 'otp_expires' => now()->addMinutes(10)]);
 
-        $brand = Setting::get('brand_name', 'Glauren');
+        $brand = \App\Modules\Chaquetas\Support\Brand::name();
         $this->wa->sendText($this->wa->normalize($signer->phone),
             "🔐 {$brand} — Código para firmar el contrato: {$code}\nVence en 10 minutos.");
 

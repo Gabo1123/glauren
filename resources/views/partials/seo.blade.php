@@ -16,8 +16,8 @@
     $key   = $seoKey ?? 'home';
     $sp    = SeoPage::for($key);
     $model = $seoModel ?? null;
-    $site  = Setting::get('brand_name', 'Glauren');
-    $defOg = Setting::get('seo_og_image', 'https://chaquetasdeprom.com/wp-content/uploads/2025/11/chaqueta-de-promocion-1.jpeg');
+    $site  = \App\Modules\Chaquetas\Support\Brand::name();
+    $defOg = \App\Modules\Chaquetas\Support\Brand::defaultImage();
 
     // --- Título ---
     $title = $seoTitleOverride
@@ -31,6 +31,12 @@
         ?? ($sp->description ?? null)
         ?? (Setting::get('seo_default_description') ?: 'Diseña tu chaqueta de prom en 3D, sigue su fabricación con fotos reales y págala en línea. Más de 10 años vistiendo promociones en Colombia.');
     $desc = trim(preg_replace('/\s+/', ' ', $desc));
+
+    // Mismo nombre de marca en todas partes (títulos guardados antes decían "Glauren")
+    if ($site === "G'Lauren") {
+        $title = preg_replace('/\bGlauren\b/u', $site, $title);
+        $desc  = preg_replace('/\bGlauren\b/u', $site, $desc);
+    }
 
     // --- Palabra clave / keywords ---
     $focus = $model->focus_keyword ?? null;
@@ -58,6 +64,26 @@
     $webId = $home.'#website';
     $pageId = $canon.'#webpage';
 
+    // Calificación con las opiniones aprobadas (encuesta de entrega / testimonios activos)
+    $rating = \Illuminate\Support\Facades\Cache::remember('seo_rating', 3600, function () {
+        $q = \App\Modules\Chaquetas\Models\Testimonial::where('active', true)->whereNotNull('rating')->where('rating', '>', 0);
+        $n = (clone $q)->count();
+
+        return $n >= 3 ? ['@type' => 'AggregateRating', 'ratingValue' => round((float) $q->avg('rating'), 1), 'reviewCount' => $n, 'bestRating' => 5, 'worstRating' => 1] : null;
+    });
+
+    // Catálogo con precios reales (lo que la IA cita cuando preguntan "¿cuánto cuesta…?")
+    $catalog = [
+        '@type' => 'OfferCatalog',
+        'name'  => 'Chaquetas y busos de promoción',
+        'itemListElement' => collect(\App\Modules\Chaquetas\Support\QuoteCatalog::products())->map(fn ($p) => [
+            '@type' => 'Offer',
+            'price' => (int) $p['price'],
+            'priceCurrency' => 'COP',
+            'itemOffered' => ['@type' => 'Product', 'name' => $p['name'], 'description' => $p['embroidery'].' bordados · tela '.$p['fabric']],
+        ])->values()->all(),
+    ];
+
     // ===== Nodos del @graph =====
     $graph = [];
 
@@ -66,13 +92,18 @@
         '@type' => ['Organization', 'LocalBusiness'],
         '@id'   => $orgId,
         'name'  => $site,
+        'alternateName' => ['Glauren', 'G Lauren', 'Chaquetas de Prom Glauren', 'chaquetasdeprom.com'],
+        'description' => 'Fabricantes de chaquetas de prom, busos y camisetas de promoción para grado once en toda Colombia. Taller propio en Bogotá, contrato formal, seguimiento con fotos y pago 50/50.',
         'url'   => $home,
-        'logo'  => ['@type' => 'ImageObject', 'url' => $defOg],
+        'logo'  => ['@type' => 'ImageObject', 'url' => \App\Modules\Chaquetas\Support\Brand::logoUrl(), 'width' => 512, 'height' => 512],
         'image' => $defOg,
+        'aggregateRating' => $rating,
+        'hasOfferCatalog' => $catalog,
+        'knowsAbout' => ['chaquetas de prom', 'chaquetas de promoción', 'busos de grado', 'chaquetas beisboleras', 'chaquetas de grado once', 'bordados personalizados'],
         'telephone'  => $tel,
         'priceRange' => '$$',
         'address' => ['@type' => 'PostalAddress', 'streetAddress' => $addr, 'addressLocality' => 'Bogotá', 'addressRegion' => 'Cundinamarca', 'addressCountry' => 'CO'],
-        'areaServed' => ['Bogotá', 'Medellín', 'Cali', 'Bucaramanga', 'Manizales', 'Cundinamarca', 'Colombia'],
+        'areaServed' => array_merge(array_column(config('ciudades', []), 'name'), ['Cundinamarca', 'Colombia']),
         'sameAs' => $sameAs ?: null,
         'openingHoursSpecification' => ['@type' => 'OpeningHoursSpecification', 'dayOfWeek' => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], 'opens' => '08:00', 'closes' => '18:00'],
     ]);
