@@ -27,6 +27,34 @@ workflows:
       - name: Pruebas
         script: flutter test
 
+  # 1b) Android para probar YA: genera un .apk que se descarga e instala directo en el celular
+  #     (sin Play Store y sin configurar nada). Codemagic envía el enlace de descarga a tu correo.
+  android-apk-prueba:
+    name: Android · APK de prueba
+    instance_type: mac_mini_m2
+    max_build_duration: 40
+    working_directory: movil
+    environment:
+      flutter: stable
+    scripts:
+      - name: Preparar plataformas
+        script: bash scripts/preparar_plataformas.sh
+      - name: Compilar .apk
+        script: |
+          flutter build apk --release \
+            --build-name=1.0.$PROJECT_BUILD_NUMBER \
+            --build-number=$PROJECT_BUILD_NUMBER
+          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/GLauren-prueba.apk
+    artifacts:
+      - build/app/outputs/flutter-apk/GLauren-prueba.apk
+    publishing:
+      email:
+        recipients:
+          - gabotorresmac@gmail.com
+        notify:
+          success: true
+          failure: true
+
   # 2) iPhone → App Store Connect (TestFlight). Se lanza a mano desde Codemagic.
   ios-app-store:
     name: iPhone · App Store
