@@ -535,10 +535,10 @@
         <a href="{{ route('home') }}" class="brand" aria-label="Glauren inicio">
             @php $brandLogo = Setting::get('brand_logo'); @endphp
             @if($brandLogo)
-                <img src="{{ $brandLogo }}" alt="{{ Setting::get('brand_name', 'Glauren') }}" title="{{ Setting::get('brand_name', 'Glauren') }}" style="height:46px;width:auto">
+                <img src="{{ $brandLogo }}" alt="{{ \App\Modules\Chaquetas\Support\Brand::name() }}" title="{{ \App\Modules\Chaquetas\Support\Brand::name() }}" style="height:46px;width:auto">
             @else
                 <span class="mk">G</span>
-                <span><span class="wm">{{ Setting::get('brand_name', 'Glauren') }}</span><span class="tg">Chaquetas de prom</span></span>
+                <span><span class="wm">{{ \App\Modules\Chaquetas\Support\Brand::name() }}</span><span class="tg">Chaquetas de prom</span></span>
             @endif
         </a>
         <div class="navlinks" id="navLinks">
@@ -1121,7 +1121,7 @@
             <div class="foot-brand">
                 <div class="fb-logo">
                     @if($brandLogo)<img src="{{ $brandLogo }}" alt="{{ Setting::get('brand_name','Glauren') }}" title="{{ Setting::get('brand_name','Glauren') }}" style="height:44px">
-                    @else<span class="mk">G</span><span class="wm">{{ Setting::get('brand_name', 'Glauren') }}</span>@endif
+                    @else<span class="mk">G</span><span class="wm">{{ \App\Modules\Chaquetas\Support\Brand::name() }}</span>@endif
                 </div>
                 <p>{{ Setting::get('footer_note', 'Chaquetas de promoción de alta calidad para grado once en toda Colombia. Diseña la tuya en 3D y síguela hasta tus manos.') }}</p>
                 <div class="foot-soc">
@@ -1141,6 +1141,9 @@
                 <a href="{{ route('seguimiento') }}">Busca tu chaqueta</a>
                 <a href="#cotiza">Cotiza en 1 minuto</a>
                 <a href="{{ route('empresas') }}">Empresas y dotación</a>
+                <a href="{{ route('ciudades.index') }}">Chaquetas por ciudad</a>
+                <a href="{{ route('ciudades.show', 'bogota') }}">Chaquetas de prom Bogotá</a>
+                <a href="{{ route('ciudades.show', 'medellin') }}">Chaquetas de prom Medellín</a>
             </div>
 
             {{-- Cuentas --}}
@@ -1165,7 +1168,7 @@
 
 
         <div class="foot-bottom">
-            <div>© {{ date('Y') }} {{ Setting::get('brand_name', 'Glauren') }} · Hecho en Colombia 🇨🇴 · Todos los derechos reservados.</div>
+            <div>© {{ date('Y') }} {{ \App\Modules\Chaquetas\Support\Brand::name() }} · Hecho en Colombia 🇨🇴 · Todos los derechos reservados.</div>
             <div class="foot-legal">
                 <a href="{{ url('/p/terminos-y-servicios') }}">Términos y servicios</a>
                 <a href="{{ url('/p/politica-de-privacidad') }}">Privacidad</a>

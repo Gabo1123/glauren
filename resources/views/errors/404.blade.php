@@ -1,6 +1,6 @@
 @php
     use App\Modules\Chaquetas\Models\Setting;
-    $brand = Setting::get('brand_name', 'Glauren');
+    $brand = \App\Modules\Chaquetas\Support\Brand::name();
     $wa = preg_replace('/\D/', '', Setting::get('contact_whatsapp', '573183504386'));
 @endphp
 <!DOCTYPE html>

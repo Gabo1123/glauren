@@ -22,7 +22,7 @@ class CustomerReplyMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $brand = Setting::get('brand_name', 'Glauren');
+        $brand = \App\Modules\Chaquetas\Support\Brand::name();
         $from  = config('mail.from.address') ?: config('mail.mailers.smtp.username') ?: 'no-reply@chaquetasdeprom.com';
 
         return new Envelope(
@@ -36,7 +36,7 @@ class CustomerReplyMail extends Mailable
         return new Content(
             view: 'emails.customer-reply',
             with: [
-                'brand'   => Setting::get('brand_name', 'Glauren'),
+                'brand'   => \App\Modules\Chaquetas\Support\Brand::name(),
                 'body'    => Setting::get('contact_reply_message', $this->defaultBody()),
                 'name'    => $this->customerName,
                 'appt'    => $this->appointment,

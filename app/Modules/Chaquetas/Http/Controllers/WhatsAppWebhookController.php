@@ -159,7 +159,7 @@ class WhatsAppWebhookController extends Controller
     private function systemPrompt(): string
     {
         $base  = rtrim(config('app.url', 'https://chaquetasdeprom.com'), '/');
-        $brand = Setting::get('brand_name', 'Glauren');
+        $brand = \App\Modules\Chaquetas\Support\Brand::name();
         $wa    = Setting::get('contact_whatsapp', '573246750207');
         $extra = Setting::get('wa_ai_prompt', '');
         $know  = trim((string) Setting::get('wa_ai_knowledge', ''));

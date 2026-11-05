@@ -40,7 +40,7 @@ class PaymentReminderController extends Controller
             ->values();
 
         $template = Setting::get('payment_reminder_template', self::DEFAULT_TEMPLATE);
-        $brand    = Setting::get('brand_name', 'Glauren');
+        $brand    = \App\Modules\Chaquetas\Support\Brand::name();
         $apiReady = $this->wa->configured();
 
         return view('admin.finance.reminders', compact('contracts', 'template', 'brand', 'apiReady'));
@@ -60,7 +60,7 @@ class PaymentReminderController extends Controller
         }
 
         $template = Setting::get('payment_reminder_template', self::DEFAULT_TEMPLATE);
-        $brand    = Setting::get('brand_name', 'Glauren');
+        $brand    = \App\Modules\Chaquetas\Support\Brand::name();
         $message  = $this->buildMessage($template, $contract, $brand);
 
         $res = $this->wa->sendText($this->wa->normalize($phone), $message);
@@ -81,7 +81,7 @@ class PaymentReminderController extends Controller
         }
 
         $template = Setting::get('payment_reminder_template', self::DEFAULT_TEMPLATE);
-        $brand    = Setting::get('brand_name', 'Glauren');
+        $brand    = \App\Modules\Chaquetas\Support\Brand::name();
         $sent = 0; $failed = 0;
 
         $contracts = Contract::with('school')->whereHas('students', function ($q) {

@@ -145,7 +145,7 @@ class AuthController extends Controller
             'phone_hint' => $this->maskPhone($phone),
         ]);
 
-        $brand = Setting::get('brand_name', 'Glauren');
+        $brand = \App\Modules\Chaquetas\Support\Brand::name();
         $msg = "🔐 *{$brand}* — Código de acceso al panel: *{$code}*\nVence en 5 minutos. Si no fuiste tú, cambia tu contraseña.";
         $this->wa->sendText($phone, $msg);
 

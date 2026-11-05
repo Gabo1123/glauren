@@ -44,6 +44,9 @@ use Illuminate\Support\Facades\Route;
 */
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
+Route::get('/llms.txt', [SitemapController::class, 'llms'])->name('llms');
+Route::get('/chaquetas-de-prom', [\App\Modules\Chaquetas\Http\Controllers\CityController::class, 'index'])->name('ciudades.index');
+Route::get('/chaquetas-de-prom/{slug}', [\App\Modules\Chaquetas\Http\Controllers\CityController::class, 'show'])->where('slug', '[a-z-]+')->name('ciudades.show');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/mi-chaqueta', [SeguimientoController::class, 'index'])->name('seguimiento');
